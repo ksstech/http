@@ -29,20 +29,20 @@
 #include	"task_console.h"
 
 #include	"x_debug.h"
+#include	"x_retarget.h"
 #include	"x_syslog.h"
 #include	"x_errors_events.h"
 #include	"x_string_to_values.h"
 #include	"x_string_general.h"
 #include	"x_time.h"
 #include	"x_string_to_values.h"
-#include	"x_ubuf.h"
 #include	"actuators.h"
 
+#include	"hal_network.h"
 #include	"hal_fota.h"
 #include	"hal_storage.h"
 #include	"hal_mcu.h"									// for halMCU_Restart()
 
-#include	<stdio.h>
 #include	<stdlib.h>
 #include	<string.h>
 #include	<limits.h>
@@ -70,20 +70,32 @@ static	const char	HtmlAPdetails[] =
 	"<input type='text' name='pswd' size='64'><br><br><input type='submit' value='Submit'></form></body></html>" ;
 
 static	const char	HtmlSTAdetails[] =
-	"<html><head><title>'IRMACOS: STA details'</title></head><body><h3>'IRMACOS: STA details'</h3>"
-	"<p>Manufacturer    : " DEV_VENDOR "</p><p>Platform        : " DEV_PLATFORM "</p>"
-	"<p>Wifi FW version : " mySTRINGIFY(DEV_WIFI_VER) "</p><p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
+	"<html><head><title>'IRMACOS: STA details'</title></head><body>"
+	"<h3>'IRMACOS: STA details'</h3>"
+	"<p>Manufacturer    : " DEV_VENDOR "</p>"
+	"<p>Platform        : " DEV_PLATFORM "</p>"
+	"<p>Wifi FW version : " mySTRINGIFY(DEV_WIFI_VER) "</p>"
+	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
 	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form></body></html>" ;
 
-static	const char HtmlAPconfigOK[] = "<html><body><h3>IRMACOS: AP details set, rebooting now..</h3><p>Please wait a minute and then confirm success</p></body></html>" ;
+static	const char HtmlAPconfigOK[] =
+	"<html><body><h3>IRMACOS: AP details set, rebooting now..</h3>"
+	"<p>Please wait a minute and then confirm success</p></body></html>" ;
 
-static	const char HtmlAPconfigFAIL[] = "<html><body><h3>IRMACOS: AP details NOT set, try again..</h3><p>Please make sure only using the allowed characters</p></body></html>" ;
+static	const char HtmlAPconfigFAIL[] =
+	"<html><body><h3>IRMACOS: AP details NOT set, try again..</h3>"
+	"<p>Please make sure only using the allowed characters</p></body></html>" ;
 
-static	const char HtmlErrorNoHost[] = "<html><body><h2>No Host: header received</h2><p>HTTP 1.1 requests must include the Host: header.</p></body></html>" ;
+static	const char HtmlErrorNoHost[] =
+	"<html><body><h2>No Host: header received</h2>"
+	"<p>HTTP 1.1 requests must include the Host: header.</p></body></html>" ;
 
-static	const char HtmlErrorInvMethod[] = "<html><body><h2>Invalid method request</h2><p>IRMACOS only support GET, not HEAD, POST, DELETE etc..</p></body></html>" ;
+static	const char HtmlErrorInvMethod[] =
+	"<html><body><h2>Invalid method request</h2>"
+	"<p>IRMACOS only support GET, not HEAD, POST, DELETE etc..</p></body></html>" ;
 
-static	const char HtmlErrorBadQuery[] = "<html><body><h2>Query key:value pair(s) mismatched</h2></body></html>" ;
+static	const char HtmlErrorBadQuery[] =
+	"<html><body><h2>Query key:value pair(s) mismatched</h2></body></html>" ;
 
 // ###################################### global variables #########################################
 
@@ -143,34 +155,37 @@ int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
 
 void	vHttpBuildResponse(http_parser * psParser, const char * format, ...) {
 	http_reqres_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sUUBuf.pBuf)) ;
-	// setup the uubuf_t structure for printing
-	xUUBufCreate(&psRR->sUUBuf, psRR->sUUBuf.pBuf, psRR->sUUBuf.Size, 0) ;
-	uuprintf(&psRR->sUUBuf, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
-	uuprintf(&psRR->sUUBuf, "Date: %#Z\r\n", &sTSZ) ;
-	uuprintf(&psRR->sUUBuf, "Server: %s\r\n", idSTA) ;
+	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sBuf.pBuf)) ;
+
+	socprintf(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
+	socprintf(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
+	socprintf(&psRR->sCtx, "Content-Language: en-US\r\n") ;
 	if (psRR->hvConnect) {
-		uuprintf(&psRR->sUUBuf, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
+		socprintf(&psRR->sCtx, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
 		if (psRR->hvConnect == coKeepAlive) {
-			uuprintf(&psRR->sUUBuf, "Keep-Alive: timeout=3\r\n") ;
+			socprintf(&psRR->sCtx, "Keep-Alive: timeout=3\r\n") ;
 		}
 	}
 	if (psRR->hvContentType) {
-		uuprintf(&psRR->sUUBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
+		socprintf(&psRR->sCtx, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 	}
 
 	va_list vArgs ;
 	va_start(vArgs, format) ;
-	psRR->hvContentLength = xvsprintf(NULL, format, vArgs) ;	// calculate content length
-
-	uuprintf(&psRR->sUUBuf, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2) ; // length+2 (CR+LF)
-	vuuprintf(&psRR->sUUBuf, format, vArgs) ;					// add the actual content
+	/* The next line does not really print anything. By specifying the NULL as the string
+	 * pointer it performs a test print and simply return the number of characters that
+	 * would have been printed if a destination was specified.*/
+	psRR->hvContentLength = xvsprintf(NULL, format, vArgs) ;
+	/* Now do the actual formatted print of the content length with an additional 2 chars
+	 * added for the extra CR + LF pair to form the blank line after the header values */
+	socprintf(&psRR->sCtx, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2) ;
+	vsocprintf(&psRR->sCtx, format, vArgs) ;				// add the actual content
 	va_end(vArgs) ;
-	uuprintf(&psRR->sUUBuf, "\r\n") ;					// add the final CR+LF after the body
-//	vUUBufDestroy(&sRR.sUUBuf) ;						// Not required, memory was provided not allocated.
+	socprintf(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
+
 #if	defined(DEBUG)
 	if (psRR->f_debug) {
-		PRINT("Content:\n%.*s", psRR->sUUBuf.Used, psRR->sUUBuf.pBuf) ;
+		PRINT("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	}
 #endif
 	return ;
@@ -195,17 +210,14 @@ static	const char * UrlTable[] = {
 void vHttpHandle_API(http_parser * psParser) {
 	static const char format[] = "<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>" ;
 	http_reqres_t * psRR = psParser->data ;
-	int32_t fd = open("/ubuf", O_RDWR | O_NONBLOCK, 4096) ;
-//	TRACK_PRINT("URL [0]=%s  [1]=%s  '%c'\n", psRR->parts[0], psRR->parts[1], *psRR->parts[1]) ;
-	vCommandInterpret(fd, (int) *psRR->parts[1]) ;
-	ubuf_t * psUBuf ;
-	ioctl(fd, ioctlUBUF_I_PTR_CNTL, &psUBuf) ;
-	if (psUBuf->used) {
-		vHttpBuildResponse(psParser, format, psUBuf->used, psUBuf->pBuf) ;
+	vCommandInterpret(1, (int) *psRR->parts[1]) ;
+	ubuf_t * psBuf = &sBufStdOut ;
+	if (psBuf->Used) {
+		vHttpBuildResponse(psParser, format, psBuf->Used, psBuf->pBuf + psBuf->IdxRD) ;
+		psBuf->Used	= psBuf->IdxWR = psBuf->IdxRD = 0 ;	// reset pointers to reflect empty
 	} else {
 		vHttpBuildResponse(psParser, "<html><body><h2>Command completed</h2></body></html>") ;
 	}
-	close(fd) ;
 }
 
 // ################################### Common HTTP API functions ###################################
@@ -213,6 +225,12 @@ void vHttpHandle_API(http_parser * psParser) {
 void	vHttpServerCloseClient(sock_ctx_t * psCtx) {
 	vRtosClearStatus(flagNET_L5_HTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
+	if (sRR.sCtx.maxTx < psCtx->maxTx) {
+		sRR.sCtx.maxTx = psCtx->maxTx ;
+	}
+	if (sRR.sCtx.maxRx < psCtx->maxRx) {
+		sRR.sCtx.maxRx = psCtx->maxRx ;
+	}
 	xNetClose(psCtx) ;
 	IF_SL_DBG(debugTRACK, "closing") ;
 }
@@ -226,7 +244,7 @@ void	vHttpServerCloseClient(sock_ctx_t * psCtx) {
 int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psParser->data)) ;
 	http_reqres_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR->sUUBuf.pBuf)) ;
+	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR->sBuf.pBuf)) ;
 
 	int32_t	iURL = -1 ;
 	if (psParser->http_errno) {
@@ -326,35 +344,39 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  */
 void	vHttpServerTask(void * pvParameters) {
 	IF_SL_DBG(debugAPPL_THREADS, messageTASK_START) ;
-	sRR.sUUBuf.pBuf	= pvPortMalloc(sRR.sUUBuf.Size = httpSERVER_BUFSIZE) ;
+	sRR.sBuf.pBuf	= pvPortMalloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
 
 	while (xRtosVerifyState(taskHTTP)) {
-	// ensure IP is up and running...
-		vRtosWaitStatus(flagNET_L3_UP) ;
+		vRtosWaitStatus(flagNET_L3_UP) ;				// ensure IP is up and running...
 		switch(HttpState) {
 		int32_t	iRetVal ;
-		case stateHTTP_RESET: {
+		case stateHTTP_RESET:
 			IF_SL_DBG(debugTRACK, "reset") ;
-			xEventGroupClearBits(xEventStatus, flagNET_L5_HTTP_SERV | flagNET_L5_HTTP_CLNT) ;
+			vRtosClearStatus(flagNET_L5_HTTP_SERV | flagNET_L5_HTTP_CLNT) ;
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
 			HttpState = stateHTTP_INIT ;
-		}
-		/* no break */
+			/* no break */
+
 		case stateHTTP_INIT:
 			IF_SL_DBG(debugTRACK, "init") ;
 			memset(&sServHttpCtx, 0 , sizeof(sock_ctx_t)) ;
 			sServHttpCtx.sa_in.sin_family		= AF_INET ;
 			sServHttpCtx.type					= SOCK_STREAM ;
 //			sServHttpCtx.psSec					= ? ;
+#if 0
+			sServHttpCtx.d_data					= 1 ;
+			sServHttpCtx.d_read					= 1 ;
+			sServHttpCtx.d_write				= 1 ;
+#endif
 			sServHttpCtx.sa_in.sin_port			= htons(sServHttpCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
 			iRetVal = xNetOpen(&sServHttpCtx) ;
 			if (iRetVal < erSUCCESS) {
 				HttpState = stateHTTP_RESET ;
 				break ;
 			}
-			xEventGroupSetBits(xEventStatus, flagNET_L5_HTTP_SERV) ;
+			vRtosSetStatus(flagNET_L5_HTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
 			IF_SL_DBG(debugTRACK, "waiting") ;
 			/* no break */
@@ -368,19 +390,18 @@ void	vHttpServerTask(void * pvParameters) {
 				break ;
 			}
 
-			// mark as having a client connection
 			iRetVal = xNetSetRecvTimeOut(&sRR.sCtx, httpINTERVAL_MS) ;
 			if (iRetVal != erSUCCESS) {
 				HttpState = stateHTTP_RESET ;
 				break ;
 			}
-			xEventGroupSetBits(xEventStatus, flagNET_L5_HTTP_CLNT) ;
+			vRtosSetStatus(flagNET_L5_HTTP_CLNT) ;		// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
 			IF_SL_DBG(debugTRACK, "connected") ;
 			/* no break */
 
 		case stateHTTP_CONNECTED:
-			iRetVal = xNetRead(&sRR.sCtx, sRR.sUUBuf.pBuf, sRR.sUUBuf.Size) ;
+			iRetVal = xNetRead(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Size) ;
 			if (iRetVal > 0) {
 				http_parser 	sParser ;
 				http_parser_init(&sParser, HTTP_REQUEST) ;
@@ -397,30 +418,29 @@ void	vHttpServerTask(void * pvParameters) {
 				sRR.hvContentType	= ctUNDEFINED ;
 //				sRR.HdrField		= 0 ;
 				sRR.f_allflags		= 0 ;
-				sRR.f_parts			= 1 ;		// break URL up in parts
-				sRR.f_query			= 1 ;		// break query up in parts
-//				sRR.f_debug			= 1 ;		// enable debug output
+				sRR.f_parts			= 1 ;				// break URL up in parts
+				sRR.f_query			= 1 ;				// break query up in parts
+//				sRR.f_debug			= 1 ;				// enable debug output
 
-				sRR.sUUBuf.Used = iRetVal ;
+				sRR.sBuf.Used = iRetVal ;
 				iRetVal = xHttpCommonDoParsing(&sParser) ;
 				if (iRetVal > 0) {						// build response if something was parsed....
+					xStdOutLock(portMAX_DELAY) ;
 					xHttpServerResponseHandler(&sParser) ;
-					iRetVal = xNetWrite(&sRR.sCtx, sRR.sUUBuf.pBuf, sRR.sUUBuf.Used) ;
+					iRetVal = xNetWrite(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Used) ;
+					xStdOutUnLock() ;
 				}
 				// socket closed or error occurred or coClose was set, close the connection
 				if (iRetVal == 0 || 					// nothing parsed or socket closed?
-					sRR.sCtx.error != 0 || 		// any error (even EAGAIN) on write ?
-					sRR.hvConnect == coClose) {	// or connection must be closed ?
+					sRR.sCtx.error != 0 || 				// any error (even EAGAIN) on write ?
+					sRR.hvConnect == coClose) {			// or connection must be closed ?
 					vHttpServerCloseClient(&sRR.sCtx) ;	// then close the damn thing
 				} else {
 					// both parse & response handler & write was successful
 				}
-			} else if (sRR.sCtx.error != EAGAIN) {	// not EAGAIN/EWOULDBLOCK, socket closed OR real error
+			} else if (sRR.sCtx.error != EAGAIN) {		// not EAGAIN/EWOULDBLOCK, socket closed OR real error
 				vHttpServerCloseClient(&sRR.sCtx) ;
 			}
-/*			if (xRtosCheckStatus(flagAPP_RESTART)) {
-				halFOTA_SetBootNumber(halFOTA_GetBootNumber(), fotaBOOT_REBOOT) ;
-			} */
 			break ;
 
 		default:
@@ -428,7 +448,7 @@ void	vHttpServerTask(void * pvParameters) {
 			break ;
 		}
 	}
-	vPortFree(sRR.sUUBuf.pBuf) ;
+	vPortFree(sRR.sBuf.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
 	IF_SL_DBG(debugAPPL_THREADS, messageTASK_DELETE) ;
