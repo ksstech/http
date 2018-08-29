@@ -25,6 +25,7 @@
 #include 	"http_common.h"
 
 #include	"x_debug.h"
+//#include	"x_stdio.h"
 #include	"x_json_parser.h"
 #include	"x_errors_events.h"
 #include	"x_syslog.h"
@@ -36,7 +37,6 @@
 
 #include	"FreeRTOS_Support.h"
 
-#include	<stdio.h>
 #include	<stdlib.h>
 #include	<stdint.h>
 #include	<string.h>
@@ -347,7 +347,7 @@ size_t	xHttpCommonDoParsing(http_parser * psParser) {
 		psRR->sfCB.on_message_complete	= xHttpCommonMessageCompleteHandler ;
 	}
 #endif
-	int32_t iRetVal = http_parser_execute(psParser, &psRR->sfCB, psRR->sUUBuf.pBuf, psRR->sUUBuf.Used) ;
+	int32_t iRetVal = http_parser_execute(psParser, &psRR->sfCB, psRR->sBuf.pBuf, psRR->sBuf.Used) ;
 	if (psRR->f_debug) {
 		if (iRetVal <= 0) {
 			SL_ERR("parse %s (%s) url=%s/%s/%s", http_errno_name(HTTP_PARSER_ERRNO(psParser)),
@@ -356,7 +356,7 @@ size_t	xHttpCommonDoParsing(http_parser * psParser) {
 			iRetVal = erFAILURE ;
 		}
 		if (INRANGE(HTTP_STATUS_BAD_REQUEST, psParser->status_code, HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED, int16_t)) {
-			SL_ERR("http error=%d (%s)", psParser->status_code, psRR->hvStatusMess) ;
+			SL_WARN("http error=%d (%s)", psParser->status_code, psRR->hvStatusMess) ;
 			iRetVal = erFAILURE ;
 		}
 	}

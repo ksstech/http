@@ -26,7 +26,6 @@
 
 #include 	"http_parser.h"
 #include	"yuarel.h"
-#include	"x_sockets.h"
 #include	"x_printf.h"
 
 #ifdef __cplusplus
@@ -44,13 +43,9 @@ extern "C" {
 #define	httpYUAREL_MAX_PARTS					4
 #define	httpYUAREL_MAX_QUERY					4
 
-#if 0
-	#define configHTTP_TX_WAIT						1000
-	#define configHTTP_RX_WAIT						4000
-#elif 1
-	#define configHTTP_TX_WAIT						500
-	#define configHTTP_RX_WAIT						500
-#endif
+#define configHTTP_TX_WAIT						500	//1000
+#define configHTTP_RX_WAIT						1000	//500	//4000
+
 // ######################################### enumerations ##########################################
 
 enum {
@@ -124,8 +119,8 @@ enum {
 typedef struct http_reqres_s http_reqres_t ;
 
 struct http_reqres_s {
-	uubuf_t					sUUBuf ;	// both
-	sock_ctx_t				sCtx ;		// both
+	ubuf_t					sBuf ;					// both
+	sock_ctx_t				sCtx ;					// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
  * a) the pcQuery format string; and
  * b) the pcBody format string			*/

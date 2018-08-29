@@ -33,17 +33,10 @@
 #include	"x_json_parser.h"							// parsing location & TZ requests
 #include	"x_errors_events.h"
 #include	"x_syslog.h"
-#include	"x_buffers.h"
-#include	"x_complex_vars.h"
-#include	"x_string_to_values.h"
-#include	"x_string_general.h"
 
+#include	"hal_network.h"
 #include	"hal_fota.h"								// firmware download handler
 #include	"hal_mcu.h"									// for halMCU_Restart()
-
-#include	<stdio.h>
-#include	<stdlib.h>
-#include	<string.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
@@ -69,49 +62,49 @@
 
 int32_t	xHttpBuildRequest(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sUUBuf.pBuf)) ;
+	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sBuf.pBuf)) ;
 
-	vuuprintf(&psRR->sUUBuf, psRR->pcQuery, psRR->VaList) ;
-	uuprintf(&psRR->sUUBuf, " HTTP/1.1\r\n") ;
-	uuprintf(&psRR->sUUBuf, "Host: %s\r\n", psRR->sCtx.pHost) ;
-	uuprintf(&psRR->sUUBuf, "From: %s\r\n", httpFROM_NAME) ;
-	uuprintf(&psRR->sUUBuf, "User-Agent: %s\r\n", httpAGENT_NAME) ;
+	vuprintf(&psRR->sBuf, psRR->pcQuery, psRR->VaList) ;
+	uprintf(&psRR->sBuf, " HTTP/1.1\r\n") ;
+	uprintf(&psRR->sBuf, "Host: %s\r\n", psRR->sCtx.pHost) ;
+	uprintf(&psRR->sBuf, "From: %s\r\n", httpFROM_NAME) ;
+	uprintf(&psRR->sBuf, "User-Agent: %s\r\n", httpAGENT_NAME) ;
 	if (psRR->hvAccept) {
-		uuprintf(&psRR->sUUBuf, "Accept: %s\r\n", ctValues[psRR->hvAccept]) ;
+		uprintf(&psRR->sBuf, "Accept: %s\r\n", ctValues[psRR->hvAccept]) ;
 		psRR->hvAccept	= ctUNDEFINED ;
 	}
 	if (psRR->hvConnect) {
-		uuprintf(&psRR->sUUBuf, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
+		uprintf(&psRR->sBuf, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
 	}
 	// from here on items common to requests and responses...
 	if (psRR->pcBody) {
 		if (psRR->hvContentType) {
-			uuprintf(&psRR->sUUBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
+			uprintf(&psRR->sBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 			// assume pcBody is pointing to actual binary payload
 				myASSERT(INRANGE_MEM(psRR->pcBody) && INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
-				uuprintf(&psRR->sUUBuf, "Content-Length: %d\r\n", psRR->hvContentLength) ;
+				uprintf(&psRR->sBuf, "Content-Length: %d\r\n", psRR->hvContentLength) ;
 				// no actual binary content added, done later...
 			} else {
 			// currently handle json/xml/text/html here, determine length using NULL string buffer address
 				psRR->hvContentLength = xvsprintf(NULL, psRR->pcBody, psRR->VaList) ;
 			// then add the calculated content length
-				uuprintf(&psRR->sUUBuf, "Content-Length: %d\r\n\r\n", psRR->hvContentLength) ;
+				uprintf(&psRR->sBuf, "Content-Length: %d\r\n\r\n", psRR->hvContentLength) ;
 			// add the actual content after 2x CR/LF pairs
-				vuuprintf(&psRR->sUUBuf, psRR->pcBody, psRR->VaList) ;
+				vuprintf(&psRR->sBuf, psRR->pcBody, psRR->VaList) ;
 			}
 		} else {
 			myASSERT(0) ;								// must have body AND content type
 		}
 	}
 	// add the final CR after the headers (and payload)
-	uuprintf(&psRR->sUUBuf, "\r\n") ;
+	uprintf(&psRR->sBuf, "\r\n") ;
 #if	defined(DEBUG)
 	if (psRR->f_debug) {
-		PRINT("Content:\n%.*s", psRR->sUUBuf.Used, psRR->sUUBuf.pBuf) ;
+		PRINT("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	}
 #endif
-	return psRR->sUUBuf.Used ;
+	return psRR->sBuf.Used ;
 }
 
 int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
@@ -122,7 +115,7 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 	sParser.data	= psRR ;
 
 	// setup the uubuf_t structure for printing
-	xUUBufCreate(&psRR->sUUBuf, NULL, (psRR->sUUBuf.Size == 0) ? configHTTP_BUFSIZE	: psRR->sUUBuf.Size, 0) ;
+	xUBufCreate(&psRR->sBuf, NULL, (psRR->sBuf.Size == 0) ? configHTTP_BUFSIZE	: psRR->sBuf.Size, 0) ;
 
 	va_start(psRR->VaList, psRR) ;
 	int32_t xLen = xHttpBuildRequest(&sParser) ;		// build the request
@@ -136,15 +129,15 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 	}
 	int32_t iRetVal = xNetOpen(&psRR->sCtx) ;
 	if (iRetVal == erSUCCESS) {							// if socket=open, write request
-		iRetVal = xNetWrite(&psRR->sCtx, psRR->sUUBuf.pBuf, xLen) ;
+		iRetVal = xNetWrite(&psRR->sCtx, psRR->sBuf.pBuf, xLen) ;
 		if (iRetVal > 0) {								// successfully written some (or all)
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 				iRetVal = psRR->handler(psRR) ;			// should return same as xNetWrite()
 			}
 			if (iRetVal > 0) {							// now do the actual read
-				iRetVal = xNetReadBlocks(&psRR->sCtx, psRR->sUUBuf.pBuf, psRR->sUUBuf.Size, configHTTP_RX_WAIT) ;
+				iRetVal = xNetReadBlocks(&psRR->sCtx, psRR->sBuf.pBuf, psRR->sBuf.Size, configHTTP_RX_WAIT) ;
 				if (iRetVal > 0) {						// actually read something
-					psRR->sUUBuf.Used = iRetVal ;
+					psRR->sBuf.Used = iRetVal ;
 					iRetVal = xHttpCommonDoParsing(&sParser) ;
 				} else {
 					IF_TRACK(debugTRACK, " nothing read ie to parse") ;
@@ -159,16 +152,28 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 		IF_TRACK(debugTRACK, " could not open connection") ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
-	vUUBufDestroy(&psRR->sUUBuf) ;						// return memory allocated
+	vUBufDestroy(&psRR->sBuf) ;							// return memory allocated
 	return iRetVal ;
 }
 
 int32_t	xHttpClientFileDownloadCheck(http_parser * psParser, const char * pBuf, size_t xLen) {
-	if (psParser->status_code != HTTP_STATUS_OK) { IF_SL_WARN(debugTRACK, "file not found") ; return erFAILURE ; }
+	if (psParser->status_code != HTTP_STATUS_OK) {
+		IF_SL_WARN(debugTRACK, "file not found") ;
+		return erFAILURE ;
+	}
 	http_reqres_t * psReq = psParser->data ;
-	if ((psReq->hvContentLength == 0ULL) || (xLen == 0UL)) { SL_ERR("Invalid size: file (%llu) or block (%u)", psReq->hvContentLength, xLen) ; return erFAILURE ; }
-	if (psReq->hvContentType != ctApplicationOctetStream) { SL_ERR("Invalid content type=%d %*s", psReq->hvContentType, xLen, pBuf) ; return erFAILURE ; }
-	if (psReq->hvConnect == coClose) { SL_ERR("Connection closed %.*s", xLen, pBuf) ; return erFAILURE ; }
+	if ((psReq->hvContentLength == 0ULL) || (xLen == 0UL)) {
+		SL_ERR("Invalid size: file (%llu) or block (%u)", psReq->hvContentLength, xLen) ;
+		return erFAILURE ;
+	}
+	if (psReq->hvContentType != ctApplicationOctetStream) {
+		SL_ERR("Invalid content type=%d %*s", psReq->hvContentType, xLen, pBuf) ;
+		return erFAILURE ;
+	}
+	if (psReq->hvConnect == coClose) {
+		SL_ERR("Connection closed %.*s", xLen, pBuf) ;
+		return erFAILURE ;
+	}
 
 	return erSUCCESS ;
 }
@@ -179,7 +184,7 @@ int32_t xHttpGetWeather(void) {
 	http_reqres_t	sReq = { 0 } ;
 	sReq.pcQuery		= configHTTP_FCAST_JOHANNESBURG ;
 	sReq.sCtx.pHost		= configHTTP_HOST_OPEN_WEATHERMAP ;
-	sReq.sUUBuf.Size	= 16384 ;
+	sReq.sBuf.Size	= 16384 ;
 	return xHttpClientExecuteRequest(&sReq) ;
 }
 
@@ -231,15 +236,15 @@ int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
 	sReq.pcQuery		= "GET /firmware/%s.bin" ;
 	sReq.hvAccept		= ctApplicationOctetStream ;
 	sReq.hvConnect		= coKeepAlive ;
-	sReq.sUUBuf.Size	= 1500 ;
+//	sReq.sUBuf.Size	= 1500 ;
 #if 0
 	sReq.f_debug		= 1 ;
-//	sReq.sCtx.d_open	= 1 ;
-//	sReq.sCtx.d_secure	= 1 ;
+	sReq.sCtx.d_open	= 1 ;
+	sReq.sCtx.d_secure	= 1 ;
 	sReq.sCtx.d_write	= 1 ;
 	sReq.sCtx.d_read	= 1 ;
 	sReq.sCtx.d_data	= 1 ;
-//	sReq.sCtx.d_eagain	= 1 ;
+	sReq.sCtx.d_eagain	= 1 ;
 #endif
 	sReq.sfCB.on_body	= halFOTA_HttpOnBody ;
 	int32_t iRetVal		= xHttpClientExecuteRequest(&sReq, pvPara) ;
@@ -280,7 +285,6 @@ int32_t xHttpClientCheckUpgrades(void) {
 
 // ########################################## Location #############################################
 
-#if	(configUSE_GEO_LOCATE == 1)
 int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
 	int32_t		iRetVal = erFAILURE, NumTok ;
 	char * 		pKey = " Insufficient" ;
@@ -318,12 +322,12 @@ int32_t	xHttpGetLocation(void) {
 	sReq.sfCB.on_body	= xHttpParseGeoLoc  ;
 #if 0
 	sReq.f_debug		= 1 ;
-//	sReq.sCtx.d_open	= 1 ;
-//	sReq.sCtx.d_secure	= 1 ;
-//	sReq.sCtx.d_write	= 1 ;
-//	sReq.sCtx.d_read	= 1 ;
-//	sReq.sCtx.d_data	= 1 ;
-//	sReq.sCtx.d_eagain	= 1 ;
+	sReq.sCtx.d_open	= 1 ;
+	sReq.sCtx.d_secure	= 1 ;
+	sReq.sCtx.d_write	= 1 ;
+	sReq.sCtx.d_read	= 1 ;
+	sReq.sCtx.d_data	= 1 ;
+	sReq.sCtx.d_eagain	= 1 ;
 #endif
 	return xHttpClientExecuteRequest(&sReq) ;
 }
@@ -337,7 +341,7 @@ int32_t	xHttpParseTimeZone(http_parser* psParser, const char* pBuf, size_t xLen)
 	char * 		pKey = " Insufficient" ;
 	NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {
-		x32_t		xVal ;
+		x32_t	xVal ;
 		iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "dstOffset", &xVal.i32, vfIXX) ;
 		if (iRetVal >= erSUCCESS) {
 			sTZ.daylight = xVal.i32 ;					// convert i32 -> i16 & store
@@ -377,12 +381,12 @@ int32_t	xHttpGetTimeZone(void) {
 	sReq.sfCB.on_body	= xHttpParseTimeZone  ;
 #if 0
 	sReq.f_debug		= 1 ;
-//	sReq.sCtx.d_open	= 1 ;
-//	sReq.sCtx.d_secure	= 1 ;
-//	sReq.sCtx.d_write	= 1 ;
-//	sReq.sCtx.d_read	= 1 ;
-//	sReq.sCtx.d_data	= 1 ;
-//	sReq.sCtx.d_eagain	= 1 ;
+	sReq.sCtx.d_open	= 1 ;
+	sReq.sCtx.d_secure	= 1 ;
+	sReq.sCtx.d_write	= 1 ;
+	sReq.sCtx.d_read	= 1 ;
+	sReq.sCtx.d_data	= 1 ;
+	sReq.sCtx.d_eagain	= 1 ;
 #endif
 	return xHttpClientExecuteRequest(&sReq, GeoLocation[Latitude], GeoLocation[Longitude], xTimeStampAsSeconds(sTSZ.usecs)) ;
 }
@@ -421,17 +425,16 @@ int32_t	xHttpGetElevation(void) {
 	sReq.hvAccept		= ctApplicationJson ;
 	sReq.sfCB.on_body	= xHttpParseElevation  ;
 #if 0
-//	sReq.f_debug		= 1 ;
-//	sReq.sCtx.d_open	= 1 ;
-//	sReq.sCtx.d_secure	= 1 ;
-//	sReq.sCtx.d_write	= 1 ;
-//	sReq.sCtx.d_read	= 1 ;
-//	sReq.sCtx.d_data	= 1 ;
-//	sReq.sCtx.d_eagain	= 1 ;
+	sReq.f_debug		= 1 ;
+	sReq.sCtx.d_open	= 1 ;
+	sReq.sCtx.d_secure	= 1 ;
+	sReq.sCtx.d_write	= 1 ;
+	sReq.sCtx.d_read	= 1 ;
+	sReq.sCtx.d_data	= 1 ;
+	sReq.sCtx.d_eagain	= 1 ;
 #endif
 	return xHttpClientExecuteRequest(&sReq, GeoLocation[Latitude], GeoLocation[Longitude]) ;
 }
-#endif
 
 // ######################################## Rules download #########################################
 
@@ -484,13 +487,13 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 	size_t xLenDone = 4 ;								// skip first 4 bytes
 	while (xLenDone < psReq->hvContentLength) {			// deal with all data to be sent
 		size_t xLenLeft = psReq->hvContentLength - xLenDone ;
-		iRetVal = esp_partition_read((esp_partition_t *) psReq->pvArg, xLenDone, psReq->sUUBuf.pBuf,
-									(xLenLeft > psReq->sUUBuf.Size) ? psReq->sUUBuf.Size : xLenLeft) ;
+		iRetVal = esp_partition_read((esp_partition_t *) psReq->pvArg, xLenDone, psReq->sBuf.pBuf,
+									(xLenLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLenLeft) ;
 		if (iRetVal != ESP_OK) {
 			SL_ERR("partition read err=0x%x (%s)", iRetVal, strerror(iRetVal)) ;
 			break ;
 		}
-		iRetVal = xNetWrite(&psReq->sCtx, (char *) psReq->sUUBuf.pBuf, (xLenLeft > psReq->sUUBuf.Size) ? psReq->sUUBuf.Size : xLenLeft) ;
+		iRetVal = xNetWrite(&psReq->sCtx, (char *) psReq->sBuf.pBuf, (xLenLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLenLeft) ;
 		if (iRetVal > 0) {
 			xLenDone += iRetVal ;
 		} else if (psReq->sCtx.error == EAGAIN) {
@@ -518,18 +521,17 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 
 	// for binary uploads the address and content length+type must be correct
 	esp_partition_iterator_t sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL) ;
-	myASSERT(sIter != 0) ;
+	IF_myASSERT(debugRESULT, sIter != 0) ;
 	const esp_partition_t *	psPart = esp_partition_get(sIter) ;
 	sRR.handler			= xHttpClientCoredumpUploadCB ;
 	sRR.pvArg			= (void *) psPart ;
 	sRR.hvContentLength	= (uint64_t) psPart->size ;
-
 	sRR.hvContentType	= ctApplicationOctetStream ;
 #if 0
 	sRR.f_debug			= 1 ;
-//	sRR.sCtx.d_secure	= 1 ;
+	sRR.sCtx.d_secure	= 1 ;
 	sRR.sCtx.d_write	= 1 ;
-//	sRR.sCtx.d_open		= 1 ;
+	sRR.sCtx.d_open		= 1 ;
 #endif
 	int32_t iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, VERSION_PATCH, sTSZ.usecs/MICROS_IN_SECOND) ;
 
