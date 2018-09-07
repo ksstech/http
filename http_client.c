@@ -40,7 +40,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						(0x0010)
+#define	debugFLAG						0x0016
 #define	debugJSON						(debugFLAG & 0x0001)
 #define	debugTRACK						(debugFLAG & 0x0002)
 #define	debugBUILD						(debugFLAG & 0x0004)
@@ -236,15 +236,14 @@ int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
 	sReq.pcQuery		= "GET /firmware/%s.bin" ;
 	sReq.hvAccept		= ctApplicationOctetStream ;
 	sReq.hvConnect		= coKeepAlive ;
-//	sReq.sUBuf.Size	= 1500 ;
 #if 0
 	sReq.f_debug		= 1 ;
 	sReq.sCtx.d_open	= 1 ;
 	sReq.sCtx.d_secure	= 1 ;
 	sReq.sCtx.d_write	= 1 ;
 	sReq.sCtx.d_read	= 1 ;
-	sReq.sCtx.d_data	= 1 ;
-	sReq.sCtx.d_eagain	= 1 ;
+//	sReq.sCtx.d_data	= 1 ;
+//	sReq.sCtx.d_eagain	= 1 ;
 #endif
 	sReq.sfCB.on_body	= halFOTA_HttpOnBody ;
 	int32_t iRetVal		= xHttpClientExecuteRequest(&sReq, pvPara) ;
@@ -304,7 +303,7 @@ int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
 		SL_ERR("Parsing '%s' key", pKey) ;
 	}
 	IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
-	IF_PRINT(debugRESULT, "lat: %.7f lng: %.7f acc: %.7f\n", GeoLocation[Latitude], GeoLocation[Longitude], GeoLocation[Altitude]) ;
+	IF_PRINT(debugRESULT, "lat: %.7f lng: %.7f acc: %.7f\n", GeoLocation[Latitude], GeoLocation[Longitude], GeoLocation[Accuracy]) ;
 	if (psTokenList) {
 		vPortFree(psTokenList) ;
 	}
@@ -527,11 +526,11 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	sRR.pvArg			= (void *) psPart ;
 	sRR.hvContentLength	= (uint64_t) psPart->size ;
 	sRR.hvContentType	= ctApplicationOctetStream ;
-#if 0
+#if 1
 	sRR.f_debug			= 1 ;
+	sRR.sCtx.d_open		= 1 ;
 	sRR.sCtx.d_secure	= 1 ;
 	sRR.sCtx.d_write	= 1 ;
-	sRR.sCtx.d_open		= 1 ;
 #endif
 	int32_t iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, VERSION_PATCH, sTSZ.usecs/MICROS_IN_SECOND) ;
 

@@ -343,7 +343,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  * 8. Respond to /restart (as emergency)
  */
 void	vHttpServerTask(void * pvParameters) {
-	IF_SL_DBG(debugAPPL_THREADS, messageTASK_START) ;
+	IF_TRACK_PRINT(debugAPPL_THREADS, messageTASK_START) ;
 	sRR.sBuf.pBuf	= pvPortMalloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
 
@@ -451,7 +451,7 @@ void	vHttpServerTask(void * pvParameters) {
 	vPortFree(sRR.sBuf.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
-	IF_SL_DBG(debugAPPL_THREADS, messageTASK_DELETE) ;
+	IF_TRACK_PRINT(debugAPPL_THREADS, messageTASK_DELETE) ;
 	vTaskDelete(NULL) ;
 }
 
@@ -463,6 +463,6 @@ void	vHttpReport(int32_t Handle) {
 	}
 	if (xRtosCheckStatus(flagNET_L5_HTTP_SERV)) {
 		xNetReport(Handle, &sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
-		xdprintf(Handle, "\t\tState=%d  maxTX=%u  maxRX=%u\n\n", HttpState, sRR.sCtx.maxTx, sRR.sCtx.maxRx) ;
+		xdprintf(Handle, "\t\tState=%d  maxTX=%u  maxRX=%u\n", HttpState, sRR.sCtx.maxTx, sRR.sCtx.maxRx) ;
 	}
 }
