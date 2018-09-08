@@ -38,9 +38,11 @@
 #include	"hal_fota.h"								// firmware download handler
 #include	"hal_mcu.h"									// for halMCU_Restart()
 
+#include	<string.h>
+
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0x0016
+#define	debugFLAG						0x0010
 #define	debugJSON						(debugFLAG & 0x0001)
 #define	debugTRACK						(debugFLAG & 0x0002)
 #define	debugBUILD						(debugFLAG & 0x0004)
@@ -140,16 +142,16 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 					psRR->sBuf.Used = iRetVal ;
 					iRetVal = xHttpCommonDoParsing(&sParser) ;
 				} else {
-					IF_TRACK(debugTRACK, " nothing read ie to parse") ;
+					IF_SL_DBG(debugTRACK, " nothing read ie to parse") ;
 				}
 			} else {
-				IF_TRACK(debugTRACK, " nothing written (by handler) so can't expect to read") ;
+				IF_SL_DBG(debugTRACK, " nothing written (by handler) so can't expect to read") ;
 			}
 		} else {
-			IF_TRACK(debugTRACK, " no header written, so can't expect to read") ;
+			IF_SL_DBG(debugTRACK, " no header written, so can't expect to read") ;
 		}
 	} else {
-		IF_TRACK(debugTRACK, " could not open connection") ;
+		IF_SL_DBG(debugTRACK, " could not open connection") ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
 	vUBufDestroy(&psRR->sBuf) ;							// return memory allocated
@@ -484,6 +486,7 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 	int32_t	iRetVal = erFAILURE ;
 	/* see https://github.com/espressif/esp-idf/issues/1650 */
 	size_t xLenDone = 4 ;								// skip first 4 bytes
+	IF_CPRINT(debugTRACK, "Coredump START upload %lld ", psReq->hvContentLength) ;
 	while (xLenDone < psReq->hvContentLength) {			// deal with all data to be sent
 		size_t xLenLeft = psReq->hvContentLength - xLenDone ;
 		iRetVal = esp_partition_read((esp_partition_t *) psReq->pvArg, xLenDone, psReq->sBuf.pBuf,
@@ -493,6 +496,7 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 			break ;
 		}
 		iRetVal = xNetWrite(&psReq->sCtx, (char *) psReq->sBuf.pBuf, (xLenLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLenLeft) ;
+		IF_CPRINT(debugTRACK, ".") ;
 		if (iRetVal > 0) {
 			xLenDone += iRetVal ;
 		} else if (psReq->sCtx.error == EAGAIN) {
@@ -501,11 +505,13 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 			SL_ERR("socket write err=0x%x (%s)", psReq->sCtx.error, strerror(psReq->sCtx.error)) ;
 			break ;
 		}
-		IF_PRINT(debugTRACK, "Done %u / %llu = %d%%\r  ", xLenDone, psReq->hvContentLength, (xLenDone * 100ULL) / psReq->hvContentLength) ;
 	}
 	if (iRetVal > 0) {
 		iRetVal = xNetWrite(&psReq->sCtx, "\n\n", 2) ;	// write the terminating LF's
 		SL_WARN("upload done") ;
+		IF_CPRINT(debugTRACK, " Coredump DONE\r\n") ;
+	} else {
+		IF_CPRINT(debugTRACK, " Coredump upload failed err=%d\r\n", iRetVal) ;
 	}
 	return iRetVal ;
 }
@@ -526,11 +532,12 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	sRR.pvArg			= (void *) psPart ;
 	sRR.hvContentLength	= (uint64_t) psPart->size ;
 	sRR.hvContentType	= ctApplicationOctetStream ;
-#if 1
+#if 0
 	sRR.f_debug			= 1 ;
 	sRR.sCtx.d_open		= 1 ;
-	sRR.sCtx.d_secure	= 1 ;
 	sRR.sCtx.d_write	= 1 ;
+	sRR.sCtx.d_secure	= 1 ;
+	sRR.sCtx.d_level	= 2 ;
 #endif
 	int32_t iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, VERSION_PATCH, sTSZ.usecs/MICROS_IN_SECOND) ;
 
