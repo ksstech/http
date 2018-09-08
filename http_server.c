@@ -364,8 +364,8 @@ void	vHttpServerTask(void * pvParameters) {
 			memset(&sServHttpCtx, 0 , sizeof(sock_ctx_t)) ;
 			sServHttpCtx.sa_in.sin_family		= AF_INET ;
 			sServHttpCtx.type					= SOCK_STREAM ;
-//			sServHttpCtx.psSec					= ? ;
 #if 0
+//			sServHttpCtx.psSec					= ? ;
 			sServHttpCtx.d_data					= 1 ;
 			sServHttpCtx.d_read					= 1 ;
 			sServHttpCtx.d_write				= 1 ;
@@ -463,6 +463,6 @@ void	vHttpReport(int32_t Handle) {
 	}
 	if (xRtosCheckStatus(flagNET_L5_HTTP_SERV)) {
 		xNetReport(Handle, &sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
-		xdprintf(Handle, "\t\tState=%d  maxTX=%u  maxRX=%u\n", HttpState, sRR.sCtx.maxTx, sRR.sCtx.maxRx) ;
+		xdprintf(Handle, "\t\t\tState=%d  maxTX=%u  maxRX=%u\n", HttpState, sRR.sCtx.maxTx, sRR.sCtx.maxRx) ;
 	}
 }
