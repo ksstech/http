@@ -40,8 +40,8 @@ extern "C" {
 #define	httpFROM_NAME							"admin@kss.co.za"
 #define	httpAGENT_NAME							"irmacos"
 
-#define	httpYUAREL_MAX_PARTS					4
-#define	httpYUAREL_MAX_QUERY					4
+#define	httpYUAREL_MAX_PARTS					8
+#define	httpYUAREL_MAX_QUERY					8
 
 #define configHTTP_TX_WAIT						500	//1000
 #define configHTTP_RX_WAIT						1000	//500	//4000
