@@ -32,10 +32,9 @@
 #include	"x_retarget.h"
 #include	"x_syslog.h"
 #include	"x_errors_events.h"
-#include	"x_string_to_values.h"
 #include	"x_string_general.h"
-#include	"x_time.h"
 #include	"x_string_to_values.h"
+#include	"x_time.h"
 #include	"actuators.h"
 
 #include	"hal_network.h"
@@ -49,25 +48,55 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						(0x0004)
+#define	debugFLAG						(0x4000)
 #define	debugTRACK						(debugFLAG & 0x0001)
 #define	debugBUILD						(debugFLAG & 0x0002)
-#define	debugPARAM						(debugFLAG & 0x0004)
+
+#define	debugPARAM						(debugFLAG & 0x4000)
+#define	debugRESULT						(debugFLAG & 0x8000)
 
 // ########################################### macros ##############################################
 
 
+// ###################################### enumerations #############################################
+
+enum {
+	urlROOT,
+	urlSAVE_AP,
+	urlAPI,
+	urlNOTFOUND,
+	urlNUMBER,							// Insert ALL URL endpoints above here
+} ;
+
 // ###################################### local ie static variables ################################
 
-uint8_t		HttpState ;
-sock_ctx_t	sServHttpCtx ;
+static	const char * UrlTable[] = {
+	[urlROOT]		= "/",
+	[urlSAVE_AP]	= "save_ap",
+	[urlAPI]		= "api",
+} ;
 
 static	const char	HtmlAPdetails[] =
-	"<html><head><title>'IRMACOS: AP details'</title></head><body><h3>'IRMACOS: AP details'</h3>"
+	"<html><head><title>'IRMACOS: AP details'</title></head>"
+	"<body><h3>'IRMACOS: AP details'</h3>"
 	"<p>AP SSID: Maximum 32 characters including A-Z, a-z and 0-9</p>"
 	"<p>AP PSWD: Same rules as SSID but max 64 characters length</p>"
-	"<form action='save_ap' method='get'>AP SSID:<br><input type='text' name='ssid' size='32'><br>AP PSWD:<br>"
-	"<input type='text' name='pswd' size='64'><br><br><input type='submit' value='Submit'></form></body></html>" ;
+#if		(halNET_BUILD_STATIC_ONLY == 1)
+	"<p>IP for network, gateway, station and DNS server(s)</p>"
+	"<p> specify without spaces or leading 0's</p>"
+#endif
+	"<form action='save_ap' method='get'>"
+	"AP SSID:<br><input type='text' name='ssid' size='32'><br>"
+	"AP PSWD:<br><input type='text' name='pswd' size='64'><br>"
+#if		(halNET_BUILD_STATIC_ONLY == 1)
+	"IP NetMask:<br><input type='text' name='nm' size='16'><br>"
+	"IP Gateway:<br><input type='text' name='gw' size='16'><br>"
+	"IP Address:<br><input type='text' name='ip' size='16'><br>"
+	"IP DNS #1 :<br><input type='text' name='d1' size='16'><br>"
+	"IP DNS #2 :<br><input type='text' name='d2' size='16'><br>"
+#endif
+	"<br><input type='submit' value='Submit'>"
+	"</form></body></html>" ;
 
 static	const char	HtmlSTAdetails[] =
 	"<html><head><title>'IRMACOS: STA details'</title></head><body>"
@@ -97,38 +126,14 @@ static	const char HtmlErrorInvMethod[] =
 static	const char HtmlErrorBadQuery[] =
 	"<html><body><h2>Query key:value pair(s) mismatched</h2></body></html>" ;
 
-// ###################################### global variables #########################################
-
+uint8_t			HttpState ;
+sock_ctx_t		sServHttpCtx ;
 http_reqres_t	sRR = { 0 } ;
 
-// ################################## local/static support functions ###############################
+// ###################################### global variables #########################################
 
-int32_t	xHttpServerParseEncoded(char * pWrite) {
-	char * pRead	= pWrite ;
-	int32_t iRetVal = 0 ;
-//	PRINT("%s  ", pWrite) ;
-	while(*pRead != 0) {
-		if (*pRead == CHR_PERCENT) {					// escape char?
-			int32_t Val1 = xHexCharToValue(*++pRead) ;
-			if (Val1 == erFAILURE) {
-				return erFAILURE ;
-			}
-			int32_t Val2 = xHexCharToValue(*++pRead) ;
-			if (Val2 == erFAILURE) {
-				return erFAILURE ;
-			}
-			IF_PRINT(debugBUILD, "[%d+%d=%d]  ", Val1, Val2, (Val1 << 4) + Val2) ;
-			*pWrite++ = (Val1 << 4) + Val2 ;
-			++pRead ;									// no, skip over source
-		} else {
-			*pWrite++ = *pRead++ ;						// copy as is to (new) position
-		}
-		++iRetVal ;										// & adjust count...
-	}
-	*pWrite = CHR_NUL ;								// terminate
-	IF_PRINT(debugBUILD, "%s\n", pWrite-iRetVal) ;
-	return iRetVal ;
-}
+
+// ################################## local/static support functions ###############################
 
 int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
 	http_reqres_t * psRR	= psParser->data ;
@@ -191,21 +196,28 @@ void	vHttpBuildResponse(http_parser * psParser, const char * format, ...) {
 	return ;
 }
 
+int32_t	xHttpServerParseWriteString(char * pKey, char *pVal) {
+	if (xStringParseEncoded(pVal) == erFAILURE) {
+		return erFAILURE ;
+	}
+	IF_CPRINT(debugTRACK, "%s : %s\n", pKey, pVal) ;
+	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) pVal, vfSXX) == ESP_OK ? erSUCCESS : erFAILURE ;
+}
+
+int32_t	xHttpServerParseWriteIPaddress(char * pKey, char * pVal) {
+	if (xStringParseEncoded(pVal) == erFAILURE) {
+		return erFAILURE ;
+	}
+	IF_CPRINT(debugTRACK, "%s : %s\n", pKey, pVal) ;
+	uint32_t	IPaddr ;
+	if (pcStringParseIpAddr(pVal, &IPaddr) == pcFAILURE) {
+		return erFAILURE ;
+	}
+	IF_CPRINT(debugTRACK, "%s : %-I\n", pKey, IPaddr) ;
+	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) htonl(IPaddr), vfUXX) == ESP_OK ? erSUCCESS : erFAILURE ;
+}
+
 // ######################################## URL handlers ###########################################
-
-enum {
-	urlROOT,
-	urlSAVE_AP,
-	urlAPI,
-	urlNOTFOUND,
-	urlNUMBER,							// Insert ALL URL endpoints above here
-} ;
-
-static	const char * UrlTable[] = {
-	[urlROOT]		= "/",
-	[urlSAVE_AP]	= "save_ap",
-	[urlAPI]		= "api",
-} ;
 
 void vHttpHandle_API(http_parser * psParser) {
 	static const char format[] = "<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>" ;
@@ -278,20 +290,37 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		break ;
 	case urlSAVE_AP:
 		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
+#if		(halNET_BUILD_STATIC_ONLY == 1)
+			(strcmp(psRR->params[2].key, halSTORAGE_KEY_NM) != 0)	||
+			(strcmp(psRR->params[3].key, halSTORAGE_KEY_GW) != 0)	||
+			(strcmp(psRR->params[4].key, halSTORAGE_KEY_IP) != 0)	||
+			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0)	||
+			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0)	||
+#endif
 			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)) {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
-
 		} else {
-			int32_t	iRetVal = xHttpServerParseEncoded(psRR->params[0].val) ;
-			if (iRetVal > 0) {
-				iRetVal = halSTORAGE_WriteKeyValue(halSTORAGE_STORE, psRR->params[0].key, (x32_t) psRR->params[0].val, vfSXX) ;
-			}
+			int32_t	iRetVal = xHttpServerParseWriteString(psRR->params[0].key, psRR->params[0].val) ;	// SSID
 			if (iRetVal == erSUCCESS) {
-				iRetVal = xHttpServerParseEncoded(psRR->params[1].val) ;
-				if (iRetVal > 0) {
-					iRetVal = halSTORAGE_WriteKeyValue(halSTORAGE_STORE, psRR->params[1].key, (x32_t) psRR->params[1].val, vfSXX) ;
+				iRetVal = xHttpServerParseWriteString(psRR->params[1].key, psRR->params[1].val) ;		// PSWD
+#if		(halNET_BUILD_STATIC_ONLY == 1)
+				if (iRetVal == erSUCCESS) {
+					iRetVal = xHttpServerParseWriteIPaddress(psRR->params[2].key, psRR->params[2].val) ;					// Netmask
+					if (iRetVal == erSUCCESS) {
+						iRetVal = xHttpServerParseWriteIPaddress(psRR->params[3].key, psRR->params[3].val) ;				// Gateway
+						if (iRetVal == erSUCCESS) {
+							iRetVal = xHttpServerParseWriteIPaddress(psRR->params[4].key, psRR->params[4].val) ;			// IP Station
+							if (iRetVal == erSUCCESS) {
+								iRetVal = xHttpServerParseWriteIPaddress(psRR->params[5].key, psRR->params[5].val) ;		// DNS #1
+								if (iRetVal == erSUCCESS) {
+									iRetVal = xHttpServerParseWriteIPaddress(psRR->params[6].key, psRR->params[6].val) ;	// DNS #2
+								}
+							}
+						}
+					}
 				}
+#endif
 			}
 			if (iRetVal == erSUCCESS) {
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
