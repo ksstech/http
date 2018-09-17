@@ -160,7 +160,7 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 
 int32_t	xHttpClientFileDownloadCheck(http_parser * psParser, const char * pBuf, size_t xLen) {
 	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_SL_WARN(debugTRACK, "file not found") ;
+		IF_SL_DBG(debugTRACK, "file not found") ;
 		return erFAILURE ;
 	}
 	http_reqres_t * psReq = psParser->data ;
