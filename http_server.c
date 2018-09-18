@@ -265,12 +265,12 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		psRR->hvContentType = ctTextPlain ;
 		SL_ERR("%s (%s)", psRR->pcBody, http_errno_name(HTTP_PARSER_ERRNO(psParser))) ;
 
-	} else if (psParser->method != HTTP_GET) {							// Invalid METHOD
+	} else if (psParser->method != HTTP_GET) {			// Invalid METHOD
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_IMPLEMENTED) ;
 		psRR->pcBody	= (char *) HtmlErrorInvMethod ;
 		SL_ERR("Method not supported (%d)", psParser->method) ;
 
-	} else if (psRR->f_host == 0) {									// host not provided
+	} else if (psRR->f_host == 0) {						// host not provided
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 		psRR->pcBody	= (char *) HtmlErrorNoHost ;
 
@@ -289,16 +289,19 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		psRR->pcBody = (wifi_mode == WIFI_MODE_AP) ? (char *) HtmlAPdetails : (char *) HtmlSTAdetails ;
 		break ;
 	case urlSAVE_AP:
+#if		(halNET_BUILD_DHCP_ONLY == 1) || (halNET_BUILD_AUTO_STATIC == 1)
 		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
-#if		(halNET_BUILD_STATIC_ONLY == 1)
-			(strcmp(psRR->params[2].key, halSTORAGE_KEY_NM) != 0)	||
+			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0))
+#elif	(halNET_BUILD_STATIC_ONLY == 1)
+		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
+			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)	||
+			(strcmp(psRR->params[2].key, halSTORAGE_KEY_NM)	!= 0)	||
 			(strcmp(psRR->params[3].key, halSTORAGE_KEY_GW) != 0)	||
 			(strcmp(psRR->params[4].key, halSTORAGE_KEY_IP) != 0)	||
 			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0)	||
-			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0)	||
+			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0))
 #endif
-			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)) {
-			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
+		{	xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
 		} else {
 			int32_t	iRetVal = xHttpServerParseWriteString(psRR->params[0].key, psRR->params[0].val) ;	// SSID
