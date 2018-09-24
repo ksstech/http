@@ -522,7 +522,7 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 #if		(configHTTP_CLIENT_TLS == 1)
 	sRR.sCtx.psSec		= &IrmacosSecInfo ;
 #endif
-	sRR.pcQuery		= "PUT /coredump/%m_p%d_%llu.bin" ;
+	sRR.pcQuery		= "PUT /coredump/%m_" mySTRINGIFY(VERSION_MICRO) "p" mySTRINGIFY(VERSION_PATCH) "_%llu.bin" ;
 
 	// for binary uploads the address and content length+type must be correct
 	esp_partition_iterator_t sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL) ;
@@ -539,7 +539,7 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	sRR.sCtx.d_secure	= 1 ;
 	sRR.sCtx.d_level	= 2 ;
 #endif
-	int32_t iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, VERSION_PATCH, sTSZ.usecs/MICROS_IN_SECOND) ;
+	int32_t iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, sTSZ.usecs/MICROS_IN_SECOND) ;
 
 	esp_partition_iterator_release(sIter) ;
 	return iRetVal ;
