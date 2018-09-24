@@ -81,19 +81,21 @@ static	const char	HtmlAPdetails[] =
 	"<body><h3>'IRMACOS: AP details'</h3>"
 	"<p>AP SSID: Maximum 32 characters including A-Z, a-z and 0-9</p>"
 	"<p>AP PSWD: Same rules as SSID but max 64 characters length</p>"
-#if		(halNET_BUILD_STATIC_ONLY == 1)
+#if		(halNET_BUILD_STATIC == 1)
 	"<p>IP for network, gateway, station and DNS server(s)</p>"
 	"<p> specify without spaces or leading 0's</p>"
 #endif
 	"<form action='save_ap' method='get'>"
 	"AP SSID:<br><input type='text' name='ssid' size='32'><br>"
 	"AP PSWD:<br><input type='text' name='pswd' size='64'><br>"
-#if		(halNET_BUILD_STATIC_ONLY == 1)
+#if		(halNET_BUILD_STATIC == 1)
 	"IP NetMask:<br><input type='text' name='nm' size='16'><br>"
 	"IP Gateway:<br><input type='text' name='gw' size='16'><br>"
 	"IP Address:<br><input type='text' name='ip' size='16'><br>"
 	"IP DNS #1 :<br><input type='text' name='d1' size='16'><br>"
+	#if	(halNET_BUILD_NUM_DNS == 2)
 	"IP DNS #2 :<br><input type='text' name='d2' size='16'><br>"
+	#endif
 #endif
 	"<br><input type='submit' value='Submit'>"
 	"</form></body></html>" ;
@@ -219,7 +221,7 @@ int32_t	xHttpServerParseWriteIPaddress(char * pKey, char * pVal) {
 
 // ######################################## URL handlers ###########################################
 
-void vHttpHandle_API(http_parser * psParser) {
+void	vHttpHandle_API(http_parser * psParser) {
 	static const char format[] = "<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>" ;
 	http_reqres_t * psRR = psParser->data ;
 	vCommandInterpret(1, (int) *psRR->parts[1]) ;
@@ -235,7 +237,7 @@ void vHttpHandle_API(http_parser * psParser) {
 // ################################### Common HTTP API functions ###################################
 
 void	vHttpServerCloseClient(sock_ctx_t * psCtx) {
-	vRtosClearStatus(flagNET_L5_HTTP_CLNT) ;
+	vRtosClearStatus(flagNET_HTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
 	if (sRR.sCtx.maxTx < psCtx->maxTx) {
 		sRR.sCtx.maxTx = psCtx->maxTx ;
@@ -273,13 +275,16 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	} else if (psRR->f_host == 0) {						// host not provided
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 		psRR->pcBody	= (char *) HtmlErrorNoHost ;
+		SL_ERR("Host name/IP not provided") ;
 
 	} else {		// at this stage all parsing results are OK, just the URL to be matched and processed.
 		if (*psRR->url.path == CHR_NUL) {				// STEP1: start by matching the URL
 			iURL = urlROOT ;							// do NOT try to match, lost single '/'
 		} else {
 			iURL = xHttpCommonFindMatch(UrlTable, NUM_OF_MEMBERS(UrlTable), psRR->url.path, strlen(psRR->url.path)) ;
-			if (iURL == 0)	{ iURL = urlNOTFOUND ; }
+			if (iURL == 0)	{
+				iURL = urlNOTFOUND ;
+			}
 		}
 	}
 
@@ -288,18 +293,23 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 		psRR->pcBody = (wifi_mode == WIFI_MODE_AP) ? (char *) HtmlAPdetails : (char *) HtmlSTAdetails ;
 		break ;
+
 	case urlSAVE_AP:
-#if		(halNET_BUILD_DHCP_ONLY == 1) || (halNET_BUILD_AUTO_STATIC == 1)
+#if		(halNET_BUILD_DHCP == 1) || (halNET_BUILD_AUTO == 1)
 		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
 			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0))
-#elif	(halNET_BUILD_STATIC_ONLY == 1)
+#elif	(halNET_BUILD_STATIC == 1)
 		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
 			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)	||
 			(strcmp(psRR->params[2].key, halSTORAGE_KEY_NM)	!= 0)	||
 			(strcmp(psRR->params[3].key, halSTORAGE_KEY_GW) != 0)	||
 			(strcmp(psRR->params[4].key, halSTORAGE_KEY_IP) != 0)	||
+	#if		(halNET_BUILD_NUM_DNS == 1)
+			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0))
+	#elif	(halNET_BUILD_NUM_DNS == 2)
 			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0)	||
 			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0))
+	#endif
 #endif
 		{	xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
@@ -307,18 +317,20 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			int32_t	iRetVal = xHttpServerParseWriteString(psRR->params[0].key, psRR->params[0].val) ;	// SSID
 			if (iRetVal == erSUCCESS) {
 				iRetVal = xHttpServerParseWriteString(psRR->params[1].key, psRR->params[1].val) ;		// PSWD
-#if		(halNET_BUILD_STATIC_ONLY == 1)
-				if (iRetVal == erSUCCESS) {
+#if		(halNET_BUILD_STATIC == 1)
+				if (iRetVal == erSUCCESS) {				// Network Address
 					iRetVal = xHttpServerParseWriteIPaddress(psRR->params[2].key, psRR->params[2].val) ;					// Netmask
-					if (iRetVal == erSUCCESS) {
+					if (iRetVal == erSUCCESS) {			// Gateway IP
 						iRetVal = xHttpServerParseWriteIPaddress(psRR->params[3].key, psRR->params[3].val) ;				// Gateway
-						if (iRetVal == erSUCCESS) {
+						if (iRetVal == erSUCCESS) {		// Station IP
 							iRetVal = xHttpServerParseWriteIPaddress(psRR->params[4].key, psRR->params[4].val) ;			// IP Station
-							if (iRetVal == erSUCCESS) {
+							if (iRetVal == erSUCCESS) {	// DNS IP #1
 								iRetVal = xHttpServerParseWriteIPaddress(psRR->params[5].key, psRR->params[5].val) ;		// DNS #1
-								if (iRetVal == erSUCCESS) {
+	#if	(halNET_BUILD_NUM_DNS == 2)
+								if (iRetVal == erSUCCESS) {	// DNS IP #2
 									iRetVal = xHttpServerParseWriteIPaddress(psRR->params[6].key, psRR->params[6].val) ;	// DNS #2
 								}
+	#endif
 							}
 						}
 					}
@@ -335,6 +347,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			}
 		}
 		break ;
+
 	case urlAPI:
 		if (psRR->NumParts == 2) {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
@@ -345,6 +358,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			psRR->pcBody 	= "<html><body><h2>** API command option Required **</h2></body></html>" ;
 		}
 		break ;
+
 //	case urlNOTFOUND:
 	default:
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_FOUND) ;
@@ -375,17 +389,17 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  * 8. Respond to /restart (as emergency)
  */
 void	vHttpServerTask(void * pvParameters) {
-	IF_TRACK_PRINT(debugAPPL_THREADS, messageTASK_START) ;
+	IF_TRACK(debugAPPL_THREADS, messageTASK_START) ;
 	sRR.sBuf.pBuf	= pvPortMalloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
 
 	while (xRtosVerifyState(taskHTTP)) {
-		vRtosWaitStatus(flagNET_L3_UP) ;				// ensure IP is up and running...
+		vRtosWaitStatus(flagNET_L3) ;				// ensure IP is up and running...
 		switch(HttpState) {
 		int32_t	iRetVal ;
 		case stateHTTP_RESET:
 			IF_SL_DBG(debugTRACK, "reset") ;
-			vRtosClearStatus(flagNET_L5_HTTP_SERV | flagNET_L5_HTTP_CLNT) ;
+			vRtosClearStatus(flagNET_HTTP_SERV | flagNET_HTTP_CLNT) ;
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
 			HttpState = stateHTTP_INIT ;
@@ -408,7 +422,7 @@ void	vHttpServerTask(void * pvParameters) {
 				HttpState = stateHTTP_RESET ;
 				break ;
 			}
-			vRtosSetStatus(flagNET_L5_HTTP_SERV) ;
+			vRtosSetStatus(flagNET_HTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
 			IF_SL_DBG(debugTRACK, "waiting") ;
 			/* no break */
@@ -427,7 +441,7 @@ void	vHttpServerTask(void * pvParameters) {
 				HttpState = stateHTTP_RESET ;
 				break ;
 			}
-			vRtosSetStatus(flagNET_L5_HTTP_CLNT) ;		// mark as having a client connection
+			vRtosSetStatus(flagNET_HTTP_CLNT) ;		// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
 			IF_SL_DBG(debugTRACK, "connected") ;
 			/* no break */
@@ -483,17 +497,17 @@ void	vHttpServerTask(void * pvParameters) {
 	vPortFree(sRR.sBuf.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
-	IF_TRACK_PRINT(debugAPPL_THREADS, messageTASK_DELETE) ;
+	IF_TRACK(debugAPPL_THREADS, messageTASK_DELETE) ;
 	vTaskDelete(NULL) ;
 }
 
 void	vHttpServerTaskInit(void) { xRtosTaskCreate(vHttpServerTask, "HTTP", httpSTACK_SIZE, NULL, 6, NULL, INT_MAX) ; }
 
 void	vHttpReport(int32_t Handle) {
-	if (xRtosCheckStatus(flagNET_L5_HTTP_CLNT)) {
+	if (xRtosCheckStatus(flagNET_HTTP_CLNT)) {
 		xNetReport(Handle, &sRR.sCtx, __FUNCTION__, 0, 0, 0) ;
 	}
-	if (xRtosCheckStatus(flagNET_L5_HTTP_SERV)) {
+	if (xRtosCheckStatus(flagNET_HTTP_SERV)) {
 		xNetReport(Handle, &sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
 		xdprintf(Handle, "\t\t\tState=%d  maxTX=%u  maxRX=%u\n", HttpState, sRR.sCtx.maxTx, sRR.sCtx.maxRx) ;
 	}
