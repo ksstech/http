@@ -93,9 +93,7 @@ static	const char	HtmlAPdetails[] =
 	"IP Gateway:<br><input type='text' name='gw' size='16'><br>"
 	"IP Address:<br><input type='text' name='ip' size='16'><br>"
 	"IP DNS #1 :<br><input type='text' name='d1' size='16'><br>"
-	#if	(halNET_BUILD_NUM_DNS == 2)
 	"IP DNS #2 :<br><input type='text' name='d2' size='16'><br>"
-	#endif
 #endif
 	"<br><input type='submit' value='Submit'>"
 	"</form></body></html>" ;
@@ -304,12 +302,8 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			(strcmp(psRR->params[2].key, halSTORAGE_KEY_NM)	!= 0)	||
 			(strcmp(psRR->params[3].key, halSTORAGE_KEY_GW) != 0)	||
 			(strcmp(psRR->params[4].key, halSTORAGE_KEY_IP) != 0)	||
-	#if		(halNET_BUILD_NUM_DNS == 1)
-			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0))
-	#elif	(halNET_BUILD_NUM_DNS == 2)
 			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0)	||
 			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0))
-	#endif
 #endif
 		{	xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
@@ -326,11 +320,9 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 							iRetVal = xHttpServerParseWriteIPaddress(psRR->params[4].key, psRR->params[4].val) ;			// IP Station
 							if (iRetVal == erSUCCESS) {	// DNS IP #1
 								iRetVal = xHttpServerParseWriteIPaddress(psRR->params[5].key, psRR->params[5].val) ;		// DNS #1
-	#if	(halNET_BUILD_NUM_DNS == 2)
 								if (iRetVal == erSUCCESS) {	// DNS IP #2
 									iRetVal = xHttpServerParseWriteIPaddress(psRR->params[6].key, psRR->params[6].val) ;	// DNS #2
 								}
-	#endif
 							}
 						}
 					}
