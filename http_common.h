@@ -131,7 +131,7 @@ struct http_reqres_s {
 	union {
 		char *	pcBody ;							// both (client 'format' string)
 		int32_t (* handler) (http_reqres_t *) ;		// client
-		void 	(* hdlr_rsp) (http_parser *) ;		// server
+		int32_t	(* hdlr_rsp) (http_parser *) ;		// server
 	} ;
 	va_list					VaList ;						// Client
 	void *					pvArg ;							// Client

@@ -158,21 +158,21 @@ int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
 	return erSUCCESS ;
 }
 
-void	vHttpBuildResponse(http_parser * psParser, const char * format, ...) {
+int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	http_reqres_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sBuf.pBuf)) ;
-
-	socprintf(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
-	socprintf(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
-	socprintf(&psRR->sCtx, "Content-Language: en-US\r\n") ;
+	int32_t iRV ;
+	iRV = socprintf(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
+	iRV += socprintf(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
+	iRV += socprintf(&psRR->sCtx, "Content-Language: en-US\r\n") ;
 	if (psRR->hvConnect) {
-		socprintf(&psRR->sCtx, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
+		iRV += socprintf(&psRR->sCtx, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
 		if (psRR->hvConnect == coKeepAlive) {
-			socprintf(&psRR->sCtx, "Keep-Alive: timeout=3\r\n") ;
+			iRV += socprintf(&psRR->sCtx, "Keep-Alive: timeout=3\r\n") ;
 		}
 	}
 	if (psRR->hvContentType) {
-		socprintf(&psRR->sCtx, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
+		iRV += socprintf(&psRR->sCtx, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 	}
 
 	va_list vArgs ;
@@ -183,17 +183,17 @@ void	vHttpBuildResponse(http_parser * psParser, const char * format, ...) {
 	psRR->hvContentLength = xvsprintf(NULL, format, vArgs) ;
 	/* Now do the actual formatted print of the content length with an additional 2 chars
 	 * added for the extra CR + LF pair to form the blank line after the header values */
-	socprintf(&psRR->sCtx, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2) ;
-	vsocprintf(&psRR->sCtx, format, vArgs) ;				// add the actual content
+	iRV += socprintf(&psRR->sCtx, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2) ;
+	iRV += vsocprintf(&psRR->sCtx, format, vArgs) ;				// add the actual content
 	va_end(vArgs) ;
-	socprintf(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
+	iRV += socprintf(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 
 #if	defined(DEBUG)
 	if (psRR->f_debug) {
-		PRINT("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
+		CPRINT("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	}
 #endif
-	return ;
+	return iRV ;
 }
 
 int32_t	xHttpServerParseWriteString(char * pKey, char *pVal) {
@@ -219,17 +219,18 @@ int32_t	xHttpServerParseWriteIPaddress(char * pKey, char * pVal) {
 
 // ######################################## URL handlers ###########################################
 
-void	vHttpHandle_API(http_parser * psParser) {
+int32_t	xHttpHandle_API(http_parser * psParser) {
 	static const char format[] = "<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>" ;
 	http_reqres_t * psRR = psParser->data ;
+	int32_t iRV ;
 	vCommandInterpret(1, (int) *psRR->parts[1]) ;
-	ubuf_t * psBuf = &sBufStdOut ;
-	if (psBuf->Used) {
-		vHttpBuildResponse(psParser, format, psBuf->Used, psBuf->pBuf + psBuf->IdxRD) ;
-		psBuf->Used	= psBuf->IdxWR = psBuf->IdxRD = 0 ;	// reset pointers to reflect empty
+	if (xUBufAvail(&sBufStdOut) > 0) {
+		iRV = xHttpSendResponse(psParser, format, xUBufAvail(&sBufStdOut), pcUBufTellRead(&sBufStdOut)) ;
+		vUBufReset(&sBufStdOut) ;
 	} else {
-		vHttpBuildResponse(psParser, "<html><body><h2>Command completed</h2></body></html>") ;
+		iRV = xHttpSendResponse(psParser, "<html><body><h2>Command completed</h2></body></html>") ;
 	}
+	return iRV ;
 }
 
 // ################################### Common HTTP API functions ###################################
@@ -237,12 +238,6 @@ void	vHttpHandle_API(http_parser * psParser) {
 void	vHttpServerCloseClient(sock_ctx_t * psCtx) {
 	vRtosClearStatus(flagNET_HTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
-	if (sRR.sCtx.maxTx < psCtx->maxTx) {
-		sRR.sCtx.maxTx = psCtx->maxTx ;
-	}
-	if (sRR.sCtx.maxRx < psCtx->maxRx) {
-		sRR.sCtx.maxRx = psCtx->maxRx ;
-	}
 	xNetClose(psCtx) ;
 	IF_SL_DBG(debugTRACK, "closing") ;
 }
@@ -258,7 +253,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR->sBuf.pBuf)) ;
 
-	int32_t	iURL = -1 ;
+	int32_t	iURL = -1, iRetVal ;
 	if (psParser->http_errno) {
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
 		psRR->pcBody	= (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
@@ -308,9 +303,9 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		{	xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
 		} else {
-			int32_t	iRetVal = xHttpServerParseWriteString(psRR->params[0].key, psRR->params[0].val) ;	// SSID
+			iRetVal = xHttpServerParseWriteString(psRR->params[0].key, psRR->params[0].val) ;		// SSID
 			if (iRetVal == erSUCCESS) {
-				iRetVal = xHttpServerParseWriteString(psRR->params[1].key, psRR->params[1].val) ;		// PSWD
+				iRetVal = xHttpServerParseWriteString(psRR->params[1].key, psRR->params[1].val) ;	// PSWD
 #if		(halNET_BUILD_STATIC == 1)
 				if (iRetVal == erSUCCESS) {				// Network Address
 					iRetVal = xHttpServerParseWriteIPaddress(psRR->params[2].key, psRR->params[2].val) ;					// Netmask
@@ -344,26 +339,32 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		if (psRR->NumParts == 2) {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 			psRR->f_bodyCB 	= 1 ;
-			psRR->hdlr_rsp	= vHttpHandle_API ;
+			psRR->hdlr_rsp	= xHttpHandle_API ;
 		} else {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 			psRR->pcBody 	= "<html><body><h2>** API command option Required **</h2></body></html>" ;
 		}
 		break ;
 
-//	case urlNOTFOUND:
-	default:
+	case urlNOTFOUND:
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_FOUND) ;
 		psRR->pcBody 	= "<html><body><h2>** URL Nor found **</h2></body></html>" ;
+		break ;
+
+	default:
 		break ;
 	}
 
 	if (psRR->f_bodyCB && psRR->hdlr_rsp) {
-		psRR->hdlr_rsp(psParser) ;						// Add dynamic content to buffer via callback
+		iRetVal = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
-		vHttpBuildResponse(psParser, psRR->pcBody) ;
+		iRetVal = xHttpSendResponse(psParser, psRR->pcBody) ;
 	}
-	return erSUCCESS ;
+	if (sServHttpCtx.maxTx < iRetVal) {
+		sServHttpCtx.maxTx = iRetVal ;
+	}
+
+	return iRetVal ;
 }
 
 /**
@@ -404,9 +405,9 @@ void	vHttpServerTask(void * pvParameters) {
 			sServHttpCtx.type					= SOCK_STREAM ;
 #if 0
 //			sServHttpCtx.psSec					= ? ;
-			sServHttpCtx.d_data					= 1 ;
-			sServHttpCtx.d_read					= 1 ;
-			sServHttpCtx.d_write				= 1 ;
+//			sServHttpCtx.d_data					= 1 ;
+//			sServHttpCtx.d_read					= 1 ;
+//			sServHttpCtx.d_write				= 1 ;
 #endif
 			sServHttpCtx.sa_in.sin_port			= htons(sServHttpCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
 			iRetVal = xNetOpen(&sServHttpCtx) ;
@@ -441,6 +442,9 @@ void	vHttpServerTask(void * pvParameters) {
 		case stateHTTP_CONNECTED:
 			iRetVal = xNetRead(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Size) ;
 			if (iRetVal > 0) {
+				if (sServHttpCtx.maxRx < iRetVal) {
+					sServHttpCtx.maxRx = iRetVal ;
+				}
 				http_parser 	sParser ;
 				http_parser_init(&sParser, HTTP_REQUEST) ;
 				sParser.data		= &sRR ;
@@ -460,12 +464,11 @@ void	vHttpServerTask(void * pvParameters) {
 				sRR.f_query			= 1 ;				// break query up in parts
 //				sRR.f_debug			= 1 ;				// enable debug output
 
-				sRR.sBuf.Used = iRetVal ;
+				sRR.sBuf.Used		= iRetVal ;
 				iRetVal = xHttpCommonDoParsing(&sParser) ;
 				if (iRetVal > 0) {						// build response if something was parsed....
 					xStdOutLock(portMAX_DELAY) ;
-					xHttpServerResponseHandler(&sParser) ;
-					iRetVal = xNetWrite(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Used) ;
+					iRetVal = xHttpServerResponseHandler(&sParser) ;
 					xStdOutUnLock() ;
 				}
 				// socket closed or error occurred or coClose was set, close the connection
@@ -493,7 +496,7 @@ void	vHttpServerTask(void * pvParameters) {
 	vTaskDelete(NULL) ;
 }
 
-void	vHttpServerTaskInit(void) { xRtosTaskCreate(vHttpServerTask, "HTTP", httpSTACK_SIZE, NULL, 6, NULL, INT_MAX) ; }
+void	vHttpServerTaskInit(void) { xRtosTaskCreate(vHttpServerTask, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ; }
 
 void	vHttpReport(int32_t Handle) {
 	if (xRtosCheckStatus(flagNET_HTTP_CLNT)) {
@@ -501,6 +504,6 @@ void	vHttpReport(int32_t Handle) {
 	}
 	if (xRtosCheckStatus(flagNET_HTTP_SERV)) {
 		xNetReport(Handle, &sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
-		xdprintf(Handle, "\t\t\tState=%d  maxTX=%u  maxRX=%u\n", HttpState, sRR.sCtx.maxTx, sRR.sCtx.maxRx) ;
+		xdprintf(Handle, "\t\t\tState=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 	}
 }
