@@ -101,7 +101,7 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 	}
 	// add the final CR after the headers (and payload)
 	uprintf(&psRR->sBuf, "\r\n") ;
-#if	defined(DEBUG)
+#if		(myDEBUG == 1)
 	if (psRR->f_debug) {
 		PRINT("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	}

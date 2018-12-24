@@ -48,7 +48,8 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						(0x4000)
+#define	debugFLAG						0xC000
+
 #define	debugTRACK						(debugFLAG & 0x0001)
 #define	debugBUILD						(debugFLAG & 0x0002)
 
@@ -188,7 +189,7 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	va_end(vArgs) ;
 	iRV += socprintf(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 
-#if	defined(DEBUG)
+#if     (myDEBUG == 1)
 	if (psRR->f_debug) {
 		CPRINT("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	}
@@ -359,6 +360,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		iRetVal = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
 		iRetVal = xHttpSendResponse(psParser, psRR->pcBody) ;
+		IF_CPRINT(debugTRACK, "Response sent iRV=%d\n", iRetVal) ;
 	}
 	if (sServHttpCtx.maxTx < iRetVal) {
 		sServHttpCtx.maxTx = iRetVal ;
@@ -382,7 +384,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  * 8. Respond to /restart (as emergency)
  */
 void	vHttpServerTask(void * pvParameters) {
-	IF_TRACK(debugAPPL_THREADS, messageTASK_START) ;
+	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
 	sRR.sBuf.pBuf	= pvPortMalloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
 
@@ -441,11 +443,11 @@ void	vHttpServerTask(void * pvParameters) {
 
 		case stateHTTP_CONNECTED:
 			iRetVal = xNetRead(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Size) ;
-			if (iRetVal > 0) {
-				if (sServHttpCtx.maxRx < iRetVal) {
+			if (iRetVal > 0) {							// read something ?
+				if (sServHttpCtx.maxRx < iRetVal) {		// yes, update the Rx packet stats
 					sServHttpCtx.maxRx = iRetVal ;
 				}
-				http_parser 	sParser ;
+				http_parser 	sParser ;				// then process the packet
 				http_parser_init(&sParser, HTTP_REQUEST) ;
 				sParser.data		= &sRR ;
 				// setup guidelines for parsing the request
@@ -485,14 +487,15 @@ void	vHttpServerTask(void * pvParameters) {
 			break ;
 
 		default:
-			myASSERT(0) ;
+			IF_myASSERT(debugRESULT, 0) ;
 			break ;
 		}
+		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
 	vPortFree(sRR.sBuf.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
-	IF_TRACK(debugAPPL_THREADS, messageTASK_DELETE) ;
+	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
 	vTaskDelete(NULL) ;
 }
 
