@@ -126,7 +126,7 @@ struct http_reqres_s {
 		const char *	pcStatMes ;		// server: status message
 	} ;
 	union {
-		char *	pcBody ;							// both (client 'format' string)
+		const char *	pcBody ;					// both (client 'format' string)
 		int32_t (* handler) (http_reqres_t *) ;		// client
 		int32_t	(* hdlr_rsp) (http_parser *) ;		// server
 	} ;

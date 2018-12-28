@@ -269,12 +269,14 @@ int32_t xHttpClientCheckUpgrades(void) {
 	 * #2 would be "[site-token].bin"
 	 * #3 would define a level to accommodate a specific client/tenant
 	 * #4 would be the broadest "[device-specification-token].bin" */
-	int32_t iRetVal = xHttpClientFirmwareUpgrade(idSTA) ;
+	int32_t iRetVal = xHttpClientFirmwareUpgrade((void *) idSTA) ;
+#if 0
 	if ((xRtosCheckStatus(flagAPP_RESTART) == 0) && (iRetVal == erSUCCESS)) {
-		iRetVal = xHttpClientFirmwareUpgrade(mqttSITE_TOKEN) ;
+		iRetVal = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN) ;
 	}
+#endif
 	if ((xRtosCheckStatus(flagAPP_RESTART) == 0) && (iRetVal == erSUCCESS)) {
-		iRetVal = xHttpClientFirmwareUpgrade(mqttSPECIFICATION_TOKEN) ;
+		iRetVal = xHttpClientFirmwareUpgrade((void *) mqttSPECIFICATION_TOKEN) ;
 	}
 	if (iRetVal == erSUCCESS) { 					// no [newer] upgrade there
 		vRtosClearStatus(flagAPP_UPGRADE) ;			// then clear the flag
@@ -288,7 +290,7 @@ int32_t xHttpClientCheckUpgrades(void) {
 
 int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
 	int32_t		iRetVal = erFAILURE, NumTok ;
-	char * 		pKey = " Insufficient" ;
+	const char * pKey = " Insufficient" ;
 	jsmn_parser	sParser ;
 	jsmntok_t *	psTokenList ;
 	NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
@@ -339,7 +341,7 @@ int32_t	xHttpParseTimeZone(http_parser* psParser, const char* pBuf, size_t xLen)
 	jsmn_parser	sParser ;
 	jsmntok_t *	psTokenList ;
 	int32_t		NumTok, iRetVal = erFAILURE ;
-	char * 		pKey = " Insufficient" ;
+	const char * pKey = " Insufficient" ;
 	NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {
 		x32_t	xVal ;
@@ -396,7 +398,7 @@ int32_t	xHttpGetTimeZone(void) {
 
 int32_t	xHttpParseElevation(http_parser* psParser, const char* pBuf, size_t xLen) {
 	int32_t		iRetVal = erFAILURE, NumTok ;
-	char * 		pKey = " Insufficient" ;
+	const char * pKey = " Insufficient" ;
 	jsmn_parser	sParser ;
 	jsmntok_t *	psTokenList ;
 	NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
@@ -507,7 +509,7 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 		}
 	}
 	if (iRetVal > 0) {
-		iRetVal = xNetWrite(&psReq->sCtx, "\n\n", 2) ;	// write the terminating LF's
+		iRetVal = xNetWrite(&psReq->sCtx, (char *) "\n\n", 2) ;	// write the terminating LF's
 		SL_WARN("upload done") ;
 		IF_CPRINT(debugTRACK, " Coredump DONE\r\n") ;
 	} else {
