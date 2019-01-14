@@ -164,7 +164,7 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sBuf.pBuf)) ;
 	int32_t iRV ;
 	iRV = socprintf(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
-	iRV += socprintf(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
+	iRV += socprintf(&psRR->sCtx, "Date: %#Z\r\n", &nvsVars.sTSZ) ;
 	iRV += socprintf(&psRR->sCtx, "Content-Language: en-US\r\n") ;
 	if (psRR->hvConnect) {
 		iRV += socprintf(&psRR->sCtx, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
@@ -289,6 +289,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		break ;
 
 	case urlSAVE_AP:
+#if		(buildOLD_VARS == 1)
 #if		(halNET_BUILD_DHCP == 1) || (halNET_BUILD_AUTO == 1)
 		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
 			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0))
@@ -334,6 +335,56 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 				psRR->pcBody	= (char *) HtmlAPconfigFAIL ;
 			}
 		}
+#else
+
+#if		(halNET_BUILD_DHCP == 1) || (halNET_BUILD_AUTO == 1)
+		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0)	||
+			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0))
+#elif	(halNET_BUILD_STATIC == 1)
+		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
+			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)	||
+			(strcmp(psRR->params[2].key, halSTORAGE_KEY_NM)	!= 0)	||
+			(strcmp(psRR->params[3].key, halSTORAGE_KEY_GW) != 0)	||
+			(strcmp(psRR->params[4].key, halSTORAGE_KEY_IP) != 0)	||
+			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0)	||
+			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0))
+#endif
+		{	xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
+			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
+		} else {
+			memset(&nvsWifi, 0 , sizeof(nvsWifi)) ;
+			iRetVal = xHttpServerParseString(psRR->params[0].val, (char *) nvsWifi.ssid) ;		// SSID
+			if (iRetVal == erSUCCESS) {
+				iRetVal = xHttpServerParseString(psRR->params[1].val, (char *) nvsWifi.pswd) ;	// PSWD
+#if		(halNET_BUILD_STATIC == 1)
+				if (iRetVal == erSUCCESS) {					// Network Address
+					iRetVal = xHttpServerParseIPaddress(psRR->params[2].val, &nvsWifi.ipNM) ;
+					if (iRetVal == erSUCCESS) {				// Gateway IP
+						iRetVal = xHttpServerParseIPaddress(psRR->params[3].val, &nvsWifi.ipGW) ;
+						if (iRetVal == erSUCCESS) {			// Station IP
+							iRetVal = xHttpServerParseIPaddress(psRR->params[4].val, &nvsWifi.ipSTA) ;
+							if (iRetVal == erSUCCESS) {		// DNS IP #1
+								iRetVal = xHttpServerParseIPaddress(psRR->params[5].val, &nvsWifi.ipDNS1) ;
+								if (iRetVal == erSUCCESS) {	// DNS IP #2
+									iRetVal = xHttpServerParseIPaddress(psRR->params[6].val, &nvsWifi.ipDNS2) ;
+								}
+							}
+						}
+					}
+				}
+#endif
+				halSTORAGE_WriteBlob(halSTORAGE_STORE, halSTORAGE_KEY_WIFI, &nvsWifi, sizeof(nvsWifi)) ;
+			}
+			if (iRetVal == erSUCCESS) {
+				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
+				psRR->pcBody	= (char *) HtmlAPconfigOK ;
+				vRtosSetStatus(flagAPP_RESTART) ;
+			} else {
+				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
+				psRR->pcBody	= (char *) HtmlAPconfigFAIL ;
+			}
+		}
+#endif
 		break ;
 
 	case urlAPI:

@@ -84,20 +84,8 @@ extern "C" {
 
 // ######################################### structures ############################################
 
-enum {
-	Latitude,
-	Longitude,
-	Altitude,
-	Accuracy,
-	Resolution,
-	GeoNumber,
-};
-
 // ################################### Global variables ############################################
 
-#if	(configUSE_GEO_LOCATE == 1)
-	extern	float	GeoLocation[] ;
-#endif
 
 // ###################################### public functions #########################################
 
@@ -114,11 +102,9 @@ int32_t	xHttpBadSSL(void) ;
 int32_t	xHttpClientFirmwareUpgrade(void * pvPara) ;
 int32_t xHttpClientCheckUpgrades(void) ;
 
-#if	(configUSE_GEO_LOCATE == 1)
 int32_t xHttpGetLocation(void) ;
 int32_t	xHttpGetElevation(void) ;
 int32_t xHttpGetTimeZone(void) ;
-#endif
 
 int32_t	xHttpClientRulesDownload(void) ;
 

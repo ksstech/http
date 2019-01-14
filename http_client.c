@@ -56,9 +56,6 @@
 
 // ################################### global/public variables #####################################
 
-#if	(configUSE_GEO_LOCATE == 1)
-	float	GeoLocation[GeoNumber] ;
-#endif
 
 // ################################### Common HTTP API functions ###################################
 
@@ -295,19 +292,21 @@ int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
 	jsmntok_t *	psTokenList ;
 	NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {								// parse Latitude
-		iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "lat", &GeoLocation[Latitude], vfFXX) ;
+		iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "lat", &nvsVars.GeoLocation[Latitude], vfFXX) ;
 		if (iRetVal >= erSUCCESS) {					// parse Longitude
-			iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "lng", &GeoLocation[Longitude], vfFXX) ;
+			iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "lng", &nvsVars.GeoLocation[Longitude], vfFXX) ;
 			if (iRetVal >= erSUCCESS) {				// parse accuracy
-				iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "accuracy", &GeoLocation[Accuracy], vfFXX) ;
+				iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "accuracy", &nvsVars.GeoLocation[Accuracy], vfFXX) ;
 			}
 		}
 	}
 	if (iRetVal < erSUCCESS) {
 		SL_ERR("Parsing '%s' key", pKey) ;
+	} else {
+		IF_PRINT(debugRESULT, "lat: %.7f lng: %.7f acc: %.7f\n",
+				nvsVars.GeoLocation[Latitude], nvsVars.GeoLocation[Longitude], nvsVars.GeoLocation[Accuracy]) ;
 	}
 	IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
-	IF_PRINT(debugRESULT, "lat: %.7f lng: %.7f acc: %.7f\n", GeoLocation[Latitude], GeoLocation[Longitude], GeoLocation[Accuracy]) ;
 	if (psTokenList) {
 		vPortFree(psTokenList) ;
 	}
@@ -347,17 +346,17 @@ int32_t	xHttpParseTimeZone(http_parser* psParser, const char* pBuf, size_t xLen)
 		x32_t	xVal ;
 		iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "dstOffset", &xVal.i32, vfIXX) ;
 		if (iRetVal >= erSUCCESS) {
-			sTZ.daylight = xVal.i32 ;					// convert i32 -> i16 & store
+			nvsVars.sTZ.daylight = xVal.i32 ;					// convert i32 -> i16 & store
 			iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "rawOffset", &xVal.i32, vfIXX) ;
 			if (iRetVal >= erSUCCESS) {
-				sTZ.timezone = xVal.i32 ;				// store value
-				iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneId", &TimeZoneId[0], vfSXX) ;
+				nvsVars.sTZ.timezone = xVal.i32 ;				// store value
+				iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneId", nvsVars.TimeZoneId, vfSXX) ;
 				if (iRetVal >= erSUCCESS) {
-					sTZ.pcTZName = TimeZoneId ;
-					iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneName", TimeZoneName, vfSXX) ;
+					nvsVars.sTZ.pcTZName = nvsVars.TimeZoneId ;
+					iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneName", nvsVars.TimeZoneName, vfSXX) ;
 					if (iRetVal >= erSUCCESS) {
-						sTZ.pcDSTName = TimeZoneName ;
-						sTSZ.pTZ = &sTZ ;				// ensure we use TZ info in future..
+						nvsVars.sTZ.pcDSTName = nvsVars.TimeZoneName ;
+						nvsVars.sTSZ.pTZ = &nvsVars.sTZ ;				// ensure we use TZ info in future..
 					}
 				}
 			}
@@ -367,7 +366,7 @@ int32_t	xHttpParseTimeZone(http_parser* psParser, const char* pBuf, size_t xLen)
 		SL_ERR("Parsing '%s' key", pKey) ;
 	} else {
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
-		IF_PRINT(debugRESULT, "New Timezone %+Z\n", &sTSZ) ;
+		IF_PRINT(debugRESULT, "New Timezone %+Z\n", &nvsVars.sTSZ) ;
 	}
 	if (psTokenList) {
 		vPortFree(psTokenList) ;
@@ -391,7 +390,7 @@ int32_t	xHttpGetTimeZone(void) {
 	sReq.sCtx.d_data	= 1 ;
 	sReq.sCtx.d_eagain	= 1 ;
 #endif
-	return xHttpClientExecuteRequest(&sReq, GeoLocation[Latitude], GeoLocation[Longitude], xTimeStampAsSeconds(sTSZ.usecs)) ;
+	return xHttpClientExecuteRequest(&sReq, nvsVars.GeoLocation[Latitude], nvsVars.GeoLocation[Longitude], xTimeStampAsSeconds(nvsVars.sTSZ.usecs)) ;
 }
 
 // ########################################## Elevation #############################################
@@ -403,16 +402,17 @@ int32_t	xHttpParseElevation(http_parser* psParser, const char* pBuf, size_t xLen
 	jsmntok_t *	psTokenList ;
 	NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {								// parse Elevation
-		iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "elevation", &GeoLocation[Altitude], vfFXX) ;
+		iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "elevation", &nvsVars.GeoLocation[Altitude], vfFXX) ;
 		if (iRetVal >= erSUCCESS) {					// parse Resolution
-			iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "resolution", &GeoLocation[Resolution], vfFXX) ;
+			iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "resolution", &nvsVars.GeoLocation[Resolution], vfFXX) ;
 		}
 	}
 	if (iRetVal < erSUCCESS) {
 		SL_ERR("Parsing '%s' key", pKey) ;
+	} else {
+		IF_PRINT(debugRESULT, "alt: %.7f res: %.7f\n", nvsVars.GeoLocation[Altitude], nvsVars.GeoLocation[Resolution]) ;
 	}
 	IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
-	IF_PRINT(debugRESULT, "alt: %.7f res: %.7f\n", GeoLocation[Altitude], GeoLocation[Resolution]) ;
 	if (psTokenList) {
 		vPortFree(psTokenList) ;
 	}
@@ -436,7 +436,7 @@ int32_t	xHttpGetElevation(void) {
 	sReq.sCtx.d_data	= 1 ;
 	sReq.sCtx.d_eagain	= 1 ;
 #endif
-	return xHttpClientExecuteRequest(&sReq, GeoLocation[Latitude], GeoLocation[Longitude]) ;
+	return xHttpClientExecuteRequest(&sReq, nvsVars.GeoLocation[Latitude], nvsVars.GeoLocation[Longitude]) ;
 }
 
 // ######################################## Rules download #########################################
@@ -541,7 +541,7 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	sRR.sCtx.d_secure	= 1 ;
 	sRR.sCtx.d_level	= 2 ;
 #endif
-	int32_t iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND) ;
+	int32_t iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, nvsVars.sTSZ.usecs/MICROS_IN_SECOND) ;
 
 	esp_partition_iterator_release(sIter) ;
 	return iRetVal ;
