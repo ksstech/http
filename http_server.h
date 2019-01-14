@@ -34,7 +34,7 @@ extern "C" {
 // ###################################### BUILD : CONFIG definitions ###############################
 
 #define	httpPRIORITY					4
-#define	httpSTACK_SIZE					(configMINIMAL_STACK_SIZE + 1024 +(myDEBUG * 2048))
+#define	httpSTACK_SIZE					(configMINIMAL_STACK_SIZE + 1024 + (myDEBUG * 2048))
 #define	httpINTERVAL_MS					(500)
 
 #define httpSERVER_BUFSIZE				(1 * KILO)
@@ -63,8 +63,8 @@ extern	http_reqres_t	sRR ;
 
 int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) ;
 
-void	vHttpServerTask(void * pvParameters) ;
-void	vHttpServerTaskInit(void) ;
+void	vTaskHttp(void * pvParameters) ;
+void	vTaskHttpInit(void) ;
 void	vHttpReport(int32_t Handle) ;
 
 #ifdef __cplusplus

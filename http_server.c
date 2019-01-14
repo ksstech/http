@@ -151,7 +151,7 @@ int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
 	case HTTP_STATUS_NOT_FOUND:			psRR->pcStatMes	= "Not Found" ;			break ;	// 404
 	case HTTP_STATUS_NOT_ACCEPTABLE:	psRR->pcStatMes	= "Not Acceptable" ;	break ;	// 406
 	case HTTP_STATUS_NOT_IMPLEMENTED:	psRR->pcStatMes	= "Not Implemented" ;	break ;	// 501
-	default:							myASSERT(0) ;								break ;
+	default:							IF_myASSERT(debugPARAM, 0) ;			break ;
 	}
 	if (INRANGE(HTTP_STATUS_BAD_REQUEST, Status, HTTP_STATUS_UNAVAILABLE_FOR_LEGAL_REASONS, int32_t)) {
 		psRR->hvConnect = coClose ;					// force connection to be closed
@@ -189,33 +189,50 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	va_end(vArgs) ;
 	iRV += socprintf(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 
-#if     (myDEBUG == 1)
-	if (psRR->f_debug) {
-		CPRINT("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
-	}
-#endif
+	IF_CPRINT((myDEBUG == 1) && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	return iRV ;
 }
 
 int32_t	xHttpServerParseWriteString(char * pKey, char *pVal) {
-	if (xStringParseEncoded(pVal) == erFAILURE) {
+	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s : %s\n", pKey, pVal) ;
+	IF_CPRINT(debugTRACK, "%s->%s\n", pKey, pVal) ;
 	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) pVal, vfSXX) == ESP_OK ? erSUCCESS : erFAILURE ;
 }
 
-int32_t	xHttpServerParseWriteIPaddress(char * pKey, char * pVal) {
-	if (xStringParseEncoded(pVal) == erFAILURE) {
+int32_t	xHttpServerParseString(char * pVal, char * pDst) {
+	if (xStringParseEncoded(pVal, pDst) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s : %s\n", pKey, pVal) ;
+	IF_CPRINT(debugTRACK, "%s->%s\n", pVal, pDst) ;
+	return erSUCCESS ;
+}
+
+int32_t	xHttpServerParseWriteIPaddress(char * pKey, char * pVal) {
+	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
+		return erFAILURE ;
+	}
+	IF_CPRINT(debugTRACK, "%s->%s", pKey, pVal) ;
 	uint32_t	IPaddr ;
 	if (pcStringParseIpAddr(pVal, &IPaddr) == pcFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s : %-I\n", pKey, IPaddr) ;
+	IF_CPRINT(debugTRACK, " : %-I\n", IPaddr) ;
 	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) htonl(IPaddr), vfUXX) == ESP_OK ? erSUCCESS : erFAILURE ;
+}
+
+int32_t	xHttpServerParseIPaddress(char * pVal, uint32_t * pDst) {
+	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
+		return erFAILURE ;
+	}
+	IF_CPRINT(debugTRACK, "%s->%s", pVal) ;
+	if (pcStringParseIpAddr(pVal, pDst) == pcFAILURE) {
+		*pDst = 0 ;
+		return erFAILURE ;
+	}
+	IF_CPRINT(debugTRACK, " : %-I\n", *pDst) ;
+	return erSUCCESS ;
 }
 
 // ######################################## URL handlers ###########################################
@@ -240,7 +257,7 @@ void	vHttpServerCloseClient(sock_ctx_t * psCtx) {
 	vRtosClearStatus(flagNET_HTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
 	xNetClose(psCtx) ;
-	IF_SL_DBG(debugTRACK, "closing") ;
+	IF_CPRINT(debugTRACK, "closing\n") ;
 }
 
 /**
@@ -421,7 +438,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 }
 
 /**
- *vHttpServerTask()
+ *vTaskHttp()
  * @param pvParameters
  *
  * Responsibilities:
@@ -434,7 +451,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  * 7. Serve HTML to capture SSID & PSWD from client
  * 8. Respond to /restart (as emergency)
  */
-void	vHttpServerTask(void * pvParameters) {
+void	vTaskHttp(void * pvParameters) {
 	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
 	sRR.sBuf.pBuf	= pvPortMalloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
@@ -444,7 +461,7 @@ void	vHttpServerTask(void * pvParameters) {
 		switch(HttpState) {
 		int32_t	iRetVal ;
 		case stateHTTP_RESET:
-			IF_SL_DBG(debugTRACK, "reset") ;
+			IF_CPRINT(debugTRACK, "reset\n") ;
 			vRtosClearStatus(flagNET_HTTP_SERV | flagNET_HTTP_CLNT) ;
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
@@ -452,7 +469,7 @@ void	vHttpServerTask(void * pvParameters) {
 			/* no break */
 
 		case stateHTTP_INIT:
-			IF_SL_DBG(debugTRACK, "init") ;
+			IF_CPRINT(debugTRACK, "init\n") ;
 			memset(&sServHttpCtx, 0 , sizeof(sock_ctx_t)) ;
 			sServHttpCtx.sa_in.sin_family		= AF_INET ;
 			sServHttpCtx.type					= SOCK_STREAM ;
@@ -470,7 +487,7 @@ void	vHttpServerTask(void * pvParameters) {
 			}
 			vRtosSetStatus(flagNET_HTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
-			IF_SL_DBG(debugTRACK, "waiting") ;
+			IF_CPRINT(debugTRACK, "waiting\n") ;
 			/* no break */
 
 		case stateHTTP_WAITING:
@@ -489,7 +506,7 @@ void	vHttpServerTask(void * pvParameters) {
 			}
 			vRtosSetStatus(flagNET_HTTP_CLNT) ;		// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
-			IF_SL_DBG(debugTRACK, "connected") ;
+			IF_CPRINT(debugTRACK, "connected\n") ;
 			/* no break */
 
 		case stateHTTP_CONNECTED:
@@ -550,7 +567,7 @@ void	vHttpServerTask(void * pvParameters) {
 	vTaskDelete(NULL) ;
 }
 
-void	vHttpServerTaskInit(void) { xRtosTaskCreate(vHttpServerTask, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ; }
+void	vTaskHttpInit(void) { xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ; }
 
 void	vHttpReport(int32_t Handle) {
 	if (xRtosCheckStatus(flagNET_HTTP_CLNT)) {
@@ -558,6 +575,6 @@ void	vHttpReport(int32_t Handle) {
 	}
 	if (xRtosCheckStatus(flagNET_HTTP_SERV)) {
 		xNetReport(Handle, &sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
-		xdprintf(Handle, "\t\t\tState=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
+		xdprintf(Handle, "\t\t\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 	}
 }
