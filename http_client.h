@@ -67,7 +67,7 @@ extern "C" {
  * Example:
  *		https://maps.googleapis.com/maps/api/elevation/json?locations=39.7391536,-104.9847034&key=YOUR_API_KEY
  */
-#define	googleAPI_ELEVATION_HOST				"maps.googleapis.com"
+//#define	googleAPI_ELEVATION_HOST				"maps.googleapis.com"
 #define	googleAPI_ELEVATION_QUERY				"GET /maps/api/elevation/json?locations=%.7f,%.7f&key="configHTTP_APIKEY_GOOGLE_PAIDKEY
 
 /*
@@ -76,7 +76,7 @@ extern "C" {
  * Example:
  * 		https://maps.googleapis.com/maps/api/timezone/json?location=38.908133,-77.047119&timestamp=1458000000&key=YOUR_API_KEY
  */
-#define	googleAPI_TIMEZONE_HOST					"maps.googleapis.com"
+//#define	googleAPI_TIMEZONE_HOST					"maps.googleapis.com"
 #define	googleAPI_TIMEZONE_QUERY				"GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="configHTTP_APIKEY_GOOGLE_PAIDKEY
 
 // ######################################### enumerations ##########################################
@@ -96,7 +96,6 @@ int32_t	xHttpClientFileDownloadCheck(http_parser * psParser, const char * pBuf, 
 
 int32_t xHttpGetWeather(void) ;
 int32_t	xHttpHowsMySSL(void) ;
-int32_t	xHttpTestMySSL(void) ;
 int32_t	xHttpBadSSL(void) ;
 
 int32_t	xHttpClientFirmwareUpgrade(void * pvPara) ;

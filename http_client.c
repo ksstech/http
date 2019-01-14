@@ -180,20 +180,23 @@ int32_t	xHttpClientFileDownloadCheck(http_parser * psParser, const char * pBuf, 
 // ###################################### WEATHER support ##########################################
 
 int32_t xHttpGetWeather(void) {
-	http_reqres_t	sReq = { 0 } ;
+	http_reqres_t sReq	= { 0 } ;
 	sReq.pcQuery		= configHTTP_FCAST_JOHANNESBURG ;
 	sReq.sCtx.pHost		= configHTTP_HOST_OPEN_WEATHERMAP ;
-	sReq.sBuf.Size	= 16384 ;
+	sReq.sBuf.Size		= 16384 ;
 	return xHttpClientExecuteRequest(&sReq) ;
 }
 
 // ################################### How's my SSL support ########################################
 
 int32_t	xHttpHowsMySSL(void) {
-	http_reqres_t	sReq = { 0 } ;
-	sReq.pcQuery		= "GET /a/check" ;
+	sock_sec_t sSecure	= { 0 } ;
+	sSecure.pPem		= HostInfo[nvsVars.HostFOTA].pCert ;
+	sSecure.PemSize		= HostInfo[nvsVars.HostFOTA].Size ;
+	http_reqres_t sReq	= { 0 } ;
+	sReq.sCtx.psSec		= &sSecure ;
 	sReq.sCtx.pHost		= "www.howsmyssl.com" ;
-	sReq.sCtx.psSec		= &IrmacosSecInfo ;
+	sReq.pcQuery		= "GET /a/check" ;
 	sReq.hvContentType	= ctUNDEFINED ;
 	sReq.hvAccept		= ctUNDEFINED ;
 	sReq.f_debug		= 1 ;
@@ -203,35 +206,26 @@ int32_t	xHttpHowsMySSL(void) {
 // ####################################### Bad SSL support #########################################
 
 int32_t	xHttpBadSSL(void) {
-	http_reqres_t	sReq = { 0 } ;
-	sReq.pcQuery		= "GET /dashboard" ;
+	sock_sec_t sSecure	= { 0 } ;
+	sSecure.pPem		= HostInfo[nvsVars.HostFOTA].pCert ;
+	sSecure.PemSize		= HostInfo[nvsVars.HostFOTA].Size ;
+	http_reqres_t sReq	= { 0 } ;
+	sReq.sCtx.psSec		= &sSecure ;
 	sReq.sCtx.pHost		= "www.badssl.com" ;
-	sReq.sCtx.psSec		= &IrmacosSecInfo ;
+	sReq.pcQuery		= "GET /dashboard" ;
 	sReq.f_debug		= 1 ;
-	return xHttpClientExecuteRequest(&sReq) ;
-}
-
-// #################################### Test My SSL support ########################################
-
-int32_t	xHttpTestMySSL(void) {
-	http_reqres_t	sReq = { 0 } ;
-	sReq.pcQuery		= "GET /" ;
-	sReq.sCtx.pHost		= hostIRMACOS_FOTA ;
-	sReq.sCtx.psSec		= &IrmacosSecInfo ;
-	sReq.hvConnect		= coKeepAlive ;
-	sReq.hvContentType	= ctUNDEFINED ;
-	sReq.hvAccept		= ctUNDEFINED ;
 	return xHttpClientExecuteRequest(&sReq) ;
 }
 
 // ################################# Firmware Over The Air support #################################
 
 int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
-	http_reqres_t	sReq = { 0 } ;
-	sReq.sCtx.pHost		= hostIRMACOS_FOTA ;
-#if		(configHTTP_CLIENT_TLS == 1)
-	sReq.sCtx.psSec		= &IrmacosSecInfo ;
-#endif
+	sock_sec_t sSecure	= { 0 } ;
+	sSecure.pPem		= HostInfo[nvsVars.HostFOTA].pCert ;
+	sSecure.PemSize		= HostInfo[nvsVars.HostFOTA].Size ;
+	http_reqres_t sReq	= { 0 } ;
+	sReq.sCtx.psSec		= &sSecure ;
+	sReq.sCtx.pHost		= HostInfo[nvsVars.HostFOTA].pName ;
 	sReq.pcQuery		= "GET /firmware/%s.bin" ;
 	sReq.hvAccept		= ctApplicationOctetStream ;
 	sReq.hvConnect		= coKeepAlive ;
@@ -253,6 +247,7 @@ int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
 		} else {
 			SL_WARN("Restart '%s'", pvPara) ;
 			vRtosSetStatus(flagAPP_RESTART) ;
+			vRtosClearStatus(flagAPP_UPGRADE) ;
 		}
 	} else if (sReq.hvStatus == HTTP_STATUS_NOT_FOUND) {
 		return erSUCCESS ;
@@ -267,18 +262,16 @@ int32_t xHttpClientCheckUpgrades(void) {
 	 * #3 would define a level to accommodate a specific client/tenant
 	 * #4 would be the broadest "[device-specification-token].bin" */
 	int32_t iRetVal = xHttpClientFirmwareUpgrade((void *) idSTA) ;
-#if 0
-	if ((xRtosCheckStatus(flagAPP_RESTART) == 0) && (iRetVal == erSUCCESS)) {
+	#if 0
+	if (xRtosCheckStatus(flagAPP_UPGRADE)) {
 		iRetVal = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN) ;
 	}
-#endif
-	if ((xRtosCheckStatus(flagAPP_RESTART) == 0) && (iRetVal == erSUCCESS)) {
+	#endif
+	if (xRtosCheckStatus(flagAPP_UPGRADE)) {
 		iRetVal = xHttpClientFirmwareUpgrade((void *) mqttSPECIFICATION_TOKEN) ;
 	}
 	if (iRetVal == erSUCCESS) { 					// no [newer] upgrade there
 		vRtosClearStatus(flagAPP_UPGRADE) ;			// then clear the flag
-	} else {
-		// If the attempt fails, then leave the flag set to come back soon and check again...
 	}
 	return iRetVal ;
 }
@@ -314,9 +307,15 @@ int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
 }
 
 int32_t	xHttpGetLocation(void) {
-	http_reqres_t sReq = { 0 } ;
-	sReq.sCtx.pHost		= googleAPI_GEOLOC_HOST ;
-	sReq.sCtx.psSec		= &GoogleSecInfo ;
+	if (nvsVars.fGeoLoc) {
+		return erSUCCESS ;
+	}
+	sock_sec_t sSecure	= { 0 } ;
+	sSecure.pPem		= HostInfo[hostGOOGLE].pCert ;
+	sSecure.PemSize		= HostInfo[hostGOOGLE].Size ;
+	http_reqres_t sReq	= { 0 } ;
+	sReq.sCtx.psSec		= &sSecure ;
+	sReq.sCtx.pHost		= googleAPI_GEOLOC_HOST ;		// not standard maps URL
 	sReq.pcQuery		= googleAPI_GEOLOC_QUERY ;
 	sReq.pcBody			= googleAPI_GEOLOC_BODY ;
 	sReq.hvContentType	= ctApplicationJson ;
@@ -375,9 +374,15 @@ int32_t	xHttpParseTimeZone(http_parser* psParser, const char* pBuf, size_t xLen)
 }
 
 int32_t	xHttpGetTimeZone(void) {
+	if (nvsVars.fTZinfo) {
+		return erSUCCESS ;
+	}
+	sock_sec_t sSecure	= { 0 } ;
+	sSecure.pPem		= HostInfo[hostGOOGLE].pCert ;
+	sSecure.PemSize		= HostInfo[hostGOOGLE].Size ;
 	http_reqres_t sReq	= { 0 } ;
-	sReq.sCtx.pHost		= googleAPI_TIMEZONE_HOST ;
-	sReq.sCtx.psSec		= &GoogleSecInfo ;
+	sReq.sCtx.psSec		= &sSecure ;
+	sReq.sCtx.pHost		= HostInfo[hostGOOGLE].pName ;
 	sReq.pcQuery		= googleAPI_TIMEZONE_QUERY ;
 	sReq.hvAccept		= ctApplicationJson ;
 	sReq.sfCB.on_body	= xHttpParseTimeZone  ;
@@ -420,9 +425,15 @@ int32_t	xHttpParseElevation(http_parser* psParser, const char* pBuf, size_t xLen
 }
 
 int32_t	xHttpGetElevation(void) {
+	if (nvsVars.fGeoLoc) {
+		return erSUCCESS ;
+	}
+	sock_sec_t sSecure	= { 0 } ;
+	sSecure.pPem		= HostInfo[hostGOOGLE].pCert ;
+	sSecure.PemSize		= HostInfo[hostGOOGLE].Size ;
 	http_reqres_t sReq	= { 0 } ;
-	sReq.sCtx.pHost		= googleAPI_ELEVATION_HOST ;
-	sReq.sCtx.psSec		= &GoogleSecInfo ;
+	sReq.sCtx.psSec		= &sSecure ;
+	sReq.sCtx.pHost		= HostInfo[hostGOOGLE].pName ;
 	sReq.pcQuery		= googleAPI_ELEVATION_QUERY ;
 	sReq.hvContentType	= ctUNDEFINED ;
 	sReq.hvAccept		= ctApplicationJson ;
@@ -459,12 +470,12 @@ int32_t xHttpClientRulesDownloadHandler(http_parser * psParser, const char * pBu
 int32_t	xHttpClientRulesDownload(void) {
 	http_reqres_t	sReq = { 0 } ;
 	sReq.pcQuery		= "GET /configs/%s.cfg" ;
-	sReq.sCtx.pHost		= hostIRMACOS_CONFIG ;
+	sReq.sCtx.pHost		= HostInfo[nvsVars.HostCONF].pName ;
 	sReq.hvContentType	= ctTextPlain ;
 	sReq.hvAccept		= ctApplicationOctetStream ;
 	sReq.sfCB.on_body	= xHttpClientRulesDownloadHandler ;
 //	sReq.f_debug		= 1 ;
-	int32_t iRetVal = xHttpClientExecuteRequest(&sReq, idSTA) ;
+	int32_t iRetVal 	= xHttpClientExecuteRequest(&sReq, idSTA) ;
 	return iRetVal ;
 }
 
@@ -474,21 +485,23 @@ int32_t	xHttpClientIdentUpload(void * pvPara) {
 	http_reqres_t sReq	= { 0 } ;
 	sReq.pcQuery		= "PATCH /ibuttons.dat" ;
 	sReq.pcBody			= "'%m' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\n" ;
-	sReq.sCtx.pHost		= hostIRMACOS_CONFIG ;
+	sReq.sCtx.pHost		= HostInfo[nvsVars.HostCONF].pName ;
 	sReq.hvContentType	= ctApplicationOctetStream ;
 //	sReq.f_append		= 1 ;
 	sReq.f_debug		= 1 ;
-	int32_t iRetVal = xHttpClientExecuteRequest(&sReq, pvPara) ;
+	int32_t iRetVal 	= xHttpClientExecuteRequest(&sReq, pvPara) ;
 	return iRetVal ;
 }
 
 // ################################## PUT core dump to host ########################################
+
 
 int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 	int32_t	iRetVal = erFAILURE ;
 	/* see https://github.com/espressif/esp-idf/issues/1650 */
 	size_t xLenDone = 4 ;								// skip first 4 bytes
 	IF_CPRINT(debugTRACK, "Coredump START upload %lld ", psReq->hvContentLength) ;
+
 	while (xLenDone < psReq->hvContentLength) {			// deal with all data to be sent
 		size_t xLenLeft = psReq->hvContentLength - xLenDone ;
 		iRetVal = esp_partition_read((esp_partition_t *) psReq->pvArg, xLenDone, psReq->sBuf.pBuf,
@@ -519,21 +532,22 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 }
 
 int32_t	xHttpClientCoredumpUpload(void * pvPara) {
+	sock_sec_t sSecure	= { 0 } ;
+	sSecure.pPem		= HostInfo[nvsVars.HostFOTA].pCert ;
+	sSecure.PemSize		= HostInfo[nvsVars.HostFOTA].Size ;
 	http_reqres_t sRR	= { 0 } ;
-	sRR.sCtx.pHost		= hostIRMACOS_CONFIG ;
-#if		(configHTTP_CLIENT_TLS == 1)
-	sRR.sCtx.psSec		= &IrmacosSecInfo ;
-#endif
-	sRR.pcQuery		= "PUT /coredump/%m_%X_%X_%llu.bin" ;
+	sRR.sCtx.psSec		= &sSecure ;
+	sRR.sCtx.pHost		= HostInfo[nvsVars.HostFOTA].pName ;
+	sRR.pcQuery			= "PUT /coredump/%m_%X_%X_%llu.bin" ;
+	sRR.handler			= xHttpClientCoredumpUploadCB ;
+	sRR.hvContentType	= ctApplicationOctetStream ;
 
 	// for binary uploads the address and content length+type must be correct
 	esp_partition_iterator_t sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL) ;
 	IF_myASSERT(debugRESULT, sIter != 0) ;
 	const esp_partition_t *	psPart = esp_partition_get(sIter) ;
-	sRR.handler			= xHttpClientCoredumpUploadCB ;
 	sRR.pvArg			= (void *) psPart ;
 	sRR.hvContentLength	= (uint64_t) psPart->size ;
-	sRR.hvContentType	= ctApplicationOctetStream ;
 #if 0
 	sRR.f_debug			= 1 ;
 	sRR.sCtx.d_open		= 1 ;
