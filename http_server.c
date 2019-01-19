@@ -164,7 +164,7 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sBuf.pBuf)) ;
 	int32_t iRV ;
 	iRV = socprintf(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
-	iRV += socprintf(&psRR->sCtx, "Date: %#Z\r\n", &nvsVars.sTSZ) ;
+	iRV += socprintf(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
 	iRV += socprintf(&psRR->sCtx, "Content-Language: en-US\r\n") ;
 	if (psRR->hvConnect) {
 		iRV += socprintf(&psRR->sCtx, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
