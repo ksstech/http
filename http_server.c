@@ -460,8 +460,8 @@ void	vTaskHttp(void * pvParameters) {
 		vRtosWaitStatus(flagNET_L3) ;				// ensure IP is up and running...
 		switch(HttpState) {
 		int32_t	iRetVal ;
-		case stateHTTP_RESET:
-			IF_CPRINT(debugTRACK, "reset\n") ;
+		case stateHTTP_DEINIT:
+			IF_CPRINT(debugTRACK, "de-init\n") ;
 			vRtosClearStatus(flagNET_HTTP_SERV | flagNET_HTTP_CLNT) ;
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
@@ -482,7 +482,7 @@ void	vTaskHttp(void * pvParameters) {
 			sServHttpCtx.sa_in.sin_port			= htons(sServHttpCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
 			iRetVal = xNetOpen(&sServHttpCtx) ;
 			if (iRetVal < erSUCCESS) {
-				HttpState = stateHTTP_RESET ;
+				HttpState = stateHTTP_DEINIT ;
 				break ;
 			}
 			vRtosSetStatus(flagNET_HTTP_SERV) ;
@@ -494,14 +494,14 @@ void	vTaskHttp(void * pvParameters) {
 			iRetVal = xNetAccept(&sServHttpCtx, &sRR.sCtx, httpINTERVAL_MS) ;
 			if (iRetVal < 0) {
 				if (sServHttpCtx.error != EAGAIN) {
-					HttpState = stateHTTP_RESET ;
+					HttpState = stateHTTP_DEINIT ;
 				}
 				break ;
 			}
 
 			iRetVal = xNetSetRecvTimeOut(&sRR.sCtx, httpINTERVAL_MS) ;
 			if (iRetVal != erSUCCESS) {
-				HttpState = stateHTTP_RESET ;
+				HttpState = stateHTTP_DEINIT ;
 				break ;
 			}
 			vRtosSetStatus(flagNET_HTTP_CLNT) ;		// mark as having a client connection
@@ -554,9 +554,7 @@ void	vTaskHttp(void * pvParameters) {
 			}
 			break ;
 
-		default:
-			IF_myASSERT(debugRESULT, 0) ;
-			break ;
+		default:	IF_myASSERT(debugRESULT, 0) ;		break ;
 		}
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
