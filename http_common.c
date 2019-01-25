@@ -225,14 +225,7 @@ int 	xHttpCommonHeaderValueHandler(http_parser * psParser, const char* pBuf, siz
 		break ;
 
 	case hfContentLength:
-#if 0
-		// fix bug in http-parser that sometimes does not recognize field with lighttpd
-		*((char *) pBuf + xLen)		= CHR_NUL ;			// make NUL terminated
-		pcStringParseValue((char *) pBuf, (p32_t) &psReq->hvContentLength, vfUXX, vs64B, " ,\n") ;
-		psParser->content_length	= psReq->hvContentLength ;
-#else
 		psReq->hvContentLength = psParser->content_length ;
-#endif
 		break ;
 
 	case hfContentType:
