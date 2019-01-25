@@ -40,8 +40,8 @@ extern "C" {
 #define	httpYUAREL_MAX_PARTS					8
 #define	httpYUAREL_MAX_QUERY					8
 
-#define configHTTP_TX_WAIT						500	//1000
-#define configHTTP_RX_WAIT						2000	//500	//4000
+#define configHTTP_TX_WAIT						500		//1000
+#define configHTTP_RX_WAIT						5000	//500
 
 // ######################################### enumerations ##########################################
 
