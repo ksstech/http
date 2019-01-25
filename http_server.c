@@ -306,54 +306,6 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		break ;
 
 	case urlSAVE_AP:
-#if		(buildOLD_VARS == 1)
-#if		(halNET_BUILD_DHCP == 1) || (halNET_BUILD_AUTO == 1)
-		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
-			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0))
-#elif	(halNET_BUILD_STATIC == 1)
-		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
-			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)	||
-			(strcmp(psRR->params[2].key, halSTORAGE_KEY_NM)	!= 0)	||
-			(strcmp(psRR->params[3].key, halSTORAGE_KEY_GW) != 0)	||
-			(strcmp(psRR->params[4].key, halSTORAGE_KEY_IP) != 0)	||
-			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0)	||
-			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0))
-#endif
-		{	xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
-			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
-		} else {
-			iRetVal = xHttpServerParseWriteString(psRR->params[0].key, psRR->params[0].val) ;		// SSID
-			if (iRetVal == erSUCCESS) {
-				iRetVal = xHttpServerParseWriteString(psRR->params[1].key, psRR->params[1].val) ;	// PSWD
-#if		(halNET_BUILD_STATIC == 1)
-				if (iRetVal == erSUCCESS) {				// Network Address
-					iRetVal = xHttpServerParseWriteIPaddress(psRR->params[2].key, psRR->params[2].val) ;					// Netmask
-					if (iRetVal == erSUCCESS) {			// Gateway IP
-						iRetVal = xHttpServerParseWriteIPaddress(psRR->params[3].key, psRR->params[3].val) ;				// Gateway
-						if (iRetVal == erSUCCESS) {		// Station IP
-							iRetVal = xHttpServerParseWriteIPaddress(psRR->params[4].key, psRR->params[4].val) ;			// IP Station
-							if (iRetVal == erSUCCESS) {	// DNS IP #1
-								iRetVal = xHttpServerParseWriteIPaddress(psRR->params[5].key, psRR->params[5].val) ;		// DNS #1
-								if (iRetVal == erSUCCESS) {	// DNS IP #2
-									iRetVal = xHttpServerParseWriteIPaddress(psRR->params[6].key, psRR->params[6].val) ;	// DNS #2
-								}
-							}
-						}
-					}
-				}
-#endif
-			}
-			if (iRetVal == erSUCCESS) {
-				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
-				psRR->pcBody	= (char *) HtmlAPconfigOK ;
-				vRtosSetStatus(flagAPP_RESTART) ;
-			} else {
-				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
-				psRR->pcBody	= (char *) HtmlAPconfigFAIL ;
-			}
-		}
-#else
-
 #if		(halNET_BUILD_DHCP == 1) || (halNET_BUILD_AUTO == 1)
 		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0)	||
 			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0))
@@ -401,7 +353,6 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 				psRR->pcBody	= (char *) HtmlAPconfigFAIL ;
 			}
 		}
-#endif
 		break ;
 
 	case urlAPI:
