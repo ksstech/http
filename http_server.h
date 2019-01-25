@@ -44,12 +44,7 @@ extern "C" {
 
 // ######################################### enumerations ##########################################
 
-enum {
-	stateHTTP_RESET,
-	stateHTTP_INIT,
-	stateHTTP_WAITING,
-	stateHTTP_CONNECTED,
-} ;
+enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNECTED } ;
 
 // ######################################### structures ############################################
 
