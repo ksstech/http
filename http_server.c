@@ -151,7 +151,7 @@ int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
 	case HTTP_STATUS_NOT_FOUND:			psRR->pcStatMes	= "Not Found" ;			break ;	// 404
 	case HTTP_STATUS_NOT_ACCEPTABLE:	psRR->pcStatMes	= "Not Acceptable" ;	break ;	// 406
 	case HTTP_STATUS_NOT_IMPLEMENTED:	psRR->pcStatMes	= "Not Implemented" ;	break ;	// 501
-	default:							IF_myASSERT(debugPARAM, 0) ;			break ;
+	default:							SL_ERR(debugAPPL_PLACE) ;
 	}
 	if (INRANGE(HTTP_STATUS_BAD_REQUEST, Status, HTTP_STATUS_UNAVAILABLE_FOR_LEGAL_REASONS, int32_t)) {
 		psRR->hvConnect = coClose ;					// force connection to be closed
@@ -505,7 +505,7 @@ void	vTaskHttp(void * pvParameters) {
 			}
 			break ;
 
-		default:	IF_myASSERT(debugRESULT, 0) ;		break ;
+		default:	SL_ERR(debugAPPL_PLACE) ;
 		}
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
