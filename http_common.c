@@ -61,40 +61,41 @@
 // ###################################### global variables #########################################
 
 const char * hfValues[hfNUMBER]	= {
-	[hfUNDEFINED]				= "",
-	[hfAccept]					= "accept",
-	[hfAcceptCharset]			= "accept-charset",
-	[hfAcceptDatetime]			= "accept-datetime",
-	[hfAcceptEncoding]			= "accept-encoding",
-	[hfAcceptLanguage]			= "accept-language",
-	[hfAcceptPatch]				= "accept-patch",
-	[hfAcceptRanges]			= "accept-ranges",
-	[hfAuthorisation]			= "authorization",
-	[hfCacheControl]			= "cache-control",
-	[hfConnection]				= "connection",
-	[hfContentLength]			= "content-length",
-	[hfContentType]				= "content-type",
-	[hfDate]					= "date",
-	[hfHost]					= "host",
-	[hfLastModified]			= "last-modified",
-	[hfPragma]					= "pragma",
-	[hfTransferEncoding]		= "transfer-encoding",
+	[hfUNDEFINED]						= "",
+	[hfAccept]							= "accept",
+	[hfAcceptCharset]					= "accept-charset",
+	[hfAcceptDatetime]					= "accept-datetime",
+	[hfAcceptEncoding]					= "accept-encoding",
+	[hfAcceptLanguage]					= "accept-language",
+	[hfAcceptPatch]						= "accept-patch",
+	[hfAcceptRanges]					= "accept-ranges",
+	[hfAuthorisation]					= "authorization",
+	[hfCacheControl]					= "cache-control",
+	[hfConnection]						= "connection",
+	[hfContentLength]					= "content-length",
+	[hfContentType]						= "content-type",
+	[hfDate]							= "date",
+	[hfHost]							= "host",
+	[hfLastModified]					= "last-modified",
+	[hfPragma]							= "pragma",
+	[hfTransferEncoding]				= "transfer-encoding",
 } ;
 
 const char * ctValues[ctNUMBER]	= {
-	[ctUNDEFINED]				= "",
-	[ctApplicationOctetStream]	= "application/octet-stream",
-	[ctApplicationJson]			= "application/json",
-	[ctApplicationXml]			= "application/xml",
-	[ctTextPlain]				= "text/plain",
-	[ctTextHtml]				= "text/html",
+	[ctUNDEFINED]						= "",
+	[ctApplicationOctetStream]			= "application/octet-stream",
+	[ctApplicationJson]					= "application/json",
+	[ctApplicationXml]					= "application/xml",
+	[ctApplicationXwwwFormUrlencoded]	= "application/x-www-form-urlencoded",
+	[ctTextPlain]						= "text/plain",
+	[ctTextHtml]						= "text/html",
 } ;
 
 const char * coValues[coNUMBER]	= {
-	[coUNDEFINED]				= "",
-	[coKeepAlive]				= "keep-alive",
-	[coUpgrade]					= "upgrade",
-	[coClose]					= "close",
+	[coUNDEFINED]						= "",
+	[coKeepAlive]						= "keep-alive",
+	[coUpgrade]							= "upgrade",
+	[coClose]							= "close",
 } ;
 
 // ################################## local/static support functions ###############################
@@ -193,7 +194,7 @@ int 	xHttpCommonStatusHandler(http_parser * psParser, const char* pBuf, size_t x
 }
 
 int 	xHttpCommonHeaderFieldHandler(http_parser * psParser, const char* pBuf, size_t xLen) {
-	myASSERT(INRANGE_SRAM(psParser) && INRANGE_SRAM(pBuf) && (xLen > 0)) ;
+	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(pBuf) && (xLen > 0)) ;
 	http_reqres_t * psReq = psParser->data ;
 	psReq->HdrField	= xHttpCommonFindMatch(hfValues, NUM_OF_MEMBERS(hfValues), pBuf, xLen) ;
 #if     (myDEBUG == 1)

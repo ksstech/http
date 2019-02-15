@@ -74,11 +74,11 @@ enum {
 	ctApplicationXml,
 	ctTextPlain,
 	ctTextHtml,
+	ctApplicationXwwwFormUrlencoded,
 #if 0
 // below here not handled yet...
 	ctApplicationPostScript,
 	ctApplicationJavascript,
-	ctApplicationX_Www_Form_UrlEncoded,
 	ctApplicationZip,
 	ctApplicationPdf,
 	ctAudioMpeg,
@@ -116,19 +116,19 @@ enum {
 typedef struct http_reqres_s http_reqres_t ;
 
 struct http_reqres_s {
-	ubuf_t					sBuf ;					// both
-	sock_ctx_t				sCtx ;					// both
+	ubuf_t					sBuf ;							// both
+	sock_ctx_t				sCtx ;							// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
  * a) the pcQuery format string; and
  * b) the pcBody format string			*/
 	union {
-		const char *	pcQuery ;		// client: 'format' GET/PUT/POST/DELETE/PATCH .....
-		const char *	pcStatMes ;		// server: status message
+		const char *	pcQuery ;							// client: 'format' GET/PUT/POST/DELETE/PATCH .....
+		const char *	pcStatMes ;							// server: status message
 	} ;
 	union {
-		const char *	pcBody ;					// both (client 'format' string)
-		int32_t (* handler) (http_reqres_t *) ;		// client
-		int32_t	(* hdlr_rsp) (http_parser *) ;		// server
+		const char *	pcBody ;							// both (client 'format' string)
+		int32_t (* handler) (http_reqres_t *) ;				// client
+		int32_t	(* hdlr_rsp) (http_parser *) ;				// server
 	} ;
 	va_list					VaList ;						// Client
 	void *					pvArg ;							// Client
@@ -145,8 +145,8 @@ struct http_reqres_s {
 	uint8_t					hvConnect ;						// Both
 	uint8_t					hvContentType ;					// Both
 	uint8_t					HdrField ;						// Both
-	int8_t					NumParts ;				// recognize -1 as error/none
-	int8_t					NumQuery ;				// recognize -1 as error/none
+	int8_t					NumParts ;						// recognize -1 as error/none
+	int8_t					NumQuery ;						// recognize -1 as error/none
 	union {
 		struct {
 			uint8_t	f_debug : 1 ;
