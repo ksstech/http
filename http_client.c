@@ -84,7 +84,7 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 			uprintf(&psRR->sBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 			// assume pcBody is pointing to actual binary payload
-				myASSERT(INRANGE_MEM(psRR->pcBody) && INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
+				IF_myASSERT(debugTRACK, INRANGE_MEM(psRR->pcBody) && INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
 				uprintf(&psRR->sBuf, "Content-Length: %d\r\n", psRR->hvContentLength) ;
 				// no actual binary content added, done later...
 			} else {
@@ -96,7 +96,7 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 				vuprintf(&psRR->sBuf, psRR->pcBody, psRR->VaList) ;
 			}
 		} else {
-			myASSERT(0) ;								// must have body AND content type
+			SL_ERR(debugAPPL_PLACE) ;
 		}
 	}
 	// add the final CR after the headers (and payload)
@@ -243,17 +243,10 @@ int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
 //	sReq.sCtx.d_eagain	= 1 ;
 #endif
 	sReq.sfCB.on_body	= halFOTA_HttpOnBody ;
-	int32_t iRetVal		= xHttpClientExecuteRequest(&sReq, pvPara) ;
-	// iRetVal here should be the number of bytes parsed or erFAILURE (-1)
-	if (iRetVal > erSUCCESS) {
-		if (sReq.hvLastModified < (BuildSeconds + fotaMIN_DIF_SECONDS)) {
-			return erSUCCESS ;
-		} else {
-			SL_WARN("Restart '%s'", pvPara) ;
-			vRtosSetStatus(flagAPP_RESTART) ;
-			vRtosClearStatus(flagAPP_UPGRADE) ;
-		}
-	} else if (sReq.hvStatus == HTTP_STATUS_NOT_FOUND) {
+	int32_t iRetVal		= xHttpClientExecuteRequest(&sReq, sReq.pvArg = pvPara) ;
+	/* iRetVal should be the number of bytes parsed or erFAILURE (-1). If the
+	 * value is 0 then effectively nothing upgraded or parsed hence an error. */
+	if (iRetVal > erSUCCESS || sReq.hvStatus == HTTP_STATUS_NOT_FOUND) {
 		return erSUCCESS ;
 	}
 	return erFAILURE ;
@@ -261,7 +254,7 @@ int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
 
 int32_t xHttpClientCheckUpgrades(void) {
 	/* To create a hierarchy of firmware upgrades, we need to define a descending order:
-	 * #1 and most specific would be MAC specific "1234567890ab.bin"
+	 * #1 would be MAC based "1234567890ab.bin" hence 100% specific
 	 * #2 would be "[site-token].bin"
 	 * #3 would define a level to accommodate a specific client/tenant
 	 * #4 would be the broadest "[device-specification-token].bin" */
@@ -297,16 +290,13 @@ int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
 			}
 		}
 	}
-	if (iRetVal < erSUCCESS) {
-		SL_ERR("Parsing '%s' key", pKey) ;
-	} else {
-		if (nvsVars.GeoLocation[Latitude] &&
-			nvsVars.GeoLocation[Longitude]) {
-			nvsVars.fGeoLoc = 1 ;
-			VarsFlag |= varFLAG_LOCATION ;
-		}
+	if (iRetVal >= erSUCCESS && nvsVars.GeoLocation[Latitude] && nvsVars.GeoLocation[Longitude]) {
+		nvsVars.fGeoLoc = 1 ;
+		VarsFlag |= varFLAG_LOCATION ;
 		IF_PRINT(debugRESULT, "lat: %.7f lng: %.7f acc: %.7f\n",
 				nvsVars.GeoLocation[Latitude], nvsVars.GeoLocation[Longitude], nvsVars.GeoLocation[Accuracy]) ;
+	} else {
+		SL_ERR("Parsing '%s' key", pKey) ;
 	}
 	IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
 	if (psTokenList) {
@@ -316,9 +306,7 @@ int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
 }
 
 int32_t	xHttpGetLocation(void) {
-	if (nvsVars.fGeoLoc &&
-		nvsVars.GeoLocation[Latitude] &&
-		nvsVars.GeoLocation[Longitude]) {
+	if (nvsVars.fGeoLoc) {
 		return erSUCCESS ;
 	}
 	sock_sec_t sSecure	= { 0 } ;
@@ -356,32 +344,24 @@ int32_t	xHttpParseTimeZone(http_parser* psParser, const char* pBuf, size_t xLen)
 		x32_t	xVal ;
 		iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "dstOffset", &xVal.i32, vfIXX) ;
 		if (iRetVal >= erSUCCESS) {
-			sTZ.daylight = xVal.i32 ;					// convert i32 -> i16 & store
+			sTZ.daylight = nvsVars.daylight = xVal.i32 ;					// convert i32 -> i16 & store
 			iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "rawOffset", &xVal.i32, vfIXX) ;
 			if (iRetVal >= erSUCCESS) {
-				sTZ.timezone = xVal.i32 ;				// store value
+				sTZ.timezone = nvsVars.timezone = xVal.i32 ;				// store value
 				iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneId", nvsVars.TimeZoneId, vfSXX) ;
 				if (iRetVal >= erSUCCESS) {
-					sTZ.pcTZName = nvsVars.TimeZoneId ;
 					iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneName", nvsVars.TimeZoneName, vfSXX) ;
-					if (iRetVal >= erSUCCESS) {
-						sTZ.pcDSTName = nvsVars.TimeZoneName ;
-						sTSZ.pTZ = &sTZ ;				// ensure we use TZ info in future..
-					}
 				}
 			}
 		}
 	}
-	if (iRetVal < erSUCCESS) {
-		SL_ERR("Parsing '%s' key", pKey) ;
-	} else {
-		if (nvsVars.TimeZoneId[0] &&
-			nvsVars.TimeZoneName[0]) {
-			nvsVars.fTZinfo = 1 ;
-			VarsFlag |= varFLAG_TIMEZONE ;
-		}
+	if (iRetVal >= erSUCCESS && nvsVars.TimeZoneId[0] && nvsVars.TimeZoneName[0]) {
+		nvsVars.fGeoTZ = 1 ;
+		VarsFlag |= varFLAG_TIMEZONE ;
+		SL_INFO("TZ info set %+Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
-		IF_PRINT(debugRESULT, "New Timezone %+Z\n", &sTSZ) ;
+	} else {
+		SL_ERR("TZ info NOT set, error parsing '%s' key", pKey) ;
 	}
 	if (psTokenList) {
 		vPortFree(psTokenList) ;
@@ -390,9 +370,9 @@ int32_t	xHttpParseTimeZone(http_parser* psParser, const char* pBuf, size_t xLen)
 }
 
 int32_t	xHttpGetTimeZone(void) {
-	if (nvsVars.fTZinfo &&
-		nvsVars.TimeZoneId[0] &&
-		nvsVars.TimeZoneName[0]) {
+	if (nvsVars.fGeoTZ) {
+		sTZ.daylight	= nvsVars.daylight ;
+		sTZ.timezone	= nvsVars.timezone ;
 		return erSUCCESS ;
 	}
 	sock_sec_t sSecure	= { 0 } ;
@@ -430,14 +410,12 @@ int32_t	xHttpParseElevation(http_parser* psParser, const char* pBuf, size_t xLen
 			iRV = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "resolution", &nvsVars.GeoLocation[Resolution], vfFXX) ;
 		}
 	}
-	if (iRV < erSUCCESS) {
-		SL_ERR("Parsing '%s' key", pKey) ;
-	} else {
-		if (nvsVars.GeoLocation[Altitude]) {
-			nvsVars.fGeoAlt = 1 ;
-			VarsFlag |= varFLAG_ELEVATION ;
-		}
+	if (iRV >= erSUCCESS && nvsVars.GeoLocation[Altitude]) {
+		nvsVars.fGeoAlt = 1 ;
+		VarsFlag |= varFLAG_ELEVATION ;
 		IF_PRINT(debugRESULT, "alt: %.7f res: %.7f\n", nvsVars.GeoLocation[Altitude], nvsVars.GeoLocation[Resolution]) ;
+	} else {
+		SL_ERR("Parsing '%s' key", pKey) ;
 	}
 	IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
 	if (psTokenList) {
@@ -447,8 +425,7 @@ int32_t	xHttpParseElevation(http_parser* psParser, const char* pBuf, size_t xLen
 }
 
 int32_t	xHttpGetElevation(void) {
-	if (nvsVars.fGeoAlt &&
-		nvsVars.GeoLocation[Altitude]) {
+	if (nvsVars.fGeoAlt) {
 		return erSUCCESS ;
 	}
 	sock_sec_t sSecure	= { 0 } ;
@@ -471,6 +448,50 @@ int32_t	xHttpGetElevation(void) {
 	sReq.sCtx.d_eagain	= 1 ;
 #endif
 	return xHttpClientExecuteRequest(&sReq, nvsVars.GeoLocation[Latitude], nvsVars.GeoLocation[Longitude]) ;
+}
+
+// ############################## Combined GeoLoc dependent info ###################################
+
+int32_t	xHttpClientCheckGeoLoc(void) {
+	int32_t iRV = xHttpGetLocation() ;
+	if (iRV == erSUCCESS) {								// Elevation & TimeZone require Location
+		iRV = xHttpGetTimeZone() ;
+		// not quite correct, ignoring iRV for elevation since not used..
+		xHttpGetElevation() ;
+	}
+	return iRV ;
+}
+
+// ###################################### Various gateways #########################################
+
+#define	httpPUSHOVER_URL						"api.pushover.net"
+#define	httpPUSHOVER_QUERY						"POST /1/messages.json"
+#define	httpPUSHOVER_BODY						"token=" httpPUSHOVER_TOKEN		\
+												"&user=" httpPUSHOVER_USER		\
+												"&title=%U&message=%U%%40%u"
+
+int32_t	xHttpClientPushOver(const char * pcMess, uint32_t u32Val) {
+	sock_sec_t sSecure	= { 0 } ;
+//	sSecure.pPem		= HostInfo[hostGOOGLE].pCert ;
+//	sSecure.PemSize		= HostInfo[hostGOOGLE].Size ;
+	http_reqres_t sReq	= { 0 } ;
+	sReq.sCtx.psSec		= &sSecure ;
+	sReq.sCtx.pHost		= httpPUSHOVER_URL ;
+	sReq.pcQuery		= httpPUSHOVER_QUERY ;
+	sReq.pcBody			= httpPUSHOVER_BODY ;
+	sReq.hvContentType	= ctApplicationXwwwFormUrlencoded ;
+	sReq.hvAccept		= ctApplicationJson ;
+//	sReq.sfCB.on_body	= xHttpParseElevation  ;
+#if 0
+	sReq.f_debug		= 1 ;
+	sReq.sCtx.d_open	= 1 ;
+	sReq.sCtx.d_secure	= 1 ;
+	sReq.sCtx.d_write	= 1 ;
+	sReq.sCtx.d_read	= 1 ;
+	sReq.sCtx.d_data	= 1 ;
+	sReq.sCtx.d_eagain	= 0 ;
+#endif
+	return xHttpClientExecuteRequest(&sReq, nameSTA, pcMess, u32Val) ;
 }
 
 // ######################################## Rules download #########################################
@@ -517,7 +538,6 @@ int32_t	xHttpClientIdentUpload(void * pvPara) {
 }
 
 // ################################## PUT core dump to host ########################################
-
 
 int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 	int32_t	iRetVal = erFAILURE ;

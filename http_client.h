@@ -104,6 +104,9 @@ int32_t xHttpClientCheckUpgrades(void) ;
 int32_t xHttpGetLocation(void) ;
 int32_t	xHttpGetElevation(void) ;
 int32_t xHttpGetTimeZone(void) ;
+int32_t	xHttpClientCheckGeoLoc(void) ;
+
+int32_t	xHttpClientPushOver(const char * pcMess, uint32_t) ;
 
 int32_t	xHttpClientRulesDownload(void) ;
 
