@@ -543,33 +543,33 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 	int32_t	iRetVal = erFAILURE ;
 	/* see https://github.com/espressif/esp-idf/issues/1650 */
 	size_t xLenDone = 4 ;								// skip first 4 bytes
-	IF_CPRINT(debugTRACK, "Coredump START upload %lld ", psReq->hvContentLength) ;
+	IF_PRINT(debugTRACK, "Coredump START upload %lld\n", psReq->hvContentLength) ;
 
 	while (xLenDone < psReq->hvContentLength) {			// deal with all data to be sent
 		size_t xLenLeft = psReq->hvContentLength - xLenDone ;
 		iRetVal = esp_partition_read((esp_partition_t *) psReq->pvArg, xLenDone, psReq->sBuf.pBuf,
 									(xLenLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLenLeft) ;
 		if (iRetVal != ESP_OK) {
-			SL_ERR("partition read err=0x%x (%s)", iRetVal, strerror(iRetVal)) ;
+			SL_ERR("read err=0x%x (%s)", iRetVal, strerror(iRetVal)) ;
 			break ;
 		}
 		iRetVal = xNetWrite(&psReq->sCtx, (char *) psReq->sBuf.pBuf, (xLenLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLenLeft) ;
-		IF_CPRINT(debugTRACK, ".") ;
+		IF_PRINT(debugTRACK, ".") ;
 		if (iRetVal > 0) {
 			xLenDone += iRetVal ;
 		} else if (psReq->sCtx.error == EAGAIN) {
 			continue ;
 		} else {										// transmit error or socket closed?
-			SL_ERR("socket write err=0x%x (%s)", psReq->sCtx.error, strerror(psReq->sCtx.error)) ;
+			SL_ERR("write err=0x%x (%s)", psReq->sCtx.error, strerror(psReq->sCtx.error)) ;
 			break ;
 		}
 	}
 	if (iRetVal > 0) {
 		iRetVal = xNetWrite(&psReq->sCtx, (char *) "\n\n", 2) ;	// write the terminating LF's
 		SL_WARN("upload done") ;
-		IF_CPRINT(debugTRACK, " Coredump DONE\r\n") ;
+		IF_PRINT(debugTRACK, " Coredump DONE\n") ;
 	} else {
-		IF_CPRINT(debugTRACK, " Coredump upload failed err=%d\r\n", iRetVal) ;
+		IF_PRINT(debugTRACK, " Coredump upload failed err=%d\n", iRetVal) ;
 	}
 	return iRetVal ;
 }

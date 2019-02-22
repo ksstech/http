@@ -350,7 +350,7 @@ size_t	xHttpCommonDoParsing(http_parser * psParser) {
 			iRetVal = erFAILURE ;
 		}
 		if (INRANGE(HTTP_STATUS_BAD_REQUEST, psParser->status_code, HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED, int16_t)) {
-			SL_WARN("http error=%d (%s)", psParser->status_code, psRR->hvStatusMess) ;
+			SL_ERR("http error=%d (%s)", psParser->status_code, psRR->hvStatusMess) ;
 			iRetVal = erFAILURE ;
 		}
 	}
