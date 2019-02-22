@@ -406,6 +406,7 @@ void	vTaskHttp(void * pvParameters) {
 	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
 	sRR.sBuf.pBuf	= pvPortMalloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
+	vRtosSetRunState(taskHTTP) ;
 
 	while (xRtosVerifyState(taskHTTP)) {
 		vRtosWaitStatus(flagNET_L3) ;				// ensure IP is up and running...
