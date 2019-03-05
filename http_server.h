@@ -34,7 +34,7 @@ extern "C" {
 // ###################################### BUILD : CONFIG definitions ###############################
 
 #define	httpPRIORITY					4
-#define	httpSTACK_SIZE					(configMINIMAL_STACK_SIZE + 1024 + (myDEBUG * 2048))
+#define	httpSTACK_SIZE					(configMINIMAL_STACK_SIZE + 768 + (myDEBUG * 384))
 #define	httpINTERVAL_MS					(500)
 
 #define httpSERVER_BUFSIZE				(1 * KILO)
