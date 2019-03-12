@@ -241,7 +241,7 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 	static const char format[] = "<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>" ;
 	http_reqres_t * psRR = psParser->data ;
 	int32_t iRV ;
-	vCommandInterpret(1, (int) *psRR->parts[1]) ;
+	vCommandInterpret((int) *psRR->parts[1]) ;
 	if (xUBufAvail(&sBufStdOut) > 0) {
 		iRV = xHttpSendResponse(psParser, format, xUBufAvail(&sBufStdOut), pcUBufTellRead(&sBufStdOut)) ;
 		vUBufReset(&sBufStdOut) ;
@@ -519,12 +519,12 @@ void	vTaskHttp(void * pvParameters) {
 
 void	vTaskHttpInit(void) { xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ; }
 
-void	vHttpReport(int32_t Handle) {
+void	vHttpReport(void) {
 	if (xRtosCheckStatus(flagNET_HTTP_CLNT)) {
-		xNetReport(Handle, &sRR.sCtx, __FUNCTION__, 0, 0, 0) ;
+		xNetReport(&sRR.sCtx, __FUNCTION__, 0, 0, 0) ;
 	}
 	if (xRtosCheckStatus(flagNET_HTTP_SERV)) {
-		xNetReport(Handle, &sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
+		xNetReport(&sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
 	}
-	xdprintf(Handle, "HTTP Stats\tFSM=%d  maxTX=%u  maxRX=%u\n\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
+	xprintf("HTTP Stats\tFSM=%d  maxTX=%u  maxRX=%u\n\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 }

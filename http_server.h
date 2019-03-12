@@ -60,7 +60,7 @@ int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) ;
 
 void	vTaskHttp(void * pvParameters) ;
 void	vTaskHttpInit(void) ;
-void	vHttpReport(int32_t Handle) ;
+void	vHttpReport(void) ;
 
 #ifdef __cplusplus
 }
