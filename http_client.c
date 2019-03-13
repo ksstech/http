@@ -545,21 +545,21 @@ int32_t	xHttpClientIdentUpload(void * pvPara) {
 int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 	int32_t	iRetVal = erFAILURE ;
 	/* see https://github.com/espressif/esp-idf/issues/1650 */
-	size_t xLenDone = 4 ;								// skip first 4 bytes
+	size_t		xNow, xLeft, xDone = 0 ;
 	IF_PRINT(debugTRACK, "Coredump START upload %lld\n", psReq->hvContentLength) ;
 
-	while (xLenDone < psReq->hvContentLength) {			// deal with all data to be sent
-		size_t xLenLeft = psReq->hvContentLength - xLenDone ;
-		iRetVal = esp_partition_read((esp_partition_t *) psReq->pvArg, xLenDone, psReq->sBuf.pBuf,
-									(xLenLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLenLeft) ;
+	while (xDone < psReq->hvContentLength) {			// deal with all data to be sent
+		xLeft	= psReq->hvContentLength - xDone ;
+		xNow	= xLeft > psReq->sBuf.Size ? psReq->sBuf.Size : xLeft ;
+		IF_PRINT(debugTRACK, "Start:%u  Write:%u  Left:%u\n", xDone, xNow, xLeft) ;
+		iRetVal = esp_partition_read((esp_partition_t *) psReq->pvArg, xDone, psReq->sBuf.pBuf, xNow) ;
 		if (iRetVal != ESP_OK) {
 			SL_ERR("read err=0x%x (%s)", iRetVal, strerror(iRetVal)) ;
 			break ;
 		}
-		iRetVal = xNetWrite(&psReq->sCtx, (char *) psReq->sBuf.pBuf, (xLenLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLenLeft) ;
-		IF_PRINT(debugTRACK, ".") ;
+		iRetVal = xNetWrite(&psReq->sCtx, (char *) psReq->sBuf.pBuf, (xLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLeft) ;
 		if (iRetVal > 0) {
-			xLenDone += iRetVal ;
+			xDone += iRetVal ;
 		} else if (psReq->sCtx.error == EAGAIN) {
 			continue ;
 		} else {										// transmit error or socket closed?
@@ -568,41 +568,53 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 		}
 	}
 	if (iRetVal > 0) {
-		iRetVal = xNetWrite(&psReq->sCtx, (char *) "\n\n", 2) ;	// write the terminating LF's
-		SL_WARN("upload done") ;
-		IF_PRINT(debugTRACK, " Coredump DONE\n") ;
-	} else {
-		IF_PRINT(debugTRACK, " Coredump upload failed err=%d\n", iRetVal) ;
+		iRetVal = xNetWrite(&psReq->sCtx, (char *) "\r\n", 2) ;	// write the terminating CR/LF
+		iRetVal = xDone + 2 ;
 	}
 	return iRetVal ;
 }
 
-int32_t	xHttpClientCoredumpUpload(void * pvPara) {
-	sock_sec_t sSecure	= { 0 } ;
-	sSecure.pPem		= HostInfo[nvsVars.HostFOTA].pCert ;
-	sSecure.PemSize		= HostInfo[nvsVars.HostFOTA].Size ;
-	http_reqres_t sRR	= { 0 } ;
-	sRR.sCtx.psSec		= &sSecure ;
-	sRR.sCtx.pHost		= HostInfo[nvsVars.HostFOTA].pName ;
-	sRR.pcQuery			= "PUT /coredump/%m_%X_%X_%llu.bin" ;
-	sRR.handler			= xHttpClientCoredumpUploadCB ;
-	sRR.hvContentType	= ctApplicationOctetStream ;
+typedef struct {
+    uint32_t data_len;  // data length
+    uint32_t version;   // core dump struct version
+    uint32_t tasks_num; // number of tasks
+    uint32_t tcb_sz;    // size of TCB
+} cd_hdr_t;
 
+int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	// for binary uploads the address and content length+type must be correct
 	esp_partition_iterator_t sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL) ;
 	IF_myASSERT(debugRESULT, sIter != 0) ;
 	const esp_partition_t *	psPart = esp_partition_get(sIter) ;
-	sRR.pvArg			= (void *) psPart ;
-	sRR.hvContentLength	= (uint64_t) psPart->size ;
-#if 0
-	sRR.f_debug			= 1 ;
-	sRR.sCtx.d_open		= 1 ;
-	sRR.sCtx.d_write	= 1 ;
-	sRR.sCtx.d_secure	= 1 ;
-	sRR.sCtx.d_level	= 2 ;
-#endif
-	int32_t iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND) ;
+	cd_hdr_t	sCDhdr ;
+	int32_t iRetVal = esp_partition_read(psPart, 0, &sCDhdr, sizeof(sCDhdr)) ;
+	if (iRetVal == ESP_OK) {
+		http_reqres_t sRR	= { 0 } ;
+		sock_sec_t sSecure	= { 0 } ;
+		sSecure.pPem		= HostInfo[nvsVars.HostFOTA].pCert ;
+		sSecure.PemSize		= HostInfo[nvsVars.HostFOTA].Size ;
+		sRR.sCtx.psSec		= &sSecure ;
+		sRR.sCtx.pHost		= HostInfo[nvsVars.HostFOTA].pName ;
+		sRR.pcQuery			= "PUT /coredump/%m_%X_%X_%llu.bin" ;
+		sRR.handler			= xHttpClientCoredumpUploadCB ;
+		sRR.hvContentType	= ctApplicationOctetStream ;
 
+		sRR.pvArg			= (void *) psPart ;
+		sRR.hvContentLength	= (uint64_t) (sCDhdr.data_len) ;
+	#if 0
+		sRR.f_debug			= 1 ;
+		sRR.sCtx.d_open		= 0 ;
+		sRR.sCtx.d_write	= 0 ;
+		sRR.sCtx.d_read		= 0 ;
+		sRR.sCtx.d_data		= 0 ;
+		sRR.sCtx.d_secure	= 0 ;
+		sRR.sCtx.d_level	= 0 ;
+	#endif
+		iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND) ;
+		if (iRetVal > 0) {
+			SL_NOT("Done: Len=%u  Ver=%u  Tsk=%u  TCB=%u",sCDhdr.data_len, sCDhdr.version, sCDhdr.tasks_num, sCDhdr.tcb_sz) ;
+		}
+	}
 	esp_partition_iterator_release(sIter) ;
 	return iRetVal ;
 }
