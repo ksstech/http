@@ -25,7 +25,6 @@
 #include 	"http_common.h"
 
 #include	"x_debug.h"
-//#include	"x_stdio.h"
 #include	"x_json_parser.h"
 #include	"x_errors_events.h"
 #include	"x_syslog.h"
@@ -44,13 +43,15 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						(0x0010)
+#define	debugFLAG						(0x4000)
+
 #define	debugPARSE						(debugFLAG & 0x0001)
 #define	debugURL						(debugFLAG & 0x0002)
-#define	debugTRACK						(debugFLAG & 0x0004)
-#define	debugBUILD						(debugFLAG & 0x0008)
+#define	debugBUILD						(debugFLAG & 0x0004)
 
-#define	debugPARAM						(debugFLAG & 0x0010)
+#define	debugTRACK						(debugFLAG & 0x2000)
+#define	debugPARAM						(debugFLAG & 0x4000)
+#define	debugRESULT						(debugFLAG & 0x8000)
 
 // ########################################### macros ##############################################
 

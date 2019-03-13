@@ -84,7 +84,10 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 			uprintf(&psRR->sBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 			// assume pcBody is pointing to actual binary payload
-				IF_myASSERT(debugTRACK, INRANGE_MEM(psRR->pcBody) && INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
+				IF_myASSERT(debugTRACK, INRANGE_MEM(psRR->handler) && INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
+				/* Since the actual binary payload will only be added in the callback from xHttpClientExecuteRequest()
+				 * we will only add a single "\r\n" pair here, the second added at the end of this function
+				 * The callback will be responsible for adding the final terminating "\r\n" */
 				uprintf(&psRR->sBuf, "Content-Length: %d\r\n", psRR->hvContentLength) ;
 				// no actual binary content added, done later...
 			} else {
@@ -99,7 +102,7 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 			SL_ERR(debugAPPL_PLACE) ;
 		}
 	}
-	// add the final CR after the headers (and payload)
+	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
 	uprintf(&psRR->sBuf, "\r\n") ;
 #if		(myDEBUG == 1)
 	if (psRR->f_debug) {
