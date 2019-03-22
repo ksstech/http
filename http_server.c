@@ -51,7 +51,6 @@
 #define	debugFLAG						0xC000
 
 #define	debugTRACK						(debugFLAG & 0x0001)
-#define	debugBUILD						(debugFLAG & 0x0002)
 
 #define	debugPARAM						(debugFLAG & 0x4000)
 #define	debugRESULT						(debugFLAG & 0x8000)

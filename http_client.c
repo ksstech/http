@@ -296,12 +296,12 @@ int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
 	if (iRetVal >= erSUCCESS && nvsVars.GeoLocation[Latitude] && nvsVars.GeoLocation[Longitude]) {
 		nvsVars.fGeoLoc = 1 ;
 		VarsFlag |= varFLAG_LOCATION ;
-		IF_PRINT(debugRESULT, "lat: %.7f lng: %.7f acc: %.7f\n",
+		SL_INFO("GL info set lat=%.7f  lng=%.7f  acc=%.7f",
 				nvsVars.GeoLocation[Latitude], nvsVars.GeoLocation[Longitude], nvsVars.GeoLocation[Accuracy]) ;
+		IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
 	} else {
-		SL_ERR("Parsing '%s' key", pKey) ;
+		SL_ERR("GL info NOT set, error parsing '%s' key", pKey) ;
 	}
-	IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
 	if (psTokenList) {
 		vPortFree(psTokenList) ;
 	}
@@ -416,11 +416,11 @@ int32_t	xHttpParseElevation(http_parser* psParser, const char* pBuf, size_t xLen
 	if (iRV >= erSUCCESS && nvsVars.GeoLocation[Altitude]) {
 		nvsVars.fGeoAlt = 1 ;
 		VarsFlag |= varFLAG_ELEVATION ;
-		IF_PRINT(debugRESULT, "alt: %.7f res: %.7f\n", nvsVars.GeoLocation[Altitude], nvsVars.GeoLocation[Resolution]) ;
+		SL_INFO("GE info set alt=%.7f  res=%.7f", nvsVars.GeoLocation[Altitude], nvsVars.GeoLocation[Resolution]) ;
+		IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
 	} else {
-		SL_ERR("Parsing '%s' key", pKey) ;
+		SL_ERR("GE info NOT set, error parsing '%s' key", pKey) ;
 	}
-	IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
 	if (psTokenList) {
 		vPortFree(psTokenList) ;
 	}
