@@ -328,8 +328,8 @@ size_t	xHttpCommonDoParsing(http_parser * psParser) {
 	psRR->sfCB.on_status		= xHttpCommonStatusHandler ;
 	psRR->sfCB.on_header_field	= xHttpCommonHeaderFieldHandler ;
 	psRR->sfCB.on_header_value	= xHttpCommonHeaderValueHandler ;
-	if (psRR->sfCB.on_body == NULL) {
-		psRR->sfCB.on_body		= xHttpCommonMessageBodyHandler ;			// default handler for all URLs
+	if (debugRESULT && psRR->sfCB.on_body == NULL) {
+		psRR->sfCB.on_body		= xHttpCommonMessageBodyHandler ;
 	}
 
 #if     (myDEBUG == 1)
