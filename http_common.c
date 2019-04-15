@@ -43,7 +43,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						(0x4000)
+#define	debugFLAG						0x4000
 
 #define	debugPARSE						(debugFLAG & 0x0001)
 #define	debugURL						(debugFLAG & 0x0002)
@@ -112,7 +112,7 @@ int32_t	xHttpCommonFindMatch(const char ** pcTable, uint32_t xSize, const char *
 		int32_t ySize = strlen(*pcTable) ;				// get length of string in table to compare against
 		if (ySize == xLen) {
 			IF_PRINT(debugPARSE, "#%d '%s' vs '%.*s'\n", Idx, *pcTable, ySize, pcMatch) ;
-			if (xstrncmp(*pcTable, pcMatch, ySize, 0) == 1) {
+			if (strncasecmp(*pcTable, pcMatch, ySize) == 0) {
 				IF_PRINT(debugPARSE, "#%d '%s' vs '%.*s'\n", Idx, *pcTable, ySize, pcMatch) ;
 				return (Idx) ;
 			}
@@ -216,8 +216,7 @@ int 	xHttpCommonHeaderValueHandler(http_parser * psParser, const char* pBuf, siz
 	struct tm sTM ;
 	switch (psReq->HdrField) {
 	case hfAcceptRanges:
-//		PRINT("===>  '%.*s'\n", xLen, pBuf) ;
-		if (xstrncmp("bytes", pBuf, xLen, 0) == 1) {
+		if (strncasecmp("bytes", pBuf, xLen) == 0) {
 			psReq->f_ac_rng = 1 ;
 		}
 		break ;
