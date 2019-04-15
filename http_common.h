@@ -40,12 +40,12 @@ extern "C" {
 #define	httpYUAREL_MAX_PARTS					8
 #define	httpYUAREL_MAX_QUERY					8
 
-#define configHTTP_TX_WAIT						500		//1000
-#define configHTTP_RX_WAIT						5000	//500
+#define configHTTP_TX_WAIT						500		// 1000
+#define configHTTP_RX_WAIT						5000	// 500
 
 // ######################################### enumerations ##########################################
 
-enum {
+enum {													// Header Fields
 	hfUNDEFINED					= 0,
 	hfAccept,
 	hfAcceptCharset,
@@ -67,7 +67,7 @@ enum {
 	hfNUMBER,
 } ;
 
-enum {
+enum {													// Content Types
 	ctUNDEFINED					= 0,
 	ctApplicationOctetStream,
 	ctApplicationJson,
@@ -75,8 +75,7 @@ enum {
 	ctTextPlain,
 	ctTextHtml,
 	ctApplicationXwwwFormUrlencoded,
-#if 0
-// below here not handled yet...
+#if 0													// below here not handled yet...
 	ctApplicationPostScript,
 	ctApplicationJavascript,
 	ctApplicationZip,
@@ -92,7 +91,7 @@ enum {
 	ctNUMBER,
 } ;
 
-enum {
+enum {													// Connection Types
 	coUNDEFINED					= 0,
 	coKeepAlive,
 	coUpgrade,
@@ -100,7 +99,7 @@ enum {
 	coNUMBER,
 } ;
 
-enum {
+enum {													// HTTP flags
 	httpFLAG_FROM			= 1 << 0,
 	httpFLAG_AGENT			= 1 << 1,
 	httpFLAG_HOST			= 1 << 2,

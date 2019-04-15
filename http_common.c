@@ -325,8 +325,7 @@ int 	xHttpCommonMessageCompleteHandler(http_parser * psParser) {
 
 size_t	xHttpCommonDoParsing(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
-	// set some default handlers...
-	psRR->sfCB.on_url			= xHttpCommonUrlHandler ;
+	psRR->sfCB.on_url			= xHttpCommonUrlHandler ;	// set some default handlers...
 	psRR->sfCB.on_status		= xHttpCommonStatusHandler ;
 	psRR->sfCB.on_header_field	= xHttpCommonHeaderFieldHandler ;
 	psRR->sfCB.on_header_value	= xHttpCommonHeaderValueHandler ;
