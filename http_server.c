@@ -402,7 +402,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  * 8. Respond to /restart (as emergency)
  */
 void	vTaskHttp(void * pvParameters) {
-	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
+	IF_SL_DBG(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
 	sRR.sBuf.pBuf	= pvPortMalloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
 	vRtosSetRunState(taskHTTP) ;
@@ -512,7 +512,7 @@ void	vTaskHttp(void * pvParameters) {
 	vPortFree(sRR.sBuf.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
-	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
+	IF_SL_DBG(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
 	vTaskDelete(NULL) ;
 }
 
