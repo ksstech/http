@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-18 Andre M Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-19 Andre M Maree / KSS Technologies (Pty) Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -15,7 +15,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 /*
@@ -50,8 +49,7 @@
 
 #define	debugFLAG						0xC000
 
-#define	debugTRACK						(debugFLAG & 0x0001)
-
+#define	debugTRACK						(debugFLAG & 0x2000)
 #define	debugPARAM						(debugFLAG & 0x4000)
 #define	debugRESULT						(debugFLAG & 0x8000)
 
@@ -405,7 +403,7 @@ void	vTaskHttp(void * pvParameters) {
 	IF_SL_DBG(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
 	sRR.sBuf.pBuf	= pvPortMalloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
-	vRtosSetRunState(taskHTTP) ;
+	vRtosSetStateRUN(taskHTTP) ;
 
 	while (xRtosVerifyState(taskHTTP)) {
 		vRtosWaitStatus(flagNET_L3) ;				// ensure IP is up and running...
@@ -510,9 +508,13 @@ void	vTaskHttp(void * pvParameters) {
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
 	vPortFree(sRR.sBuf.pBuf) ;
+	IF_SL_DBG(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
+
+#if		(debugAPPL_SHUTDOWN)
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
-	IF_SL_DBG(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
+#endif
+
 	vTaskDelete(NULL) ;
 }
 
