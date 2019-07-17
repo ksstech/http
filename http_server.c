@@ -77,15 +77,9 @@ static	const char * UrlTable[] = {
 static	const char	HtmlAPdetails[] =
 	"<html><head><title>'IRMACOS: AP details'</title></head>"
 	"<body><h3>'IRMACOS: AP details'</h3>"
-	"<p>AP SSID: Maximum 32 characters including A-Z, a-z and 0-9</p>"
-	"<p>AP PSWD: Same rules as SSID but max 64 characters length</p>"
-#if		(halNET_BUILD_STATIC == 1)
-	"<p>IP for network, gateway, station and DNS server(s)</p>"
-	"<p> specify without spaces or leading 0's</p>"
-#endif
 	"<form action='save_ap' method='get'>"
-	"AP SSID:<br><input type='text' name='ssid' size='32'><br>"
-	"AP PSWD:<br><input type='text' name='pswd' size='64'><br>"
+	"AP SSID (Max 32 chars incl A-Z, a-z and 0-9):<br><input type='text' name='ssid' size='32'><br>"
+	"AP PSWD (Max 64 chars incl A-Z, a-z and 0-9):<br><input type='text' name='pswd' size='64'><br>"
 #if		(halNET_BUILD_STATIC == 1)
 	"IP NetMask:<br><input type='text' name='nm' size='16'><br>"
 	"IP Gateway:<br><input type='text' name='gw' size='16'><br>"
