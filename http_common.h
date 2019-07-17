@@ -26,7 +26,10 @@
 
 #include 	"http_parser.h"
 #include	"yuarel.h"
+
 #include	"x_printf.h"
+#include	"x_ubuf.h"
+#include	"x_sockets.h"
 
 #ifdef __cplusplus
 extern "C" {

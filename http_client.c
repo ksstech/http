@@ -37,7 +37,6 @@
 
 #include	"hal_network.h"
 #include	"hal_fota.h"								// firmware download handler
-#include	"hal_mcu.h"									// for halMCU_Restart()
 
 #include	<string.h>
 
@@ -48,6 +47,7 @@
 #define	debugBUILD						(debugFLAG & 0x0004)
 #define	debugTIMING						(debugFLAG & 0x0008)
 
+#define	debugDEBUG						(debugFLAG & 0x1000)
 #define	debugTRACK						(debugFLAG & 0x2000)
 #define	debugPARAM						(debugFLAG & 0x4000)
 #define	debugRESULT						(debugFLAG & 0x8000)
