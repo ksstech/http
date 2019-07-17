@@ -116,7 +116,7 @@ typedef struct http_reqres_s http_reqres_t ;
 
 struct http_reqres_s {
 	ubuf_t					sBuf ;							// both
-	sock_ctx_t				sCtx ;							// both
+	netx_t					sCtx ;							// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
  * a) the pcQuery format string; and
  * b) the pcBody format string			*/

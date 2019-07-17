@@ -51,7 +51,7 @@ enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNEC
 
 // ################################### Global variables ############################################
 
-extern	sock_ctx_t	sServHttpCtx ;
+extern	netx_t	sServHttpCtx ;
 extern	http_reqres_t	sRR ;
 
 // ###################################### public functions #########################################

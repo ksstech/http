@@ -125,7 +125,7 @@ static	const char HtmlErrorBadQuery[] =
 	"<html><body><h2>Query key:value pair(s) mismatched</h2></body></html>" ;
 
 uint8_t			HttpState ;
-sock_ctx_t		sServHttpCtx ;
+netx_t		sServHttpCtx ;
 http_reqres_t	sRR = { 0 } ;
 
 // ###################################### global variables #########################################
@@ -250,7 +250,7 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 
 // ################################### Common HTTP API functions ###################################
 
-void	vHttpServerCloseClient(sock_ctx_t * psCtx) {
+void	vHttpServerCloseClient(netx_t * psCtx) {
 	vRtosClearStatus(flagNET_HTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
 	xNetClose(psCtx) ;
@@ -419,7 +419,7 @@ void	vTaskHttp(void * pvParameters) {
 
 		case stateHTTP_INIT:
 			IF_CPRINT(debugTRACK, "init\n") ;
-			memset(&sServHttpCtx, 0 , sizeof(sock_ctx_t)) ;
+			memset(&sServHttpCtx, 0 , sizeof(netx_t)) ;
 			sServHttpCtx.sa_in.sin_family		= AF_INET ;
 			sServHttpCtx.type					= SOCK_STREAM ;
 #if 0
