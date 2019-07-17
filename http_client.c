@@ -132,18 +132,18 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 	if (psRR->sCtx.sa_in.sin_port	== 0) {
 			psRR->sCtx.sa_in.sin_port	= htons(psRR->sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
 	}
-	int32_t iRetVal = xNetOpen(&psRR->sCtx) ;
-	if (iRetVal == erSUCCESS) {							// if socket=open, write request
-		iRetVal = xNetWrite(&psRR->sCtx, psRR->sBuf.pBuf, xLen) ;
-		if (iRetVal > 0) {								// successfully written some (or all)
+	int32_t iRV = xNetOpen(&psRR->sCtx) ;
+	if (iRV == erSUCCESS) {							// if socket=open, write request
+		iRV = xNetWrite(&psRR->sCtx, psRR->sBuf.pBuf, xLen) ;
+		if (iRV > 0) {								// successfully written some (or all)
 			if (psRR->hvContentType == ctApplicationOctetStream) {
-				iRetVal = psRR->handler(psRR) ;			// should return same as xNetWrite()
+				iRV = psRR->handler(psRR) ;			// should return same as xNetWrite()
 			}
-			if (iRetVal > 0) {							// now do the actual read
-				iRetVal = xNetReadBlocks(&psRR->sCtx, psRR->sBuf.pBuf, psRR->sBuf.Size, configHTTP_RX_WAIT) ;
-				if (iRetVal > 0) {						// actually read something
-					psRR->sBuf.Used = iRetVal ;
-					iRetVal = xHttpCommonDoParsing(&sParser) ;
+			if (iRV > 0) {							// now do the actual read
+				iRV = xNetReadBlocks(&psRR->sCtx, psRR->sBuf.pBuf, psRR->sBuf.Size, configHTTP_RX_WAIT) ;
+				if (iRV > 0) {						// actually read something
+					psRR->sBuf.Used = iRV ;
+					iRV = xHttpCommonDoParsing(&sParser) ;	// return erFAILURE or some 0+ number
 				} else {
 					IF_SL_DBG(debugTRACK, " nothing read ie to parse") ;
 				}
@@ -159,7 +159,7 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
 	vUBufDestroy(&psRR->sBuf) ;							// return memory allocated
 	IF_SYSTIMER_STOP(debugTIMING, systimerHTTP) ;
-	return iRetVal ;
+	return iRV ;
 }
 
 int32_t	xHttpClientFileDownloadCheck(http_parser * psParser, const char * pBuf, size_t xLen) {
@@ -278,22 +278,22 @@ int32_t xHttpClientCheckUpgrades(void) {
 
 // ########################################## Location #############################################
 
-int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
-	int32_t		iRetVal = erFAILURE, NumTok ;
+int32_t	xHttpParseGeoLoc(http_parser * psParser, const char * pBuf, size_t xLen) {
+	int32_t		iRV = erFAILURE, NumTok ;
 	const char * pKey = " Insufficient" ;
 	jsmn_parser	sParser ;
 	jsmntok_t *	psTokenList ;
 	NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {								// parse Latitude
-		iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "lat", &nvsVars.GeoLocation[Latitude], vfFXX) ;
-		if (iRetVal >= erSUCCESS) {					// parse Longitude
-			iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "lng", &nvsVars.GeoLocation[Longitude], vfFXX) ;
-			if (iRetVal >= erSUCCESS) {				// parse accuracy
-				iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "accuracy", &nvsVars.GeoLocation[Accuracy], vfFXX) ;
+		iRV = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "lat", &nvsVars.GeoLocation[Latitude], vfFXX) ;
+		if (iRV >= erSUCCESS) {					// parse Longitude
+			iRV = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "lng", &nvsVars.GeoLocation[Longitude], vfFXX) ;
+			if (iRV >= erSUCCESS) {				// parse accuracy
+				iRV = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "accuracy", &nvsVars.GeoLocation[Accuracy], vfFXX) ;
 			}
 		}
 	}
-	if (iRetVal >= erSUCCESS && nvsVars.GeoLocation[Latitude] && nvsVars.GeoLocation[Longitude]) {
+	if (iRV >= erSUCCESS && nvsVars.GeoLocation[Latitude] && nvsVars.GeoLocation[Longitude]) {
 		nvsVars.fGeoLoc = 1 ;
 		VarsFlag |= varFLAG_LOCATION ;
 		SL_INFO("GL info set lat=%.7f  lng=%.7f  acc=%.7f",
@@ -305,7 +305,7 @@ int32_t	xHttpParseGeoLoc(http_parser* psParser, const char* pBuf, size_t xLen) {
 	if (psTokenList) {
 		vPortFree(psTokenList) ;
 	}
-    return iRetVal ;
+    return iRV ;
 }
 
 int32_t	xHttpGetLocation(void) {
@@ -337,28 +337,28 @@ int32_t	xHttpGetLocation(void) {
 
 // ##################################### TIMEZONE support ##########################################
 
-int32_t	xHttpParseTimeZone(http_parser* psParser, const char* pBuf, size_t xLen) {
+int32_t	xHttpParseTimeZone(http_parser * psParser, const char * pBuf, size_t xLen) {
 	jsmn_parser	sParser ;
 	jsmntok_t *	psTokenList ;
-	int32_t		NumTok, iRetVal = erFAILURE ;
+	int32_t		NumTok, iRV = erFAILURE ;
 	const char * pKey = " Insufficient" ;
 	NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {
 		x32_t	xVal ;
-		iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "dstOffset", &xVal.i32, vfIXX) ;
-		if (iRetVal >= erSUCCESS) {
+		iRV = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "dstOffset", &xVal.i32, vfIXX) ;
+		if (iRV >= erSUCCESS) {
 			sTZ.daylight = nvsVars.daylight = xVal.i32 ;					// convert i32 -> i16 & store
-			iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "rawOffset", &xVal.i32, vfIXX) ;
-			if (iRetVal >= erSUCCESS) {
+			iRV = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "rawOffset", &xVal.i32, vfIXX) ;
+			if (iRV >= erSUCCESS) {
 				sTZ.timezone = nvsVars.timezone = xVal.i32 ;				// store value
-				iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneId", nvsVars.TimeZoneId, vfSXX) ;
-				if (iRetVal >= erSUCCESS) {
-					iRetVal = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneName", nvsVars.TimeZoneName, vfSXX) ;
+				iRV = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneId", nvsVars.TimeZoneId, vfSXX) ;
+				if (iRV >= erSUCCESS) {
+					iRV = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "timeZoneName", nvsVars.TimeZoneName, vfSXX) ;
 				}
 			}
 		}
 	}
-	if (iRetVal >= erSUCCESS && nvsVars.TimeZoneId[0] && nvsVars.TimeZoneName[0]) {
+	if (iRV >= erSUCCESS && nvsVars.TimeZoneId[0] && nvsVars.TimeZoneName[0]) {
 		nvsVars.fGeoTZ = 1 ;
 		VarsFlag |= varFLAG_TIMEZONE ;
 		SL_INFO("TZ info set %+Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
@@ -369,7 +369,7 @@ int32_t	xHttpParseTimeZone(http_parser* psParser, const char* pBuf, size_t xLen)
 	if (psTokenList) {
 		vPortFree(psTokenList) ;
 	}
-    return iRetVal ;
+    return iRV ;
 }
 
 int32_t	xHttpGetTimeZone(void) {
@@ -543,7 +543,7 @@ int32_t	xHttpClientIdentUpload(void * pvPara) {
 // ################################## PUT core dump to host ########################################
 
 int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
-	int32_t	iRetVal = erFAILURE ;
+	int32_t	iRV = erFAILURE ;
 	/* see https://github.com/espressif/esp-idf/issues/1650 */
 	size_t		xNow, xLeft, xDone = 0 ;
 	IF_PRINT(debugTRACK, "Coredump START upload %lld\n", psReq->hvContentLength) ;
@@ -552,14 +552,14 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 		xLeft	= psReq->hvContentLength - xDone ;
 		xNow	= xLeft > psReq->sBuf.Size ? psReq->sBuf.Size : xLeft ;
 		IF_PRINT(debugTRACK, "Start:%u  Write:%u  Left:%u\n", xDone, xNow, xLeft) ;
-		iRetVal = esp_partition_read((esp_partition_t *) psReq->pvArg, xDone, psReq->sBuf.pBuf, xNow) ;
-		if (iRetVal != ESP_OK) {
-			SL_ERR("read err=0x%x (%s)", iRetVal, strerror(iRetVal)) ;
-			break ;
+		iRV = esp_partition_read((esp_partition_t *) psReq->pvArg, xDone, psReq->sBuf.pBuf, xNow) ;
+		if (iRV != ESP_OK) {
+			SL_ERR("read err=0x%x (%s)", iRV, strerror(iRV)) ;
+			return -iRV ;
 		}
-		iRetVal = xNetWrite(&psReq->sCtx, (char *) psReq->sBuf.pBuf, (xLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLeft) ;
-		if (iRetVal > 0) {
-			xDone += iRetVal ;
+		iRV = xNetWrite(&psReq->sCtx, (char *) psReq->sBuf.pBuf, (xLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLeft) ;
+		if (iRV > 0) {
+			xDone += iRV ;
 		} else if (psReq->sCtx.error == EAGAIN) {
 			continue ;
 		} else {										// transmit error or socket closed?
@@ -567,11 +567,11 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 			break ;
 		}
 	}
-	if (iRetVal > 0) {
-		iRetVal = xNetWrite(&psReq->sCtx, (char *) "\r\n", 2) ;	// write the terminating CR/LF
-		iRetVal = xDone + 2 ;
+	if (iRV > 0) {
+		iRV = xNetWrite(&psReq->sCtx, (char *) "\r\n", 2) ;	// write the terminating CR/LF
+		iRV = xDone + 2 ;
 	}
-	return iRetVal ;
+	return iRV ;
 }
 
 typedef struct {
@@ -587,8 +587,8 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	IF_myASSERT(debugRESULT, sIter != 0) ;
 	const esp_partition_t *	psPart = esp_partition_get(sIter) ;
 	cd_hdr_t	sCDhdr ;
-	int32_t iRetVal = esp_partition_read(psPart, 0, &sCDhdr, sizeof(sCDhdr)) ;
-	if (iRetVal == ESP_OK) {
+	int32_t iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(sCDhdr)) ;
+	if (iRV == ESP_OK) {
 		http_reqres_t sRR	= { 0 } ;
 		sock_sec_t sSecure	= { 0 } ;
 		sSecure.pPem		= HostInfo[nvsVars.HostFOTA].pCert ;
@@ -610,11 +610,11 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 		sRR.sCtx.d_secure	= 0 ;
 		sRR.sCtx.d_level	= 0 ;
 	#endif
-		iRetVal 	= xHttpClientExecuteRequest(&sRR, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND) ;
-		if (iRetVal > 0) {
+		iRV 	= xHttpClientExecuteRequest(&sRR, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND) ;
+		if (iRV > 0) {
 			SL_NOT("Done: Len=%u  Ver=%u  Tsk=%u  TCB=%u",sCDhdr.data_len, sCDhdr.version, sCDhdr.tasks_num, sCDhdr.tcb_sz) ;
 		}
 	}
 	esp_partition_iterator_release(sIter) ;
-	return iRetVal ;
+	return iRV ;
 }

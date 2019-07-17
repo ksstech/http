@@ -322,6 +322,11 @@ int 	xHttpCommonMessageCompleteHandler(http_parser * psParser) {
 	return erSUCCESS ;
 }
 
+/**
+ * xHttpCommonDoParsing()
+ * @param	psParser
+ * @return	erFAILURE or result of http_parser_execute() being 0, 1 or some number ?
+ */
 size_t	xHttpCommonDoParsing(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
 	psRR->sfCB.on_url			= xHttpCommonUrlHandler ;	// set some default handlers...
@@ -341,18 +346,18 @@ size_t	xHttpCommonDoParsing(http_parser * psParser) {
 		psRR->sfCB.on_message_complete	= xHttpCommonMessageCompleteHandler ;
 	}
 #endif
-	int32_t iRetVal = http_parser_execute(psParser, &psRR->sfCB, psRR->sBuf.pBuf, psRR->sBuf.Used) ;
+	int32_t iRV = http_parser_execute(psParser, &psRR->sfCB, psRR->sBuf.pBuf, psRR->sBuf.Used) ;
 	if (psRR->f_debug) {
-		if (iRetVal <= 0) {
+		if (iRV <= 0) {
 			SL_ERR("parse %s (%s) url=%s/%s/%s", http_errno_name(HTTP_PARSER_ERRNO(psParser)),
 												http_errno_description(HTTP_PARSER_ERRNO(psParser)),
 												psRR->url.host, psRR->url.path, psRR->url.query) ;
-			iRetVal = erFAILURE ;
+			iRV = erFAILURE ;
 		}
 		if (INRANGE(HTTP_STATUS_BAD_REQUEST, psParser->status_code, HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED, int16_t)) {
 			SL_ERR("http error=%d (%s)", psParser->status_code, psRR->hvStatusMess) ;
-			iRetVal = erFAILURE ;
+			iRV = erFAILURE ;
 		}
 	}
-	return iRetVal ;
+	return iRV ;
 }

@@ -268,7 +268,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR->sBuf.pBuf)) ;
 
-	int32_t	iURL = -1, iRetVal ;
+	int32_t	iURL = -1, iRV ;
 	if (psParser->http_errno) {
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
 		psRR->pcBody	= (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
@@ -373,16 +373,16 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	}
 
 	if (psRR->f_bodyCB && psRR->hdlr_rsp) {
-		iRetVal = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
+		iRV = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
-		iRetVal = xHttpSendResponse(psParser, psRR->pcBody) ;
-		IF_CPRINT(debugTRACK, "Response sent iRV=%d\n", iRetVal) ;
+		iRV = xHttpSendResponse(psParser, psRR->pcBody) ;
+		IF_CPRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
 	}
-	if (sServHttpCtx.maxTx < iRetVal) {
-		sServHttpCtx.maxTx = iRetVal ;
+	if (sServHttpCtx.maxTx < iRV) {
+		sServHttpCtx.maxTx = iRV ;
 	}
 
-	return iRetVal ;
+	return iRV ;
 }
 
 /**
