@@ -81,12 +81,13 @@ static	const char	HtmlAPdetails[] =
 	"AP SSID (Max 32 chars incl A-Z, a-z and 0-9):<br><input type='text' name='ssid' size='32'><br>"
 	"AP PSWD (Max 64 chars incl A-Z, a-z and 0-9):<br><input type='text' name='pswd' size='64'><br>"
 #if		(halNET_BUILD_STATIC == 1)
-	"IP NetMask:<br><input type='text' name='nm' size='16'><br>"
-	"IP Gateway:<br><input type='text' name='gw' size='16'><br>"
-	"IP Address:<br><input type='text' name='ip' size='16'><br>"
-	"IP DNS #1 :<br><input type='text' name='d1' size='16'><br>"
-	"IP DNS #2 :<br><input type='text' name='d2' size='16'><br>"
+	"IP NetMask (w.x.y.z):<br><input type='text' name='nm' size='16' value='255.255.255.0'><br>"
+	"IP Gateway (w.x.y.z):<br><input type='text' name='gw' size='16' value='192.168.1.1.'><br>"
+	"IP Address (w.x.y.z):<br><input type='text' name='ip' size='16' value='192.168.1.100'><br>"
+	"IP DNS#1 (w.x.y.z):<br><input type='text' name='d1' size='16' value='192.169.1.1'><br>"
+	"IP DNS#2 (w.x.y.z):<br><input type='text' name='d2' size='16' value='8.8.8.8'><br>"
 #endif
+	"IP MQTT (w.x.y.z):<br><input type='text' name='mqtt' size='16' value='0.0.0.0'><br>"
 	"<br><input type='submit' value='Submit'>"
 	"</form></body></html>" ;
 
