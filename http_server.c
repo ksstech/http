@@ -47,7 +47,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0xC000
+#define	debugFLAG						0x000
 
 #define	debugTRACK						(debugFLAG & 0x2000)
 #define	debugPARAM						(debugFLAG & 0x4000)
@@ -300,7 +300,8 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	case urlSAVE_AP:
 #if		(halNET_BUILD_DHCP == 1) || (halNET_BUILD_AUTO == 1)
 		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0)	||
-			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0))
+			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)	||
+			(strcmp(psRR->params[2].key, halSTORAGE_KEY_MQTT) != 0))
 #elif	(halNET_BUILD_STATIC == 1)
 		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
 			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)	||
@@ -308,35 +309,26 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			(strcmp(psRR->params[3].key, halSTORAGE_KEY_GW) != 0)	||
 			(strcmp(psRR->params[4].key, halSTORAGE_KEY_IP) != 0)	||
 			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0)	||
-			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0))
+			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0) ||
+			(strcmp(psRR->params[7].key, halSTORAGE_KEY_MQTT) != 0))
 #endif
 		{	xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
 		} else {
 			memset(&nvsWifi, 0 , sizeof(nvsWifi)) ;
-			iRetVal = xHttpServerParseString(psRR->params[0].val, (char *) nvsWifi.ssid) ;		// SSID
-			if (iRetVal == erSUCCESS) {
-				iRetVal = xHttpServerParseString(psRR->params[1].val, (char *) nvsWifi.pswd) ;	// PSWD
+			int32_t i = 0 ;
+			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.ssid) ;
+			if (iRV == erSUCCESS) iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.pswd) ;
 #if		(halNET_BUILD_STATIC == 1)
-				if (iRetVal == erSUCCESS) {					// Network Address
-					iRetVal = xHttpServerParseIPaddress(psRR->params[2].val, &nvsWifi.ipNM) ;
-					if (iRetVal == erSUCCESS) {				// Gateway IP
-						iRetVal = xHttpServerParseIPaddress(psRR->params[3].val, &nvsWifi.ipGW) ;
-						if (iRetVal == erSUCCESS) {			// Station IP
-							iRetVal = xHttpServerParseIPaddress(psRR->params[4].val, &nvsWifi.ipSTA) ;
-							if (iRetVal == erSUCCESS) {		// DNS IP #1
-								iRetVal = xHttpServerParseIPaddress(psRR->params[5].val, &nvsWifi.ipDNS1) ;
-								if (iRetVal == erSUCCESS) {	// DNS IP #2
-									iRetVal = xHttpServerParseIPaddress(psRR->params[6].val, &nvsWifi.ipDNS2) ;
-								}
-							}
-						}
-					}
-				}
+			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipNM) ;
+			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipGW) ;
+			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipSTA) ;
+			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipDNS1) ;
+			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipDNS2) ;
 #endif
-				halSTORAGE_WriteBlob(halSTORAGE_STORE, halSTORAGE_KEY_WIFI, &nvsWifi, sizeof(nvsWifi)) ;
-			}
-			if (iRetVal == erSUCCESS) {
+			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipMQTT) ;
+			if (iRV == erSUCCESS) iRV = halSTORAGE_WriteBlob(halSTORAGE_STORE, halSTORAGE_KEY_WIFI, &nvsWifi, sizeof(nvsWifi)) ;
+			if (iRV == erSUCCESS) {
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 				psRR->pcBody	= (char *) HtmlAPconfigOK ;
 				vRtosSetStatus(flagAPP_RESTART) ;
