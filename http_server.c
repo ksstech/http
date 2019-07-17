@@ -495,13 +495,9 @@ void	vTaskHttp(void * pvParameters) {
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
 	vPortFree(sRR.sBuf.pBuf) ;
-	IF_SL_DBG(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
-
-#if		(debugAPPL_SHUTDOWN)
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
-#endif
-
+	IF_SL_DBG(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
 	vTaskDelete(NULL) ;
 }
 
