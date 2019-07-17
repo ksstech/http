@@ -600,6 +600,10 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	const esp_partition_t *	psPart = esp_partition_get(sIter) ;
 	cd_hdr_t	sCDhdr ;
 	int32_t iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(sCDhdr)) ;
+	if ((sCDhdr.data_len == sCDhdr.tasks_num) && (sCDhdr.tcb_sz == sCDhdr.version)) {
+		SL_ALRT("Coredump requested but not found") ;
+		return erFAILURE ;
+	}
 	if (iRV == ESP_OK) {
 		http_reqres_t sRR	= { 0 } ;
 		sock_sec_t sSecure	= { 0 } ;
