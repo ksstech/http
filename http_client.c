@@ -112,6 +112,11 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 	return psRR->sBuf.Used ;
 }
 
+/**
+ * xHttpClientExecuteRequest()
+ * @param psRR
+ * @return	erFAILURE or result of xHttpCommonDoParsing() being 0 or more
+ */
 int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR)) ;
 	IF_SYSTIMER_START(debugTIMING, systimerHTTP) ;
@@ -146,15 +151,19 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 					iRV = xHttpCommonDoParsing(&sParser) ;	// return erFAILURE or some 0+ number
 				} else {
 					IF_SL_DBG(debugTRACK, " nothing read ie to parse") ;
+					iRV = erFAILURE ;
 				}
 			} else {
 				IF_SL_DBG(debugTRACK, " nothing written (by handler) so can't expect to read") ;
+				iRV = erFAILURE ;
 			}
 		} else {
 			IF_SL_DBG(debugTRACK, " no header written, so can't expect to read") ;
+			iRV = erFAILURE ;
 		}
 	} else {
-		IF_SL_DBG(debugTRACK, " could not open connection") ;
+		IF_SL_DBG(debugTRACK, " could not open connection (%d)", iRV) ;
+		iRV = erFAILURE ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
 	vUBufDestroy(&psRR->sBuf) ;							// return memory allocated
@@ -164,7 +173,7 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 
 int32_t	xHttpClientFileDownloadCheck(http_parser * psParser, const char * pBuf, size_t xLen) {
 	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_SL_DBG(debugTRACK, "file not found") ;
+		IF_SL_DBG(debugTRACK, "File not found") ;
 		return erFAILURE ;
 	}
 	http_reqres_t * psReq = psParser->data ;
@@ -457,10 +466,13 @@ int32_t	xHttpGetElevation(void) {
 
 int32_t	xHttpClientCheckGeoLoc(void) {
 	int32_t iRV = xHttpGetLocation() ;
-	if (iRV == erSUCCESS) {								// Elevation & TimeZone require Location
+	IF_PRINT(debugDEBUG, "Location iRV=%d\n", iRV) ;
+	if (iRV > erFAILURE) {								// Elevation & TimeZone require Location
 		iRV = xHttpGetTimeZone() ;
+		IF_PRINT(debugDEBUG, "Time Zone iRV=%d\n", iRV) ;
 		// not quite correct, ignoring iRV for elevation since not used..
-		xHttpGetElevation() ;
+		iRV = xHttpGetElevation() ;
+		IF_PRINT(debugDEBUG, "Elevation iRV=%d\n", iRV) ;
 	}
 	return iRV ;
 }
@@ -550,7 +562,7 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 
 	while (xDone < psReq->hvContentLength) {			// deal with all data to be sent
 		xLeft	= psReq->hvContentLength - xDone ;
-		xNow	= xLeft > psReq->sBuf.Size ? psReq->sBuf.Size : xLeft ;
+		xNow	= (xLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLeft ;
 		IF_PRINT(debugTRACK, "Start:%u  Write:%u  Left:%u\n", xDone, xNow, xLeft) ;
 		iRV = esp_partition_read((esp_partition_t *) psReq->pvArg, xDone, psReq->sBuf.pBuf, xNow) ;
 		if (iRV != ESP_OK) {
