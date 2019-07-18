@@ -292,7 +292,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, si
 	case ctTextPlain:
 	case ctTextHtml:
 	case ctApplicationXml:
-		xprintf("BODY (plain/html/xml)\n%.*s", xLen, pBuf) ;
+		printfx("BODY (plain/html/xml)\n%.*s", xLen, pBuf) ;
 		break ;
 	case ctApplicationJson:
 	{	// test parse (count tokens) then allocate memory & parse
@@ -302,7 +302,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, si
 		if (iRetVal > erSUCCESS) {						// print parsed tokens
 			iRetVal = xJsonPrintTokens((uint8_t *) pBuf, psTokenList, iRetVal, 0) ;
 		} else {
-			xprintf("BODY (json)\n%!'+b", xLen, pBuf) ;	// not parsed, just dump...
+			printfx("BODY (json)\n%!'+b", xLen, pBuf) ;	// not parsed, just dump...
 		}
 		if (psTokenList) {								// if allocated,
 			vPortFree(psTokenList) ;					// free the memory allocated in xJsonParse()
@@ -310,7 +310,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, si
 		break ;
 	}
 	default:
-		xprintf("BODY (other)\n%!'+b", xLen, pBuf) ;
+		printfx("BODY (other)\n%!'+b", xLen, pBuf) ;
 	}
     return erSUCCESS ;
 }

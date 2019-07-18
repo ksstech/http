@@ -66,44 +66,44 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sBuf.pBuf)) ;
 
-	vuprintf(&psRR->sBuf, psRR->pcQuery, psRR->VaList) ;
-	uprintf(&psRR->sBuf, " HTTP/1.1\r\n") ;
-	uprintf(&psRR->sBuf, "Host: %s\r\n", psRR->sCtx.pHost) ;
-	uprintf(&psRR->sBuf, "From: %s\r\n", httpFROM_NAME) ;
-	uprintf(&psRR->sBuf, "User-Agent: %s\r\n", httpAGENT_NAME) ;
+	vuprintfx(&psRR->sBuf, psRR->pcQuery, psRR->VaList) ;
+	uprintfx(&psRR->sBuf, " HTTP/1.1\r\n") ;
+	uprintfx(&psRR->sBuf, "Host: %s\r\n", psRR->sCtx.pHost) ;
+	uprintfx(&psRR->sBuf, "From: %s\r\n", httpFROM_NAME) ;
+	uprintfx(&psRR->sBuf, "User-Agent: %s\r\n", httpAGENT_NAME) ;
 	if (psRR->hvAccept) {
-		uprintf(&psRR->sBuf, "Accept: %s\r\n", ctValues[psRR->hvAccept]) ;
+		uprintfx(&psRR->sBuf, "Accept: %s\r\n", ctValues[psRR->hvAccept]) ;
 		psRR->hvAccept	= ctUNDEFINED ;
 	}
 	if (psRR->hvConnect) {
-		uprintf(&psRR->sBuf, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
+		uprintfx(&psRR->sBuf, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
 	}
 	// from here on items common to requests and responses...
 	if (psRR->pcBody) {
 		if (psRR->hvContentType) {
-			uprintf(&psRR->sBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
+			uprintfx(&psRR->sBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 			// assume pcBody is pointing to actual binary payload
 				IF_myASSERT(debugTRACK, INRANGE_MEM(psRR->handler) && INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
 				/* Since the actual binary payload will only be added in the callback from xHttpClientExecuteRequest()
 				 * we will only add a single "\r\n" pair here, the second added at the end of this function
 				 * The callback will be responsible for adding the final terminating "\r\n" */
-				uprintf(&psRR->sBuf, "Content-Length: %d\r\n", psRR->hvContentLength) ;
+				uprintfx(&psRR->sBuf, "Content-Length: %d\r\n", psRR->hvContentLength) ;
 				// no actual binary content added, done later...
 			} else {
 			// currently handle json/xml/text/html here, determine length using NULL string buffer address
-				psRR->hvContentLength = xvsprintf(NULL, psRR->pcBody, psRR->VaList) ;
+				psRR->hvContentLength = vsprintfx(NULL, psRR->pcBody, psRR->VaList) ;
 			// then add the calculated content length
-				uprintf(&psRR->sBuf, "Content-Length: %d\r\n\r\n", psRR->hvContentLength) ;
+				uprintfx(&psRR->sBuf, "Content-Length: %d\r\n\r\n", psRR->hvContentLength) ;
 			// add the actual content after 2x CR/LF pairs
-				vuprintf(&psRR->sBuf, psRR->pcBody, psRR->VaList) ;
+				vuprintfx(&psRR->sBuf, psRR->pcBody, psRR->VaList) ;
 			}
 		} else {
 			SL_ERR(debugAPPL_PLACE) ;
 		}
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
-	uprintf(&psRR->sBuf, "\r\n") ;
+	uprintfx(&psRR->sBuf, "\r\n") ;
 #if		(myDEBUG == 1)
 	if (psRR->f_debug) {
 		PRINT("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;

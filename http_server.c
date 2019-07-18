@@ -155,17 +155,17 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	http_reqres_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sBuf.pBuf)) ;
 	int32_t iRV ;
-	iRV = socprintf(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
-	iRV += socprintf(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
-	iRV += socprintf(&psRR->sCtx, "Content-Language: en-US\r\n") ;
+	iRV = socprintfx(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
+	iRV += socprintfx(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
+	iRV += socprintfx(&psRR->sCtx, "Content-Language: en-US\r\n") ;
 	if (psRR->hvConnect) {
-		iRV += socprintf(&psRR->sCtx, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
+		iRV += socprintfx(&psRR->sCtx, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
 		if (psRR->hvConnect == coKeepAlive) {
-			iRV += socprintf(&psRR->sCtx, "Keep-Alive: timeout=3\r\n") ;
+			iRV += socprintfx(&psRR->sCtx, "Keep-Alive: timeout=3\r\n") ;
 		}
 	}
 	if (psRR->hvContentType) {
-		iRV += socprintf(&psRR->sCtx, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
+		iRV += socprintfx(&psRR->sCtx, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 	}
 
 	va_list vArgs ;
@@ -173,15 +173,15 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	/* The next line does not really print anything. By specifying the NULL as the string
 	 * pointer it performs a test print and simply return the number of characters that
 	 * would have been printed if a destination was specified.*/
-	psRR->hvContentLength = xvsprintf(NULL, format, vArgs) ;
+	psRR->hvContentLength = vsprintfx(NULL, format, vArgs) ;
 	/* Now do the actual formatted print of the content length with an additional 2 chars
 	 * added for the extra CR + LF pair to form the blank line after the header values */
-	iRV += socprintf(&psRR->sCtx, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2) ;
-	iRV += vsocprintf(&psRR->sCtx, format, vArgs) ;				// add the actual content
+	iRV += socprintfx(&psRR->sCtx, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2) ;
+	iRV += vsocprintfx(&psRR->sCtx, format, vArgs) ;				// add the actual content
 	va_end(vArgs) ;
-	iRV += socprintf(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
+	iRV += socprintfx(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 
-	IF_CPRINT((myDEBUG == 1) && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
+	IF_PRINT((myDEBUG == 1) && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	return iRV ;
 }
 
@@ -189,7 +189,7 @@ int32_t	xHttpServerParseWriteString(char * pKey, char *pVal) {
 	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s->%s\n", pKey, pVal) ;
+	IF_PRINT(debugTRACK, "%s->%s\n", pKey, pVal) ;
 	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) pVal, vfSXX) == ESP_OK ? erSUCCESS : erFAILURE ;
 }
 
@@ -197,7 +197,7 @@ int32_t	xHttpServerParseString(char * pVal, char * pDst) {
 	if (xStringParseEncoded(pVal, pDst) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s->%s\n", pVal, pDst) ;
+	IF_PRINT(debugTRACK, "%s->%s\n", pVal, pDst) ;
 	return erSUCCESS ;
 }
 
@@ -205,12 +205,12 @@ int32_t	xHttpServerParseWriteIPaddress(char * pKey, char * pVal) {
 	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s->%s", pKey, pVal) ;
+	IF_PRINT(debugTRACK, "%s->%s", pKey, pVal) ;
 	uint32_t	IPaddr ;
 	if (pcStringParseIpAddr(pVal, &IPaddr) == pcFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, " : %-I\n", IPaddr) ;
+	IF_PRINT(debugTRACK, " : %-I\n", IPaddr) ;
 	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) htonl(IPaddr), vfUXX) == ESP_OK ? erSUCCESS : erFAILURE ;
 }
 
@@ -218,12 +218,12 @@ int32_t	xHttpServerParseIPaddress(char * pVal, uint32_t * pDst) {
 	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s->%s", pVal) ;
+	IF_PRINT(debugTRACK, "%s->%s", pVal) ;
 	if (pcStringParseIpAddr(pVal, pDst) == pcFAILURE) {
 		*pDst = 0 ;
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, " : %-I\n", *pDst) ;
+	IF_PRINT(debugTRACK, " : %-I\n", *pDst) ;
 	return erSUCCESS ;
 }
 
@@ -249,7 +249,7 @@ void	vHttpServerCloseClient(netx_t * psCtx) {
 	vRtosClearStatus(flagNET_HTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
 	xNetClose(psCtx) ;
-	IF_CPRINT(debugTRACK, "closing\n") ;
+	IF_PRINT(debugTRACK, "closing\n") ;
 }
 
 /**
@@ -363,7 +363,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		iRV = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
 		iRV = xHttpSendResponse(psParser, psRR->pcBody) ;
-		IF_CPRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
+		IF_PRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
 	}
 	if (sServHttpCtx.maxTx < iRV) {
 		sServHttpCtx.maxTx = iRV ;
@@ -397,7 +397,7 @@ void	vTaskHttp(void * pvParameters) {
 		switch(HttpState) {
 		int32_t	iRetVal ;
 		case stateHTTP_DEINIT:
-			IF_CPRINT(debugTRACK, "de-init\n") ;
+			IF_PRINT(debugTRACK, "de-init\n") ;
 			vRtosClearStatus(flagNET_HTTP_SERV | flagNET_HTTP_CLNT) ;
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
@@ -405,7 +405,7 @@ void	vTaskHttp(void * pvParameters) {
 			/* no break */
 
 		case stateHTTP_INIT:
-			IF_CPRINT(debugTRACK, "init\n") ;
+			IF_PRINT(debugTRACK, "init\n") ;
 			memset(&sServHttpCtx, 0 , sizeof(netx_t)) ;
 			sServHttpCtx.sa_in.sin_family		= AF_INET ;
 			sServHttpCtx.type					= SOCK_STREAM ;
@@ -423,7 +423,7 @@ void	vTaskHttp(void * pvParameters) {
 			}
 			vRtosSetStatus(flagNET_HTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
-			IF_CPRINT(debugTRACK, "waiting\n") ;
+			IF_PRINT(debugTRACK, "waiting\n") ;
 			/* no break */
 
 		case stateHTTP_WAITING:
@@ -442,7 +442,7 @@ void	vTaskHttp(void * pvParameters) {
 			}
 			vRtosSetStatus(flagNET_HTTP_CLNT) ;		// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
-			IF_CPRINT(debugTRACK, "connected\n") ;
+			IF_PRINT(debugTRACK, "connected\n") ;
 			/* no break */
 
 		case stateHTTP_CONNECTED:
@@ -510,5 +510,5 @@ void	vHttpReport(void) {
 	if (xRtosCheckStatus(flagNET_HTTP_SERV)) {
 		xNetReport(&sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
 	}
-	xprintf("\t\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
+	printfx("\t\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 }
