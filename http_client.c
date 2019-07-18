@@ -312,7 +312,7 @@ int32_t	xHttpParseGeoLoc(http_parser * psParser, const char * pBuf, size_t xLen)
 		SL_ERR("GL info NOT set, error parsing '%s' key", pKey) ;
 	}
 	if (psTokenList) {
-		vPortFree(psTokenList) ;
+		free(psTokenList) ;
 	}
     return iRV ;
 }
@@ -376,7 +376,7 @@ int32_t	xHttpParseTimeZone(http_parser * psParser, const char * pBuf, size_t xLe
 		SL_ERR("TZ info NOT set, error parsing '%s' key", pKey) ;
 	}
 	if (psTokenList) {
-		vPortFree(psTokenList) ;
+		free(psTokenList) ;
 	}
     return iRV ;
 }
@@ -431,7 +431,7 @@ int32_t	xHttpParseElevation(http_parser* psParser, const char* pBuf, size_t xLen
 		SL_ERR("GE info NOT set, error parsing '%s' key", pKey) ;
 	}
 	if (psTokenList) {
-		vPortFree(psTokenList) ;
+		free(psTokenList) ;
 	}
     return iRV ;
 }

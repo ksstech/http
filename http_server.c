@@ -388,7 +388,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  */
 void	vTaskHttp(void * pvParameters) {
 	IF_SL_DBG(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
-	sRR.sBuf.pBuf	= pvPortMalloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
+	sRR.sBuf.pBuf	= malloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
 	vRtosSetStateRUN(taskHTTP) ;
 
