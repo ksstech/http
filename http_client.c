@@ -106,7 +106,7 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 	uprintfx(&psRR->sBuf, "\r\n") ;
 #if		(myDEBUG == 1)
 	if (psRR->f_debug) {
-		PRINT("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
+		SL_DBG("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	}
 #endif
 	return psRR->sBuf.Used ;
