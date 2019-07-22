@@ -161,23 +161,15 @@ int 	xHttpCommonUrlHandler(http_parser * psParser, const char* pBuf, size_t xLen
 		psRes->NumQuery = 0 ;
 	}
 
-#if     (myDEBUG == 1)
+	#if	(myDEBUG == 1)
 	if (psRes->f_debug) {
-		PRINT("Struct values:\n") ;
-		PRINT("\tscheme:\t\t%s\n", psRes->url.scheme) ;
-		PRINT("\thost:\t\t%s\n", psRes->url.host) ;
-		PRINT("\tport:\t\t%d\n", psRes->url.port) ;
-		PRINT("\tpath:\t\t%s\n", *psRes->url.path == CHR_NUL ? "/" : psRes->url.path) ;
-		PRINT("\tquery:\t\t%s\n", psRes->url.query) ;
-		PRINT("\tfragment:\t%s\n", psRes->url.fragment) ;
-		for (Idx = 0; Idx < psRes->NumParts; Idx++) {
-			PRINT("Path part[%d]: '%s'\n", Idx, psRes->parts[Idx]) ;
-		}
-		for (Idx = 0; Idx < psRes->NumQuery; Idx++) {
-			PRINT("Parameter [%d]: name='%s' value='%s'\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val) ;
-		}
+		PRINT("Struct: scheme:%s  host:%s  port:%d  path:%s  query:%s  fragment:%s\n",
+				psRes->url.scheme, psRes->url.host, psRes->url.port, *psRes->url.path == CHR_NUL ? "/" : psRes->url.path,
+				psRes->url.query, psRes->url.fragment) ;
+		for (Idx = 0; Idx < psRes->NumParts; ++Idx) PRINT("Path part[%d]: '%s'\n", Idx, psRes->parts[Idx]) ;
+		for (Idx = 0; Idx < psRes->NumQuery; ++Idx) PRINT("Parameter[%d]: name='%s' value='%s'\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val) ;
 	}
-#endif
+	#endif
 	return erSUCCESS ;
 }
 
