@@ -22,9 +22,10 @@
  * http_common.c
  */
 
+#include	"FreeRTOS_Support.h"
+
 #include 	"http_common.h"
 
-#include	"x_debug.h"
 #include	"x_json_parser.h"
 #include	"x_errors_events.h"
 #include	"x_syslog.h"
@@ -34,7 +35,7 @@
 #include	"x_string_general.h"
 #include	"x_time.h"
 
-#include	"FreeRTOS_Support.h"
+#include	"hal_debug.h"
 
 #include	<stdlib.h>
 #include	<stdint.h>
@@ -284,7 +285,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, si
 	case ctTextPlain:
 	case ctTextHtml:
 	case ctApplicationXml:
-		printfx("BODY (plain/html/xml)\n%.*s", xLen, pBuf) ;
+		PRINT("BODY (plain/html/xml)\n%.*s", xLen, pBuf) ;
 		break ;
 	case ctApplicationJson:
 	{	// test parse (count tokens) then allocate memory & parse
@@ -294,7 +295,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, si
 		if (iRetVal > erSUCCESS) {						// print parsed tokens
 			iRetVal = xJsonPrintTokens((uint8_t *) pBuf, psTokenList, iRetVal, 0) ;
 		} else {
-			printfx("BODY (json)\n%!'+b", xLen, pBuf) ;	// not parsed, just dump...
+			PRINT("BODY (json)\n%!'+b", xLen, pBuf) ;	// not parsed, just dump...
 		}
 		if (psTokenList) {								// if allocated,
 			vPortFree(psTokenList) ;					// free the memory allocated in xJsonParse()
@@ -302,7 +303,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, si
 		break ;
 	}
 	default:
-		printfx("BODY (other)\n%!'+b", xLen, pBuf) ;
+		PRINT("BODY (other)\n%!'+b", xLen, pBuf) ;
 	}
     return erSUCCESS ;
 }

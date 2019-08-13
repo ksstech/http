@@ -21,13 +21,13 @@
  * http_client.c
  */
 
+#include	"FreeRTOS_Support.h"
+
 #include 	"http_server.h"
 #include 	"http_client.h"								// for xHttpFirmware????()
 #include	"rules_parse_text.h"
-#include	"FreeRTOS_Support.h"
 #include	"task_control.h"
 
-#include	"x_debug.h"
 #include	"x_retarget.h"
 #include	"x_syslog.h"
 #include	"x_errors_events.h"
@@ -36,6 +36,7 @@
 #include	"x_time.h"
 #include	"actuators.h"
 
+#include	"hal_debug.h"
 #include	"hal_network.h"
 #include	"hal_fota.h"
 #include	"hal_storage.h"
@@ -235,6 +236,12 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 	int32_t iRV ;
 	vCommandInterpret((int) *psRR->parts[1]) ;
 	if (xUBufAvail(&sBufStdOut) > 0) {
+		/* Definitive problem here if the volume of output from vCommandInterpret() exceed the
+		 * size of the buffer. In this case some content would have been overwritten and the
+		 * pointers would have wrapped and could point somewhere other than the start of the
+		 * buffer. In this case, the response as sent will be incomplete or invalid.
+		 * TODO: change handling to accommodate sending 2 separate blocks
+		 */
 		iRV = xHttpSendResponse(psParser, format, xUBufAvail(&sBufStdOut), pcUBufTellRead(&sBufStdOut)) ;
 		vUBufReset(&sBufStdOut) ;
 	} else {
@@ -510,5 +517,5 @@ void	vHttpReport(void) {
 	if (xRtosCheckStatus(flagNET_HTTP_SERV)) {
 		xNetReport(&sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
 	}
-	printfx("\t\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
+	PRINT("\t\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 }
