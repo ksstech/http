@@ -322,7 +322,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		{	xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
 		} else {
-			memset(&nvsWifi, 0 , sizeof(nvsWifi)) ;
+			bzero(&nvsWifi, sizeof(nvsWifi)) ;
 			int32_t i = 0 ;
 			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.ssid) ;
 			if (iRV == erSUCCESS) iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.pswd) ;
