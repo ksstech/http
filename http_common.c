@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-18 Andre M Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-19 Andre M Maree / KSS Technologies (Pty) Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -44,7 +44,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0x4000
+#define	debugFLAG						0x0000
 
 #define	debugPARSE						(debugFLAG & 0x0001)
 #define	debugURL						(debugFLAG & 0x0002)

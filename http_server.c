@@ -48,7 +48,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0x000
+#define	debugFLAG						0x0000
 
 #define	debugTRACK						(debugFLAG & 0x2000)
 #define	debugPARAM						(debugFLAG & 0x4000)
@@ -182,7 +182,7 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	va_end(vArgs) ;
 	iRV += socprintfx(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 
-	IF_PRINT((myDEBUG == 1) && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
+	IF_CPRINT((myDEBUG == 1) && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	return iRV ;
 }
 
@@ -190,7 +190,7 @@ int32_t	xHttpServerParseWriteString(char * pKey, char *pVal) {
 	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_PRINT(debugTRACK, "%s->%s\n", pKey, pVal) ;
+	IF_CPRINT(debugTRACK, "%s->%s\n", pKey, pVal) ;
 	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) pVal, vfSXX) == ESP_OK ? erSUCCESS : erFAILURE ;
 }
 
@@ -198,7 +198,7 @@ int32_t	xHttpServerParseString(char * pVal, char * pDst) {
 	if (xStringParseEncoded(pVal, pDst) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_PRINT(debugTRACK, "%s->%s\n", pVal, pDst) ;
+	IF_CPRINT(debugTRACK, "%s->%s\n", pVal, pDst) ;
 	return erSUCCESS ;
 }
 
@@ -206,12 +206,12 @@ int32_t	xHttpServerParseWriteIPaddress(char * pKey, char * pVal) {
 	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_PRINT(debugTRACK, "%s->%s", pKey, pVal) ;
+	IF_CPRINT(debugTRACK, "%s->%s", pKey, pVal) ;
 	uint32_t	IPaddr ;
 	if (pcStringParseIpAddr(pVal, &IPaddr) == pcFAILURE) {
 		return erFAILURE ;
 	}
-	IF_PRINT(debugTRACK, " : %-I\n", IPaddr) ;
+	IF_CPRINT(debugTRACK, " : %-I\n", IPaddr) ;
 	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) htonl(IPaddr), vfUXX) == ESP_OK ? erSUCCESS : erFAILURE ;
 }
 
@@ -219,12 +219,12 @@ int32_t	xHttpServerParseIPaddress(char * pVal, uint32_t * pDst) {
 	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_PRINT(debugTRACK, "%s->%s", pVal) ;
+	IF_CPRINT(debugTRACK, "%s->%s", pVal) ;
 	if (pcStringParseIpAddr(pVal, pDst) == pcFAILURE) {
 		*pDst = 0 ;
 		return erFAILURE ;
 	}
-	IF_PRINT(debugTRACK, " : %-I\n", *pDst) ;
+	IF_CPRINT(debugTRACK, " : %-I\n", *pDst) ;
 	return erSUCCESS ;
 }
 
@@ -256,7 +256,7 @@ void	vHttpServerCloseClient(netx_t * psCtx) {
 	vRtosClearStatus(flagNET_HTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
 	xNetClose(psCtx) ;
-	IF_PRINT(debugTRACK, "closing\n") ;
+	IF_CPRINT(debugTRACK, "closing\n") ;
 }
 
 /**
@@ -370,7 +370,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		iRV = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
 		iRV = xHttpSendResponse(psParser, psRR->pcBody) ;
-		IF_PRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
+		IF_CPRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
 	}
 	if (sServHttpCtx.maxTx < iRV) {
 		sServHttpCtx.maxTx = iRV ;
@@ -404,7 +404,7 @@ void	vTaskHttp(void * pvParameters) {
 		switch(HttpState) {
 		int32_t	iRetVal ;
 		case stateHTTP_DEINIT:
-			IF_PRINT(debugTRACK, "de-init\n") ;
+			IF_CPRINT(debugTRACK, "de-init\n") ;
 			vRtosClearStatus(flagNET_HTTP_SERV | flagNET_HTTP_CLNT) ;
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
@@ -412,15 +412,15 @@ void	vTaskHttp(void * pvParameters) {
 			/* no break */
 
 		case stateHTTP_INIT:
-			IF_PRINT(debugTRACK, "init\n") ;
+			IF_CPRINT(debugTRACK, "init\n") ;
 			memset(&sServHttpCtx, 0 , sizeof(netx_t)) ;
 			sServHttpCtx.sa_in.sin_family		= AF_INET ;
 			sServHttpCtx.type					= SOCK_STREAM ;
 #if 0
 //			sServHttpCtx.psSec					= ? ;
-//			sServHttpCtx.d_data					= 1 ;
-//			sServHttpCtx.d_read					= 1 ;
-//			sServHttpCtx.d_write				= 1 ;
+			sServHttpCtx.d_data					= 1 ;
+			sServHttpCtx.d_read					= 1 ;
+			sServHttpCtx.d_write				= 1 ;
 #endif
 			sServHttpCtx.sa_in.sin_port			= htons(sServHttpCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
 			iRetVal = xNetOpen(&sServHttpCtx) ;
@@ -430,7 +430,7 @@ void	vTaskHttp(void * pvParameters) {
 			}
 			vRtosSetStatus(flagNET_HTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
-			IF_PRINT(debugTRACK, "waiting\n") ;
+			IF_CPRINT(debugTRACK, "waiting\n") ;
 			/* no break */
 
 		case stateHTTP_WAITING:
@@ -447,14 +447,15 @@ void	vTaskHttp(void * pvParameters) {
 				HttpState = stateHTTP_DEINIT ;
 				break ;
 			}
-			vRtosSetStatus(flagNET_HTTP_CLNT) ;		// mark as having a client connection
+			vRtosSetStatus(flagNET_HTTP_CLNT) ;			// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
-			IF_PRINT(debugTRACK, "connected\n") ;
+			IF_CPRINT(debugTRACK, "connected\n") ;
 			/* no break */
 
 		case stateHTTP_CONNECTED:
 			iRetVal = xNetRead(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Size) ;
 			if (iRetVal > 0) {							// read something ?
+				IF_CPRINT(debugTRACK, "start parsing\n") ;
 				if (sServHttpCtx.maxRx < iRetVal) {		// yes, update the Rx packet stats
 					sServHttpCtx.maxRx = iRetVal ;
 				}
@@ -476,25 +477,29 @@ void	vTaskHttp(void * pvParameters) {
 				sRR.f_parts			= 1 ;				// break URL up in parts
 				sRR.f_query			= 1 ;				// break query up in parts
 //				sRR.f_debug			= 1 ;				// enable debug output
-
 				sRR.sBuf.Used		= iRetVal ;
 				iRetVal = xHttpCommonDoParsing(&sParser) ;
 				if (iRetVal > 0) {						// build response if something was parsed....
+					IF_CPRINT(debugTRACK, "start response handler\n") ;
 					xStdOutLock(portMAX_DELAY) ;
 					iRetVal = xHttpServerResponseHandler(&sParser) ;
 					xStdOutUnLock() ;
 				}
+				IF_CPRINT(debugTRACK, "Parsing done\n") ;
 				// socket closed or error occurred or coClose was set, close the connection
 				if (iRetVal == 0 || 					// nothing parsed or socket closed?
 					sRR.sCtx.error != 0 || 				// any error (even EAGAIN) on write ?
 					sRR.hvConnect == coClose) {			// or connection must be closed ?
 					vHttpServerCloseClient(&sRR.sCtx) ;	// then close the damn thing
+					IF_CPRINT(debugTRACK, "client closed\n") ;
 				} else {
 					// both parse & response handler & write was successful
 				}
 			} else if (sRR.sCtx.error != EAGAIN) {		// not EAGAIN/EWOULDBLOCK, socket closed OR real error
 				vHttpServerCloseClient(&sRR.sCtx) ;
+				IF_CPRINT(debugTRACK, "client closed\n") ;
 			}
+			IF_CPRINT(debugTRACK, "Tx done\n") ;
 			break ;
 
 		default:	SL_ERR(debugAPPL_PLACE) ;
