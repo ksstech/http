@@ -568,7 +568,7 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 		IF_PRINT(debugTRACK, "Start:%u  Write:%u  Left:%u\n", xDone, xNow, xLeft) ;
 		iRV = esp_partition_read((esp_partition_t *) psReq->pvArg, xDone, psReq->sBuf.pBuf, xNow) ;
 		if (iRV != ESP_OK) {
-			SL_ERR("read err=0x%x (%s)", iRV, strerror(iRV)) ;
+			SL_ERR("read err=0x%x (%s)", iRV, esp_err_to_name(iRV)) ;
 			return -iRV ;
 		}
 		iRV = xNetWrite(&psReq->sCtx, (char *) psReq->sBuf.pBuf, (xLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLeft) ;
@@ -603,7 +603,7 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	cd_hdr_t	sCDhdr ;
 	int32_t iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(sCDhdr)) ;
 	if ((sCDhdr.data_len == sCDhdr.tasks_num) && (sCDhdr.tcb_sz == sCDhdr.version)) {
-		SL_ALRT("Coredump requested but not found") ;
+		SL_ALRT("Coredump not found: L=0x%X  N=%d  S=0x%X  V=%d", sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
 		return erFAILURE ;
 	}
 	if (iRV == ESP_OK) {
