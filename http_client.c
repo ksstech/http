@@ -255,10 +255,11 @@ int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
 //	sReq.sCtx.d_eagain	= 1 ;
 #endif
 	sReq.sfCB.on_body	= halFOTA_HttpOnBody ;
-	int32_t iRetVal		= xHttpClientExecuteRequest(&sReq, sReq.pvArg = pvPara) ;
-	/* iRetVal should be the number of bytes parsed or erFAILURE (-1). If the
-	 * value is 0 then effectively nothing upgraded or parsed hence an error. */
-	if (iRetVal > erSUCCESS || sReq.hvStatus == HTTP_STATUS_NOT_FOUND) {
+	int32_t iRV		= xHttpClientExecuteRequest(&sReq, sReq.pvArg = pvPara) ;
+	/* iRV should be the number of bytes parsed or erFAILURE (-1). If the
+	 * value is 0 then effectively nothing upgraded or parsed hence an error.
+	 */
+	if (iRV > erSUCCESS || sReq.hvStatus == HTTP_STATUS_NOT_FOUND) {
 		return erSUCCESS ;
 	}
 	return erFAILURE ;
@@ -269,20 +270,21 @@ int32_t xHttpClientCheckUpgrades(void) {
 	 * #1 would be MAC based "1234567890ab.bin" hence 100% specific
 	 * #2 would be "[site-token].bin"
 	 * #3 would define a level to accommodate a specific client/tenant
-	 * #4 would be the broadest "[device-specification-token].bin" */
-	int32_t iRetVal = xHttpClientFirmwareUpgrade((void *) idSTA) ;
+	 * #4 would be the broadest "[device-specification-token].bin"
+	 */
+	int32_t iRV = xHttpClientFirmwareUpgrade((void *) idSTA) ;
 	#if 0
 	if (xRtosCheckStatus(flagAPP_UPGRADE)) {
-		iRetVal = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN) ;
+		iRV = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN) ;
 	}
 	#endif
 	if (xRtosCheckStatus(flagAPP_UPGRADE)) {
-		iRetVal = xHttpClientFirmwareUpgrade((void *) mqttSPECIFICATION_TOKEN) ;
+		iRV = xHttpClientFirmwareUpgrade((void *) mqttSPECIFICATION_TOKEN) ;
 	}
-	if (iRetVal == erSUCCESS) { 					// no [newer] upgrade there
-		vRtosClearStatus(flagAPP_UPGRADE) ;			// then clear the flag
+	if (iRV == erSUCCESS) { 							// no [newer] upgrade there
+		vRtosClearStatus(flagAPP_UPGRADE) ;				// then clear the flag
 	}
-	return iRetVal ;
+	return iRV ;
 }
 
 // ########################################## Location #############################################
