@@ -521,6 +521,8 @@ void	vHttpReport(void) {
 	}
 	if (xRtosCheckStatus(flagNET_HTTP_SERV)) {
 		xNetReport(&sServHttpCtx, __FUNCTION__, 0, 0, 0) ;
+	} else {
+		PRINT("%C%-15s%C ", xpfSGR(attrRESET, colourFG_CYAN, 0, 0), __FUNCTION__, attrRESET) ;
 	}
 	PRINT("\t\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 }
