@@ -35,6 +35,7 @@
 #include	"x_string_to_values.h"
 #include	"x_time.h"
 #include	"actuators.h"
+#include	"commands.h"
 
 #include	"hal_debug.h"
 #include	"hal_network.h"
