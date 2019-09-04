@@ -599,11 +599,15 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	// for binary uploads the address and content length+type must be correct
 	esp_partition_iterator_t sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL) ;
 	IF_myASSERT(debugRESULT, sIter != 0) ;
+
 	const esp_partition_t *	psPart = esp_partition_get(sIter) ;
+	IF_myASSERT(debugRESULT, psPart != 0) ;
+
 	cd_hdr_t	sCDhdr ;
 	int32_t iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(sCDhdr)) ;
-	if ((sCDhdr.data_len == sCDhdr.tasks_num) && (sCDhdr.tcb_sz == sCDhdr.version)) {
-		SL_ALRT("Coredump not found: L=0x%X  N=%d  S=0x%X  V=%d", sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
+	if (iRV != ESP_OK || (sCDhdr.data_len == sCDhdr.tasks_num && sCDhdr.tcb_sz == sCDhdr.version)) {
+		esp_partition_iterator_release(sIter) ;
+		SL_ALRT("Not found (%d) L=0x%X  N=%d  S=0x%X  V=%d", iRV, sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
 		return erFAILURE ;
 	}
 	if (iRV == ESP_OK) {
