@@ -629,9 +629,7 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 		sRR.sCtx.d_level	= 0 ;
 	#endif
 		iRV 	= xHttpClientExecuteRequest(&sRR, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND) ;
-		if (iRV > 0) {
-			SL_NOT("Done: Len=%u  Ver=%u  Tsk=%u  TCB=%u",sCDhdr.data_len, sCDhdr.version, sCDhdr.tasks_num, sCDhdr.tcb_sz) ;
-		}
+		SL_WARN("(%d) L=%u  V=%u  T=%u  S=%u", iRV, sCDhdr.data_len, sCDhdr.version, sCDhdr.tasks_num, sCDhdr.tcb_sz) ;
 	}
 	esp_partition_iterator_release(sIter) ;
 	return iRV ;
