@@ -307,11 +307,11 @@ int32_t	xHttpParseGeoLoc(http_parser * psParser, const char * pBuf, size_t xLen)
 	if (iRV >= erSUCCESS && nvsVars.GeoLocation[Latitude] && nvsVars.GeoLocation[Longitude]) {
 		nvsVars.fGeoLoc = 1 ;
 		VarsFlag |= varFLAG_LOCATION ;
-		SL_INFO("GL info set lat=%.7f  lng=%.7f  acc=%.7f",
+		SL_INFO("lat=%.7f  lng=%.7f  acc=%.7f",
 				nvsVars.GeoLocation[Latitude], nvsVars.GeoLocation[Longitude], nvsVars.GeoLocation[Accuracy]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
 	} else {
-		SL_ERR("GL info NOT set, error parsing '%s' key", pKey) ;
+		SL_ERR("Error parsing '%s' key", pKey) ;
 	}
 	if (psTokenList) {
 		free(psTokenList) ;
@@ -372,10 +372,10 @@ int32_t	xHttpParseTimeZone(http_parser * psParser, const char * pBuf, size_t xLe
 	if (iRV >= erSUCCESS && nvsVars.TimeZoneId[0] && nvsVars.TimeZoneName[0]) {
 		nvsVars.fGeoTZ = 1 ;
 		VarsFlag |= varFLAG_TIMEZONE ;
-		SL_INFO("TZ info set %+Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
+		SL_INFO("%+Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
 	} else {
-		SL_ERR("TZ info NOT set, error parsing '%s' key", pKey) ;
+		SL_ERR("Error parsing '%s' key", pKey) ;
 	}
 	if (psTokenList) {
 		free(psTokenList) ;
@@ -427,10 +427,10 @@ int32_t	xHttpParseElevation(http_parser* psParser, const char* pBuf, size_t xLen
 	if (iRV >= erSUCCESS && nvsVars.GeoLocation[Altitude]) {
 		nvsVars.fGeoAlt = 1 ;
 		VarsFlag |= varFLAG_ELEVATION ;
-		SL_INFO("GE info set alt=%.7f  res=%.7f", nvsVars.GeoLocation[Altitude], nvsVars.GeoLocation[Resolution]) ;
+		SL_INFO("alt=%.7f  res=%.7f", nvsVars.GeoLocation[Altitude], nvsVars.GeoLocation[Resolution]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, (uint8_t *) pBuf, psTokenList, NumTok, 0) ;
 	} else {
-		SL_ERR("GE info NOT set, error parsing '%s' key", pKey) ;
+		SL_ERR("Error parsing '%s' key", pKey) ;
 	}
 	if (psTokenList) {
 		free(psTokenList) ;
