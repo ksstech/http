@@ -84,7 +84,8 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 			uprintfx(&psRR->sBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 			// assume pcBody is pointing to actual binary payload
-				IF_myASSERT(debugTRACK, INRANGE_MEM(psRR->handler) && INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
+//				IF_myASSERT(debugTRACK, INRANGE_MEM(psRR->handler) && INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
+				IF_myASSERT(debugTRACK, INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
 				/* Since the actual binary payload will only be added in the callback from xHttpClientExecuteRequest()
 				 * we will only add a single "\r\n" pair here, the second added at the end of this function
 				 * The callback will be responsible for adding the final terminating "\r\n" */
