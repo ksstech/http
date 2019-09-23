@@ -339,7 +339,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			if (iRV == erSUCCESS) {
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 				psRR->pcBody	= (char *) HtmlAPconfigOK ;
-				vRtosSetStatus(flagAPP_RESTART) ;
+				xRtosSetStatus(flagAPP_RESTART) ;
 			} else {
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
 				psRR->pcBody	= (char *) HtmlAPconfigFAIL ;
@@ -398,7 +398,7 @@ void	vTaskHttp(void * pvParameters) {
 	IF_CTRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
 	sRR.sBuf.pBuf	= malloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
-	vRtosSetStateRUN(taskHTTP) ;
+	xRtosSetStateRUN(taskHTTP) ;
 
 	while (xRtosVerifyState(taskHTTP)) {
 		xRtosWaitStatus(flagL3_STA, portMAX_DELAY) ;	// ensure IP is up and running...
