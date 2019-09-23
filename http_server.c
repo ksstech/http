@@ -413,7 +413,7 @@ void	vTaskHttp(void * pvParameters) {
 	while (xRtosVerifyState(taskHTTP)) {
 		xRtosWaitStatus(flagL3_STA, portMAX_DELAY) ;	// ensure IP is up and running...
 		switch(HttpState) {
-		int32_t	iRetVal ;
+		int32_t	iRV ;
 		case stateHTTP_DEINIT:
 			IF_CTRACK(debugTRACK, "de-init") ;
 			xRtosClearStatus(flagNET_HTTP_SERV | flagNET_HTTP_CLNT) ;
@@ -434,8 +434,8 @@ void	vTaskHttp(void * pvParameters) {
 			sServHttpCtx.d_write				= 1 ;
 #endif
 			sServHttpCtx.sa_in.sin_port			= htons(sServHttpCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
-			iRetVal = xNetOpen(&sServHttpCtx) ;
-			if (iRetVal < erSUCCESS) {
+			iRV = xNetOpen(&sServHttpCtx) ;
+			if (iRV < erSUCCESS) {
 				HttpState = stateHTTP_DEINIT ;
 				break ;
 			}
@@ -445,16 +445,16 @@ void	vTaskHttp(void * pvParameters) {
 			/* no break */
 
 		case stateHTTP_WAITING:
-			iRetVal = xNetAccept(&sServHttpCtx, &sRR.sCtx, httpINTERVAL_MS) ;
-			if (iRetVal < 0) {
+			iRV = xNetAccept(&sServHttpCtx, &sRR.sCtx, httpINTERVAL_MS) ;
+			if (iRV < 0) {
 				if (sServHttpCtx.error != EAGAIN) {
 					HttpState = stateHTTP_DEINIT ;
 				}
 				break ;
 			}
 
-			iRetVal = xNetSetRecvTimeOut(&sRR.sCtx, httpINTERVAL_MS) ;
-			if (iRetVal != erSUCCESS) {
+			iRV = xNetSetRecvTimeOut(&sRR.sCtx, httpINTERVAL_MS) ;
+			if (iRV != erSUCCESS) {
 				HttpState = stateHTTP_DEINIT ;
 				break ;
 			}
@@ -464,11 +464,11 @@ void	vTaskHttp(void * pvParameters) {
 			/* no break */
 
 		case stateHTTP_CONNECTED:
-			iRetVal = xNetRead(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Size) ;
-			if (iRetVal > 0) {							// read something ?
-				if (sServHttpCtx.maxRx < iRetVal) {		// yes, update the Rx packet stats
-					sServHttpCtx.maxRx = iRetVal ;
+			iRV = xNetRead(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Size) ;
+			if (iRV > 0) {							// read something ?
 				IF_CTRACK(debugTRACK, "start parsing") ;
+				if (sServHttpCtx.maxRx < iRV) {		// yes, update the Rx packet stats
+					sServHttpCtx.maxRx = iRV ;
 				}
 				http_parser 	sParser ;				// then process the packet
 				http_parser_init(&sParser, HTTP_REQUEST) ;
@@ -488,17 +488,17 @@ void	vTaskHttp(void * pvParameters) {
 				sRR.f_parts			= 1 ;				// break URL up in parts
 				sRR.f_query			= 1 ;				// break query up in parts
 //				sRR.f_debug			= 1 ;				// enable debug output
-				sRR.sBuf.Used		= iRetVal ;
-				iRetVal = xHttpCommonDoParsing(&sParser) ;
-				if (iRetVal > 0) {						// build response if something was parsed....
+				sRR.sBuf.Used		= iRV ;
+				iRV = xHttpCommonDoParsing(&sParser) ;
+				if (iRV > 0) {							// build response if something was parsed....
 					IF_CTRACK(debugTRACK, "start response handler") ;
 					xStdOutLock(portMAX_DELAY) ;
-					iRetVal = xHttpServerResponseHandler(&sParser) ;
+					iRV = xHttpServerResponseHandler(&sParser) ;
 					xStdOutUnLock() ;
 				}
 				IF_CTRACK(debugTRACK, "Parsing done\n") ;
 				// socket closed or error occurred or coClose was set, close the connection
-				if (iRetVal == 0 || 					// nothing parsed or socket closed?
+				if (iRV == 0 || 						// nothing parsed or socket closed?
 					sRR.sCtx.error != 0 || 				// any error (even EAGAIN) on write ?
 					sRR.hvConnect == coClose) {			// or connection must be closed ?
 					vHttpServerCloseClient(&sRR.sCtx) ;	// then close the damn thing
