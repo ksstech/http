@@ -271,7 +271,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR->sBuf.pBuf)) ;
 
-	int32_t	iURL = -1, iRV ;
+	int32_t	iURL = -1, iRV, i ;
 	if (psParser->http_errno) {
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
 		psRR->pcBody	= (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
@@ -306,36 +306,46 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		break ;
 
 	case urlSAVE_AP:
-#if		(halNET_BUILD_DHCP == 1) || (halNET_BUILD_AUTO == 1)
-		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0)	||
-			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)	||
-			(strcmp(psRR->params[2].key, halSTORAGE_KEY_MQTT) != 0))
-#elif	(halNET_BUILD_STATIC == 1)
-		if ((strcmp(psRR->params[0].key, halSTORAGE_KEY_SSID) != 0) ||
-			(strcmp(psRR->params[1].key, halSTORAGE_KEY_PSWD) != 0)	||
-			(strcmp(psRR->params[2].key, halSTORAGE_KEY_NM)	!= 0)	||
-			(strcmp(psRR->params[3].key, halSTORAGE_KEY_GW) != 0)	||
-			(strcmp(psRR->params[4].key, halSTORAGE_KEY_IP) != 0)	||
-			(strcmp(psRR->params[5].key, halSTORAGE_KEY_DNS1) != 0)	||
-			(strcmp(psRR->params[6].key, halSTORAGE_KEY_DNS2) != 0) ||
-			(strcmp(psRR->params[7].key, halSTORAGE_KEY_MQTT) != 0))
+		i = 0 ;
+		if ((strcmp(psRR->params[i++].key, halSTORAGE_KEY_SSID) != 0)	||
+			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_PSWD) != 0)	||
+#if		(halNET_EXTEND_IP == 1)
+			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_NM)	!= 0)	||
+			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_GW)	!= 0)	||
+			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_IP)	!= 0)	||
+			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_DNS1) != 0)	||
+			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_DNS2) != 0)	||
 #endif
-		{	xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
+			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_MQTT) != 0)) {
+			// missing/corrupted/wrong key for an IP parameter, stop parsing & complain...
+			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
+
 		} else {
 			bzero(&nvsWifi, sizeof(nvsWifi)) ;
-			int32_t i = 0 ;
+			// all IP parameter keys matched, parsed them now
+			i = 0 ;
 			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.ssid) ;
-			if (iRV == erSUCCESS) iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.pswd) ;
-#if		(halNET_BUILD_STATIC == 1)
-			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipNM) ;
-			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipGW) ;
-			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipSTA) ;
-			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipDNS1) ;
-			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipDNS2) ;
+			if (iRV == erSUCCESS)
+				iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.pswd) ;
+#if		(halNET_EXTEND_IP == 1)
+			if (iRV == erSUCCESS)
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipNM) ;
+			if (iRV == erSUCCESS)
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipGW) ;
+			if (iRV == erSUCCESS)
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipSTA) ;
+			if (iRV == erSUCCESS)
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipDNS1) ;
+			if (iRV == erSUCCESS)
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipDNS2) ;
 #endif
-			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipMQTT) ;
-			if (iRV == erSUCCESS) iRV = halSTORAGE_WriteBlob(halSTORAGE_STORE, halSTORAGE_KEY_WIFI, &nvsWifi, sizeof(nvsWifi)) ;
+			if (iRV == erSUCCESS)						// last parameter in the list
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipMQTT) ;
+			// if all IP parameters parsed successfully then we can persist them...
+			if (iRV == erSUCCESS)
+				iRV = halSTORAGE_WriteBlob(halSTORAGE_STORE, halSTORAGE_KEY_WIFI, &nvsWifi, sizeof(nvsWifi)) ;
+			// inform the client of success or not....
 			if (iRV == erSUCCESS) {
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 				psRR->pcBody	= (char *) HtmlAPconfigOK ;
