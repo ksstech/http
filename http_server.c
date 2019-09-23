@@ -401,7 +401,7 @@ void	vTaskHttp(void * pvParameters) {
 	vRtosSetStateRUN(taskHTTP) ;
 
 	while (xRtosVerifyState(taskHTTP)) {
-		xRtosWaitStatus(flagNET_L1 | flagNET_L2 | flagNET_L3, portMAX_DELAY) ;	// ensure IP is up and running...
+		xRtosWaitStatus(flagL3_STA, portMAX_DELAY) ;	// ensure IP is up and running...
 		switch(HttpState) {
 		int32_t	iRetVal ;
 		case stateHTTP_DEINIT:
