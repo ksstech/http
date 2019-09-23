@@ -235,7 +235,18 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 	static const char format[] = "<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>" ;
 	http_reqres_t * psRR = psParser->data ;
 	int32_t iRV ;
-	vCommandInterpret((int) *psRR->parts[1]) ;
+	for (int32_t i = 1; i < httpYUAREL_MAX_PARTS && psRR->parts[i] != NULL; ++i) {
+		char * pcCommand = psRR->parts[i] ;
+		xStringParseEncoded(pcCommand, pcCommand) ;
+		IF_CPRINT(debugTRACK, "#%d = '%s'\n", i, pcCommand) ;
+		while (*pcCommand != CHR_NUL) {
+			vCommandInterpret((int) *pcCommand, cmndFLAGS_TEST) ;
+			++pcCommand ;
+		}
+		if (pcCommand - psRR->parts[i] > 1) {
+			vCommandInterpret((int) CHR_CR, cmndFLAGS_TEST) ;
+		}
+	}
 	if (xUBufAvail(&sBufStdOut) > 0) {
 		/* Definitive problem here if the volume of output from vCommandInterpret() exceed the
 		 * size of the buffer. In this case some content would have been overwritten and the
