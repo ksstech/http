@@ -322,8 +322,8 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
 
 		} else {
-			bzero(&nvsWifi, sizeof(nvsWifi)) ;
 			// all IP parameter keys matched, parsed them now
+			memset(&nvsWifi, 0, sizeof(nvsWifi)) ;
 			i = 0 ;
 			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.ssid) ;
 			if (iRV == erSUCCESS)
