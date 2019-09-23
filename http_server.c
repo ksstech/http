@@ -49,7 +49,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0x2000
+#define	debugFLAG						0x0000
 
 #define	debugTRACK						(debugFLAG & 0x2000)
 #define	debugPARAM						(debugFLAG & 0x4000)
@@ -507,7 +507,7 @@ void	vTaskHttp(void * pvParameters) {
 					iRV = xHttpServerResponseHandler(&sParser) ;
 					xStdOutUnLock() ;
 				}
-				IF_CTRACK(debugTRACK, "Parsing done\n") ;
+				IF_CTRACK(debugTRACK, "Parsing done") ;
 				// socket closed or error occurred or coClose was set, close the connection
 				if (iRV == 0 || 						// nothing parsed or socket closed?
 					sRR.sCtx.error != 0 || 				// any error (even EAGAIN) on write ?
