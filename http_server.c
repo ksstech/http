@@ -254,7 +254,7 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 // ################################### Common HTTP API functions ###################################
 
 void	vHttpServerCloseClient(netx_t * psCtx) {
-	vRtosClearStatus(flagNET_HTTP_CLNT) ;
+	xRtosClearStatus(flagNET_HTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
 	xNetClose(psCtx) ;
 	IF_CTRACK(debugTRACK, "closing\n") ;
@@ -405,8 +405,8 @@ void	vTaskHttp(void * pvParameters) {
 		switch(HttpState) {
 		int32_t	iRetVal ;
 		case stateHTTP_DEINIT:
-			IF_CTRACK(debugTRACK, "de-init\n") ;
-			vRtosClearStatus(flagNET_HTTP_SERV | flagNET_HTTP_CLNT) ;
+			IF_CTRACK(debugTRACK, "de-init") ;
+			xRtosClearStatus(flagNET_HTTP_SERV | flagNET_HTTP_CLNT) ;
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
 			HttpState = stateHTTP_INIT ;
@@ -429,7 +429,7 @@ void	vTaskHttp(void * pvParameters) {
 				HttpState = stateHTTP_DEINIT ;
 				break ;
 			}
-			vRtosSetStatus(flagNET_HTTP_SERV) ;
+			xRtosSetStatus(flagNET_HTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
 			IF_CTRACK(debugTRACK, "waiting\n") ;
 			/* no break */
@@ -448,7 +448,7 @@ void	vTaskHttp(void * pvParameters) {
 				HttpState = stateHTTP_DEINIT ;
 				break ;
 			}
-			vRtosSetStatus(flagNET_HTTP_CLNT) ;			// mark as having a client connection
+			xRtosSetStatus(flagNET_HTTP_CLNT) ;			// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
 			IF_CTRACK(debugTRACK, "connected\n") ;
 			/* no break */

@@ -283,7 +283,7 @@ int32_t xHttpClientCheckUpgrades(void) {
 		iRV = xHttpClientFirmwareUpgrade((void *) mqttSPECIFICATION_TOKEN) ;
 	}
 	if (iRV == erSUCCESS) { 							// no [newer] upgrade there
-		vRtosClearStatus(flagAPP_UPGRADE) ;				// then clear the flag
+		xRtosClearStatus(flagAPP_UPGRADE) ;				// then clear the flag
 	}
 	return iRV ;
 }
