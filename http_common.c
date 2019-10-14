@@ -291,9 +291,9 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, si
 	{	// test parse (count tokens) then allocate memory & parse
 		jsmntok_t *	psTokenList ;
 		jsmn_parser	sParser ;
-		int32_t iRetVal = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
-		if (iRetVal > erSUCCESS) {						// print parsed tokens
-			iRetVal = xJsonPrintTokens((uint8_t *) pBuf, psTokenList, iRetVal, 0) ;
+		int32_t iRV = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
+		if (iRV > erSUCCESS) {							// print parsed tokens
+			iRV = xJsonPrintTokens((uint8_t *) pBuf, psTokenList, iRV, 0) ;
 		} else {
 			PRINT("BODY (json)\n%!'+b", xLen, pBuf) ;	// not parsed, just dump...
 		}
@@ -326,7 +326,7 @@ size_t	xHttpCommonDoParsing(http_parser * psParser) {
 	psRR->sfCB.on_status		= xHttpCommonStatusHandler ;
 	psRR->sfCB.on_header_field	= xHttpCommonHeaderFieldHandler ;
 	psRR->sfCB.on_header_value	= xHttpCommonHeaderValueHandler ;
-	if (debugRESULT && psRR->sfCB.on_body == NULL) {
+	if (debugTRACK && psRR->sfCB.on_body == NULL) {
 		psRR->sfCB.on_body		= xHttpCommonMessageBodyHandler ;
 	}
 

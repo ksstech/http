@@ -537,8 +537,8 @@ int32_t	xHttpClientRulesDownload(void) {
 	sReq.hvAccept		= ctApplicationOctetStream ;
 	sReq.sfCB.on_body	= xHttpClientRulesDownloadHandler ;
 //	sReq.f_debug		= 1 ;
-	int32_t iRetVal 	= xHttpClientExecuteRequest(&sReq, idSTA) ;
-	return iRetVal ;
+	int32_t iRV 		= xHttpClientExecuteRequest(&sReq, idSTA) ;
+	return iRV ;
 }
 
 // ################################## POST IDENT info to host ######################################
@@ -551,8 +551,8 @@ int32_t	xHttpClientIdentUpload(void * pvPara) {
 	sReq.hvContentType	= ctApplicationOctetStream ;
 //	sReq.f_append		= 1 ;
 	sReq.f_debug		= 1 ;
-	int32_t iRetVal 	= xHttpClientExecuteRequest(&sReq, pvPara) ;
-	return iRetVal ;
+	int32_t iRV 		= xHttpClientExecuteRequest(&sReq, pvPara) ;
+	return iRV ;
 }
 
 // ################################## PUT core dump to host ########################################
