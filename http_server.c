@@ -421,7 +421,7 @@ void	vTaskHttp(void * pvParameters) {
 	HttpState 		= stateHTTP_INIT ;
 	xRtosSetStateRUN(taskHTTP) ;
 
-	while (xRtosVerifyState(taskHTTP)) {
+	while (bRtosVerifyState(taskHTTP)) {
 		xRtosWaitStatus(flagL3_STA, portMAX_DELAY) ;	// ensure IP is up and running...
 		switch(HttpState) {
 		int32_t	iRV ;
@@ -538,10 +538,10 @@ void	vTaskHttp(void * pvParameters) {
 void	vTaskHttpInit(void) { xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ; }
 
 void	vHttpReport(void) {
-	if (xRtosCheckStatus(flagNET_HTTP_CLNT)) {
+	if (bRtosCheckStatus(flagNET_HTTP_CLNT)) {
 		xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0) ;
 	}
-	if (xRtosCheckStatus(flagNET_HTTP_SERV)) {
+	if (bRtosCheckStatus(flagNET_HTTP_SERV)) {
 		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0) ;
 	} else {
 		PRINT("%CHTTP%C\t", xpfSGR(attrRESET, colourFG_CYAN, 0, 0), attrRESET) ;

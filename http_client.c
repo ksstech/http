@@ -275,11 +275,11 @@ int32_t xHttpClientCheckUpgrades(void) {
 	 */
 	int32_t iRV = xHttpClientFirmwareUpgrade((void *) idSTA) ;
 	#if 0
-	if (xRtosCheckStatus(flagAPP_UPGRADE)) {
+	if (bRtosCheckStatus(flagAPP_UPGRADE)) {
 		iRV = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN) ;
 	}
 	#endif
-	if (xRtosCheckStatus(flagAPP_UPGRADE)) {
+	if (bRtosCheckStatus(flagAPP_UPGRADE)) {
 		iRV = xHttpClientFirmwareUpgrade((void *) mqttSPECIFICATION_TOKEN) ;
 	}
 	if (iRV == erSUCCESS) { 							// no [newer] upgrade there
