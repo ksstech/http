@@ -49,7 +49,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0x0000
+#define	debugFLAG						0x4000
 
 #define	debugTRACK						(debugFLAG & 0x2000)
 #define	debugPARAM						(debugFLAG & 0x4000)
@@ -100,29 +100,35 @@ static	const char	HtmlSTAdetails[] =
 	"<p>Platform        : " DEV_PLATFORM "</p>"
 	"<p>Wifi FW version : " mySTRINGIFY(DEV_WIFI_VER) "</p>"
 	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
-	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form></body></html>" ;
+	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form>"
+	"</body></html>" ;
 
 static	const char HtmlAPconfigOK[] =
 	"<html><body><h3>IRMACOS: AP details set, rebooting now..</h3>"
-	"<p>Please wait a minute and then confirm success</p></body></html>" ;
+	"<p>Please wait a minute and then confirm success</p>"
+	"</body></html>" ;
 
 static	const char HtmlAPconfigFAIL[] =
 	"<html><body><h3>IRMACOS: AP details NOT set, try again..</h3>"
-	"<p>Please make sure only using the allowed characters</p></body></html>" ;
+	"<p>Please make sure only using the allowed characters</p>"
+	"</body></html>" ;
 
 static	const char HtmlErrorNoHost[] =
 	"<html><body><h2>No Host: header received</h2>"
-	"<p>HTTP 1.1 requests must include the Host: header.</p></body></html>" ;
+	"<p>HTTP 1.1 requests must include the Host: header.</p>"
+	"</body></html>" ;
 
 static	const char HtmlErrorInvMethod[] =
 	"<html><body><h2>Invalid method request</h2>"
-	"<p>IRMACOS only support GET, not HEAD, POST, DELETE etc..</p></body></html>" ;
+	"<p>IRMACOS only support GET, not HEAD, POST, DELETE etc..</p>"
+	"</body></html>" ;
 
 static	const char HtmlErrorBadQuery[] =
-	"<html><body><h2>Query key:value pair(s) mismatched</h2></body></html>" ;
+	"<html><body><h2>Query key:value pair(s) mismatched</h2>"
+	"</body></html>" ;
 
 uint8_t			HttpState ;
-netx_t		sServHttpCtx ;
+netx_t			sServHttpCtx ;
 http_reqres_t	sRR = { 0 } ;
 
 // ###################################### global variables #########################################
