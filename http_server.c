@@ -193,14 +193,6 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	return iRV ;
 }
 
-int32_t	xHttpServerParseWriteString(char * pKey, char *pVal) {
-	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
-		return erFAILURE ;
-	}
-	IF_CPRINT(debugTRACK, "%s->%s\n", pKey, pVal) ;
-	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) pVal, vfSXX) == ESP_OK ? erSUCCESS : erFAILURE ;
-}
-
 int32_t	xHttpServerParseString(char * pVal, char * pDst) {
 	if (xStringParseEncoded(pVal, pDst) == erFAILURE) {
 		return erFAILURE ;
@@ -209,25 +201,12 @@ int32_t	xHttpServerParseString(char * pVal, char * pDst) {
 	return erSUCCESS ;
 }
 
-int32_t	xHttpServerParseWriteIPaddress(char * pKey, char * pVal) {
-	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
+int32_t	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
+	if (xStringParseEncoded(pSrc, NULL) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s->%s", pKey, pVal) ;
-	uint32_t	IPaddr ;
-	if (pcStringParseIpAddr(pVal, &IPaddr) == pcFAILURE) {
-		return erFAILURE ;
-	}
-	IF_CPRINT(debugTRACK, " : %-I\n", IPaddr) ;
-	return halSTORAGE_WriteKeyValue(halSTORAGE_STORE, pKey, (x32_t) htonl(IPaddr), vfUXX) == ESP_OK ? erSUCCESS : erFAILURE ;
-}
-
-int32_t	xHttpServerParseIPaddress(char * pVal, uint32_t * pDst) {
-	if (xStringParseEncoded(pVal, NULL) == erFAILURE) {
-		return erFAILURE ;
-	}
-	IF_CPRINT(debugTRACK, "%s->%s", pVal) ;
-	if (pcStringParseIpAddr(pVal, pDst) == pcFAILURE) {
+	IF_CPRINT(debugTRACK, "%s->%s", pSrc) ;
+	if (pcStringParseIpAddr(pSrc, (p32_t) pDst, "\0") == pcFAILURE) {
 		*pDst = 0 ;
 		return erFAILURE ;
 	}
