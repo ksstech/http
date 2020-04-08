@@ -407,7 +407,7 @@ void	vTaskHttp(void * pvParameters) {
 	xRtosSetStateRUN(taskHTTP) ;
 
 	while (bRtosVerifyState(taskHTTP)) {
-		xRtosWaitStatus(flagL3_STA, portMAX_DELAY) ;	// ensure IP is up and running...
+		xRtosWaitStatusANY(flagL3_ANY, portMAX_DELAY) ;	// ensure IP is up and running...
 		switch(HttpState) {
 		int32_t	iRV ;
 		case stateHTTP_DEINIT:
@@ -416,7 +416,7 @@ void	vTaskHttp(void * pvParameters) {
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
 			HttpState = stateHTTP_INIT ;
-			/* no break */
+			break ;					// must NOT fall through since the Lx status might have changed
 
 		case stateHTTP_INIT:
 			IF_CTRACK(debugTRACK, "init") ;
