@@ -49,7 +49,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0x4000
+#define	debugFLAG						0xC000
 
 #define	debugTRACK						(debugFLAG & 0x2000)
 #define	debugPARAM						(debugFLAG & 0x4000)
