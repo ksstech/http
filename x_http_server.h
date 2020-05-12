@@ -19,12 +19,12 @@
  */
 
 /*
- * http_server.h
+ * x_http_server.h
  */
 
 #pragma once
 
-#include 	"http_common.h"
+#include 	"http_parser.h"
 #include	<stdint.h>
 
 #ifdef __cplusplus
@@ -51,8 +51,8 @@ enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNEC
 
 // ################################### Global variables ############################################
 
-extern	netx_t	sServHttpCtx ;
-extern	http_reqres_t	sRR ;
+//extern	netx_t	sServHttpCtx ;
+//extern	http_reqres_t	sRR ;
 
 // ###################################### public functions #########################################
 

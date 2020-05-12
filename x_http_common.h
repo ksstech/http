@@ -19,7 +19,7 @@
  */
 
 /*
- * http_common.h
+ * x_http_common.h
  */
 
 #pragma once
@@ -27,7 +27,6 @@
 #include 	"http_parser.h"
 #include	"yuarel.h"
 
-#include	"x_printf.h"
 #include	"x_ubuf.h"
 #include	"x_sockets.h"
 

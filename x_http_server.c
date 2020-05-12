@@ -23,13 +23,14 @@
 
 #include	"FreeRTOS_Support.h"
 
-#include 	"http_server.h"
-#include 	"http_client.h"								// for xHttpFirmware????()
+#include 	"x_http_server.h"
+#include 	"x_http_client.h"								// for xHttpFirmware????()
 #include	"rules_parse_text.h"
 #include	"task_control.h"
 
 #include	"x_retarget.h"
 #include	"x_syslog.h"
+#include	"x_printf.h"
 #include	"x_errors_events.h"
 #include	"x_string_general.h"
 #include	"x_string_to_values.h"
@@ -438,7 +439,7 @@ void	vTaskHttp(void * pvParameters) {
 			xRtosSetStatus(flagNET_HTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
 			IF_CTRACK(debugTRACK, "waiting") ;
-			/* no break */
+			/* FALLTHRU */
 
 		case stateHTTP_WAITING:
 			iRV = xNetAccept(&sServHttpCtx, &sRR.sCtx, httpINTERVAL_MS) ;
@@ -457,7 +458,7 @@ void	vTaskHttp(void * pvParameters) {
 			xRtosSetStatus(flagNET_HTTP_CLNT) ;			// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
 			IF_CTRACK(debugTRACK, "connected") ;
-			/* no break */
+			/* FALLTHRU */
 
 		case stateHTTP_CONNECTED:
 			iRV = xNetRead(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Size) ;

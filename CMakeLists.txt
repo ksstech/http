@@ -1,7 +1,5 @@
-set(COMPONENT_SRCS  "http_client.c"
-					"http_common.c"
-					"http_server.c")
-set(COMPONENT_ADD_INCLUDEDIRS)
-set(COMPONENT_REQUIRES)
-set(COMPONENT_PRIV_REQUIRES)
-register_component()
+idf_component_register(	SRCS x_http_client.c x_http_common.c x_http_server.c 
+						INCLUDE_DIRS .
+						REQUIRES irmacos x_sockets common http-parser libyuarel buffers
+						PRIV_REQUIRES hal_esp32 rtos-support statistics sitewhere actuators x_json common syslog printf systiming hal_esp32 commands
+						)

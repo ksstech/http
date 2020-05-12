@@ -22,7 +22,7 @@
  * http_client.c
  */
 
-#include 	"http_client.h"
+#include	"x_http_client.h"
 
 #include	"sitewhere.h"
 #include	"sitewhere-text.h"							// for vMqttSubscribeRulesTEXT()
@@ -32,6 +32,7 @@
 #include	"x_json_parser.h"							// parsing location & TZ requests
 #include	"x_errors_events.h"
 #include	"x_syslog.h"
+#include	"x_printf.h"
 #include	"x_systiming.h"
 
 #include	"hal_debug.h"

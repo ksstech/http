@@ -1,12 +1,11 @@
 /*
- * http_client.h
+ * x_http_client.h
  */
 
 #pragma once
 
-#include 	"http_common.h"
-
 #include	"x_config.h"								// required for API keys...
+#include 	"x_http_common.h"
 #include	"x_sockets.h"
 #include	"x_definitions.h"
 #include	"x_time.h"
