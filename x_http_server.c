@@ -518,7 +518,6 @@ void	vTaskHttp(void * pvParameters) {
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
 	IF_CTRACK(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
-	IF_EXEC_1(configDELAY_TASK_DELETE > 0, vTaskDelay, configDELAY_TASK_DELETE) ;
 	vTaskDelete(NULL) ;
 }
 
