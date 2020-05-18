@@ -29,8 +29,8 @@
 #include	"task_control.h"
 
 #include	"x_retarget.h"
-#include	"x_syslog.h"
-#include	"x_printf.h"
+#include	"syslog.h"
+#include	"printfx.h"
 #include	"x_errors_events.h"
 #include	"x_string_general.h"
 #include	"x_string_to_values.h"

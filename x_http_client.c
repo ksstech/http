@@ -31,9 +31,9 @@
 
 #include	"x_json_parser.h"							// parsing location & TZ requests
 #include	"x_errors_events.h"
-#include	"x_syslog.h"
-#include	"x_printf.h"
-#include	"x_systiming.h"
+#include	"syslog.h"
+#include	"printfx.h"
+#include	"systiming.h"
 
 #include	"hal_debug.h"
 #include	"hal_network.h"
