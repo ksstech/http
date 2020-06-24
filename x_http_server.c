@@ -50,7 +50,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0xE000
+#define	debugFLAG						0xC000
 
 #define	debugTRACK						(debugFLAG & 0x2000)
 #define	debugPARAM						(debugFLAG & 0x4000)
@@ -190,7 +190,7 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	va_end(vArgs) ;
 	iRV += socprintfx(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 
-	IF_CPRINT((myDEBUG == 1) && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
+	IF_CPRINT((debugTRACK == 1) && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	return iRV ;
 }
 
@@ -226,11 +226,11 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 		xStringParseEncoded(pcCommand, pcCommand) ;
 		IF_CPRINT(debugTRACK, "#%d = '%s'\n", i, pcCommand) ;
 		while (*pcCommand != CHR_NUL) {
-			vCommandInterpret((int) *pcCommand, cmndFLAGS_TEST) ;
+			vCommandInterpret((int) *pcCommand, false) ;
 			++pcCommand ;
 		}
 		if (pcCommand - psRR->parts[i] > 1) {
-			vCommandInterpret((int) CHR_CR, cmndFLAGS_TEST) ;
+			vCommandInterpret((int) CHR_CR, false) ;
 		}
 	}
 	if (xUBufAvail(&sRTCslow.sBufStdOut) > 0) {
@@ -238,7 +238,7 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 		 * size of the buffer. In this case some content would have been overwritten and the
 		 * pointers would have wrapped and could point somewhere other than the start of the
 		 * buffer. In this case, the response as sent will be incomplete or invalid.
-		 * TODO: change handling to accommodate sending 2 separate blocks
+		 * XXX change handling to accommodate sending 2 separate blocks
 		 */
 		iRV = xHttpSendResponse(psParser, format, xUBufAvail(&sRTCslow.sBufStdOut), pcUBufTellRead(&sRTCslow.sBufStdOut)) ;
 		vUBufReset(&sRTCslow.sBufStdOut) ;

@@ -106,11 +106,7 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
 	uprintfx(&psRR->sBuf, "\r\n") ;
-#if		(myDEBUG == 1)
-	if (psRR->f_debug) {
-		SL_DBG("Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
-	}
-#endif
+	IF_SL_DBG(debugTRACK && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	return psRR->sBuf.Used ;
 }
 

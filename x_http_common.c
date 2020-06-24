@@ -162,7 +162,7 @@ int 	xHttpCommonUrlHandler(http_parser * psParser, const char* pBuf, size_t xLen
 		psRes->NumQuery = 0 ;
 	}
 
-	#if	(myDEBUG == 1)
+#if	(debugTRACK == 1)
 	if (psRes->f_debug) {
 		PRINT("Struct: scheme:%s  host:%s  port:%d  path:%s  query:%s  fragment:%s\n",
 				psRes->url.scheme, psRes->url.host, psRes->url.port, *psRes->url.path == CHR_NUL ? "/" : psRes->url.path,
@@ -170,13 +170,13 @@ int 	xHttpCommonUrlHandler(http_parser * psParser, const char* pBuf, size_t xLen
 		for (Idx = 0; Idx < psRes->NumParts; ++Idx) PRINT("Path part[%d]: '%s'\n", Idx, psRes->parts[Idx]) ;
 		for (Idx = 0; Idx < psRes->NumQuery; ++Idx) PRINT("Parameter[%d]: name='%s' value='%s'\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val) ;
 	}
-	#endif
+#endif
 	return erSUCCESS ;
 }
 
 int 	xHttpCommonStatusHandler(http_parser * psParser, const char* pBuf, size_t xLen) {
 	http_reqres_t * psReq = psParser->data ;
-#if     (myDEBUG == 1)
+#if     (debugTRACK == 1)
 	if (psReq->f_debug) {
 		PRINT("Status: %d = '%.*s'\n", psParser->status_code, xLen, pBuf) ;
 	}
@@ -191,7 +191,7 @@ int 	xHttpCommonHeaderFieldHandler(http_parser * psParser, const char* pBuf, siz
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(pBuf) && (xLen > 0)) ;
 	http_reqres_t * psReq = psParser->data ;
 	psReq->HdrField	= xHttpCommonFindMatch(hfValues, NUM_OF_MEMBERS(hfValues), pBuf, xLen) ;
-#if     (myDEBUG == 1)
+#if     (debugTRACK == 1)
 	if (psReq->f_debug) {
 		PRINT("Header field: '%.*s'\n", (int)xLen, pBuf) ;
 	}
@@ -201,7 +201,7 @@ int 	xHttpCommonHeaderFieldHandler(http_parser * psParser, const char* pBuf, siz
 
 int 	xHttpCommonHeaderValueHandler(http_parser * psParser, const char* pBuf, size_t xLen) {
 	http_reqres_t * psReq = psParser->data ;
-#if     (myDEBUG == 1)
+#if     (debugTRACK == 1)
 	if (psReq->f_debug) {
 		PRINT("Header value: '%.*s'\n", (int)xLen, pBuf);
 	}
@@ -330,7 +330,7 @@ size_t	xHttpCommonDoParsing(http_parser * psParser) {
 		psRR->sfCB.on_body		= xHttpCommonMessageBodyHandler ;
 	}
 
-#if     (myDEBUG == 1)
+#if     (debugTRACK == 1)
 	if (psRR->f_debug == 1) {
 		psRR->sfCB.on_message_begin		= xHttpCommonMessageBeginHandler ;
 		psRR->sfCB.on_chunk_header		= xHttpCommonChunkHeaderHandler ;
