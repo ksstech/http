@@ -439,7 +439,7 @@ void	vTaskHttp(void * pvParameters) {
 			xRtosSetStatus(flagNET_HTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
 			IF_CTRACK(debugTRACK, "waiting") ;
-			/* FALLTHRU */
+			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_WAITING:
 			iRV = xNetAccept(&sServHttpCtx, &sRR.sCtx, httpINTERVAL_MS) ;
@@ -458,7 +458,7 @@ void	vTaskHttp(void * pvParameters) {
 			xRtosSetStatus(flagNET_HTTP_CLNT) ;			// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
 			IF_CTRACK(debugTRACK, "connected") ;
-			/* FALLTHRU */
+			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_CONNECTED:
 			iRV = xNetRead(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Size) ;
