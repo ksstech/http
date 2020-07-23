@@ -28,7 +28,6 @@
 #include	"rules_parse_text.h"
 #include	"task_control.h"
 
-#include	"x_retarget.h"
 #include	"syslog.h"
 #include	"printfx.h"
 #include	"x_errors_events.h"
@@ -38,6 +37,7 @@
 #include	"actuators.h"
 #include	"commands.h"
 
+#include	"hal_rtc.h"
 #include	"hal_debug.h"
 #include	"hal_network.h"
 #include	"hal_fota.h"
@@ -233,15 +233,15 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 			vCommandInterpret((int) CHR_CR, false) ;
 		}
 	}
-	if (xUBufAvail(&sRTCslow.sBufStdOut) > 0) {
+	if (xUBufAvail(&sRTCvars.sRTCbuf) > 0) {
 		/* Definitive problem here if the volume of output from vCommandInterpret() exceed the
 		 * size of the buffer. In this case some content would have been overwritten and the
 		 * pointers would have wrapped and could point somewhere other than the start of the
 		 * buffer. In this case, the response as sent will be incomplete or invalid.
 		 * XXX change handling to accommodate sending 2 separate blocks
 		 */
-		iRV = xHttpSendResponse(psParser, format, xUBufAvail(&sRTCslow.sBufStdOut), pcUBufTellRead(&sRTCslow.sBufStdOut)) ;
-		vUBufReset(&sRTCslow.sBufStdOut) ;
+		iRV = xHttpSendResponse(psParser, format, xUBufAvail(&sRTCvars.sRTCbuf), pcUBufTellRead(&sRTCvars.sRTCbuf)) ;
+		vUBufReset(&sRTCvars.sRTCbuf) ;
 	} else {
 		iRV = xHttpSendResponse(psParser, "<html><body><h2>Command completed</h2></body></html>") ;
 	}
@@ -489,9 +489,9 @@ void	vTaskHttp(void * pvParameters) {
 				iRV = xHttpCommonDoParsing(&sParser) ;
 				if (iRV > 0) {							// build response if something was parsed....
 					IF_CTRACK(debugTRACK, "start response handler") ;
-					xStdOutLock(portMAX_DELAY) ;
+					halRTC_BufLock(portMAX_DELAY) ;
 					iRV = xHttpServerResponseHandler(&sParser) ;
-					xStdOutUnLock() ;
+					halRTC_BufUnLock() ;
 				}
 				IF_CTRACK(debugTRACK, "Parsing done") ;
 				// socket closed or error occurred or coClose was set, close the connection
