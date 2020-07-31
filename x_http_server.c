@@ -33,11 +33,11 @@
 #include	"x_errors_events.h"
 #include	"x_string_general.h"
 #include	"x_string_to_values.h"
+#include	"x_stdio.h"
 #include	"x_time.h"
 #include	"actuators.h"
 #include	"commands.h"
 
-#include	"hal_rtc.h"
 #include	"hal_debug.h"
 #include	"hal_network.h"
 #include	"hal_fota.h"
@@ -490,9 +490,9 @@ void	vTaskHttp(void * pvParameters) {
 				iRV = xHttpCommonDoParsing(&sParser) ;
 				if (iRV > 0) {							// build response if something was parsed....
 					IF_CTRACK(debugTRACK, "start response handler") ;
-					halRTC_BufLock(portMAX_DELAY) ;
+					xStdioBufLock(portMAX_DELAY) ;
 					iRV = xHttpServerResponseHandler(&sParser) ;
-					halRTC_BufUnLock() ;
+					xStdioBufUnLock() ;
 				}
 				IF_CTRACK(debugTRACK, "Parsing done") ;
 				// socket closed or error occurred or coClose was set, close the connection
