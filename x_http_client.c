@@ -43,15 +43,16 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0x4000
-#define	debugJSON						(debugFLAG & 0x0001)
-#define	debugBUILD						(debugFLAG & 0x0004)
-#define	debugTIMING						(debugFLAG & 0x0008)
+#define	debugFLAG					0x4000
 
-#define	debugDEBUG						(debugFLAG & 0x1000)
-#define	debugTRACK						(debugFLAG & 0x2000)
-#define	debugPARAM						(debugFLAG & 0x4000)
-#define	debugRESULT						(debugFLAG & 0x8000)
+#define	debugJSON					(debugFLAG & 0x0001)
+#define	debugBUILD					(debugFLAG & 0x0002)
+#define	debugDEBUG					(debugFLAG & 0x0004)
+
+#define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
+#define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
+#define	debugPARAM					(debugFLAG_GLOBAL & debugFLAG & 0x4000)
+#define	debugRESULT					(debugFLAG_GLOBAL & debugFLAG & 0x8000)
 
 // ###################################### BUILD : CONFIG definitions ###############################
 
