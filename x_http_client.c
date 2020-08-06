@@ -118,6 +118,7 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
  */
 int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR)) ;
+	IF_SYSTIMER_INIT(debugTIMING, systimerHTTP, systimerTICKS, "HTTPclnt", myMS_TO_TICKS(configHTTP_RX_WAIT/100), myMS_TO_TICKS(configHTTP_RX_WAIT)) ;
 	IF_SYSTIMER_START(debugTIMING, systimerHTTP) ;
 	http_parser sParser ;
 	http_parser_init(&sParser, HTTP_RESPONSE) ;			// clear all parser fields/values
