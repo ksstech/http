@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-18 Andre M Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-20 Andre M Maree / KSS Technologies (Pty) Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -43,7 +43,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0x4000
+#define	debugFLAG					0xC000
 
 #define	debugJSON					(debugFLAG & 0x0001)
 #define	debugBUILD					(debugFLAG & 0x0002)
@@ -391,9 +391,8 @@ int32_t	xHttpParseGeoLoc(http_parser * psParser, const char * pBuf, size_t xLen)
 }
 
 int32_t	xHttpGetLocation(void) {
-	if (nvsVars.fGeoLoc) {
+	if (nvsVars.fGeoLoc)
 		return erSUCCESS ;
-	}
 	sock_sec_t sSecure	= { 0 } ;
 	sSecure.pPem		= HostInfo[hostGOOGLE].pCert ;
 	sSecure.PemSize		= HostInfo[hostGOOGLE].Size ;
@@ -484,11 +483,11 @@ int32_t	xHttpGetTimeZone(void) {
 // ########################################## Elevation #############################################
 
 int32_t	xHttpParseElevation(http_parser* psParser, const char* pBuf, size_t xLen) {
-	int32_t		iRV = erFAILURE, NumTok ;
+	int32_t		iRV = erFAILURE ;
 	const char * pKey = " Insufficient" ;
 	jsmn_parser	sParser ;
 	jsmntok_t *	psTokenList ;
-	NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
+	int32_t NumTok = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {								// parse Elevation
 		iRV = xJsonParseKeyValue(pBuf, psTokenList, NumTok, pKey = "elevation", &nvsVars.GeoLocation[Altitude], vfFXX) ;
 		if (iRV >= erSUCCESS) {					// parse Resolution
@@ -586,10 +585,8 @@ int32_t	xHttpClientPushOver(const char * pcMess, uint32_t u32Val) {
 
 int32_t xHttpClientRulesDownloadHandler(http_parser * psParser, const char * pBuf, size_t xLen) {
 	// check if all OK to continue
-	if (xHttpClientFileDownloadCheck(psParser, pBuf, xLen) == erFAILURE) {
+	if (xHttpClientFileDownloadCheck(psParser, pBuf, xLen) == erFAILURE)
 		return erFAILURE ;
-	}
-
 	MQTTMessage	RulesMessage ;
 	MessageData	RulesData ;
 	RulesData.message				= &RulesMessage ;
