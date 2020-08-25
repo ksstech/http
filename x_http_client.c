@@ -235,7 +235,77 @@ int32_t	xHttpBadSSL(void) {
 
 // ################################# Firmware Over The Air support #################################
 
-int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
+int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
+	if (xHttpClientFileDownloadCheck(psParser, pBuf, xLen) == erFAILURE)
+		return erFAILURE ;
+
+	http_reqres_t * psReq = psParser->data ;
+	IF_PRINT(debugTRACK, "File=%x  Build=%x  Diff=%x\n", psReq->hvLastModified, BuildSeconds, psReq->hvLastModified - BuildSeconds) ;
+	/* BuildSeconds			: creation time of running FW
+	 * hvLastModified		: creation time of available FW
+	 * fotaMIN_DIF_SECONDS	: Required MIN difference BuildSeconds-> hvLastModified
+	 *						: How much later must avail FW be to be considered new?
+	 */
+	if (psReq->hvLastModified < (BuildSeconds + fotaMIN_DIF_SECONDS)) {
+		IF_PRINT(debugTRACK, " => No newer firmware found\n") ;
+		return erSUCCESS ;
+	}
+	xRtosSetStatus(flagAPP_RESTART) ;
+	return 1 ;
+}
+
+int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
+	int32_t iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen) ;
+	if (iRV != 1)
+		return iRV ;
+
+	xRtosClearStatus(flagAPP_RESTART) ;
+	fota_info_t	sFI ;
+	iRV = halFOTA_Begin(&sFI) ;
+	if (iRV == erFAILURE)
+		return erFAILURE ;
+	IF_PRINT(debugTRACK, "OTA begin OK\n") ;
+
+	sFI.pBuf	= (void *) pBuf ;
+	sFI.xLen	= xLen ;
+	http_reqres_t * psReq = psParser->data ;
+	size_t	xLenDone = 0, xLenFull = psReq->hvContentLength ;
+	IF_SYSTIMER_INIT(debugTIMING, systimerFOTA, systimerTICKS, "halFOTA", myMS_TO_TICKS(configHTTP_RX_WAIT/10), myMS_TO_TICKS(configHTTP_RX_WAIT)) ;
+
+	while (xLen) {										// deal with all received packets
+		iRV = halFOTA_Write(&sFI) ;
+		if (iRV != ESP_OK) {
+			break ;
+		}
+		xLenDone += sFI.xLen ;					// update the done count
+		IF_PRINT(debugTRACK, "%d%% (%d)\r", (xLenDone * 100)/xLenFull, xLenDone) ;
+		if (xLenDone == xLenFull) {						// if all done, get out...
+			IF_PRINT(debugTRACK, "\n") ;
+			break ;
+		}
+		IF_SYSTIMER_START(debugTIMING, systimerFOTA) ;
+		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sBuf.pBuf), psReq->sBuf.Size, configHTTP_RX_WAIT) ;
+		IF_SYSTIMER_STOP(debugTIMING, systimerFOTA) ;
+		if (iRV > 0) {
+			sFI.xLen = iRV ;
+		} else if (psReq->sCtx.error == EAGAIN) {
+			continue ;
+		} else {
+			break ;										// no need for error reporting, already done in xNetRead()
+		}
+	}
+	sFI.iRV = iRV ;										// save for halFOTA_End() reuse
+
+	IF_SYSTIMER_SHOW_NUM(debugTIMING, systimerFOTA) ;
+	IF_PRINT(debugTRACK, "Wrote %u/%u from '%s/%s'\n", xLenDone, xLenFull, psReq->sCtx.pHost, psReq->pvArg) ;
+
+	iRV = halFOTA_End(&sFI) ;
+	xRtosClearStatus(flagAPP_UPGRADE) ;
+	xRtosSetStatus(flagAPP_RESTART) ;
+	return iRV ;
+}
+
+int32_t	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 	sock_sec_t sSecure	= { 0 } ;
 	sSecure.pPem		= HostInfo[nvsVars.HostFOTA].pCert ;
 	sSecure.PemSize		= HostInfo[nvsVars.HostFOTA].Size ;
@@ -245,6 +315,8 @@ int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
 	sReq.pcQuery		= "GET /firmware/%s.bin" ;
 	sReq.hvAccept		= ctApplicationOctetStream ;
 	sReq.hvConnect		= coKeepAlive ;
+	sReq.sfCB.on_body	= bCheck ? xHttpClientCheckFOTA : xHttpClientPerformFOTA ;
+
 #if 0
 	sReq.f_debug		= 1 ;
 	sReq.sCtx.d_open	= 1 ;
@@ -254,36 +326,35 @@ int32_t	xHttpClientFirmwareUpgrade(void * pvPara) {
 //	sReq.sCtx.d_data	= 1 ;
 //	sReq.sCtx.d_eagain	= 1 ;
 #endif
-	sReq.sfCB.on_body	= halFOTA_HttpOnBody ;
-	int32_t iRV		= xHttpClientExecuteRequest(&sReq, sReq.pvArg = pvPara) ;
+
+	int32_t iRV	= xHttpClientExecuteRequest(&sReq, sReq.pvArg = pvPara) ;
 	/* iRV should be the number of bytes parsed or erFAILURE (-1). If the
 	 * value is 0 then effectively nothing upgraded or parsed hence an error.
 	 */
-	if (iRV > erSUCCESS || sReq.hvStatus == HTTP_STATUS_NOT_FOUND) {
+	if (iRV > erSUCCESS || sReq.hvStatus == HTTP_STATUS_NOT_FOUND)
 		return erSUCCESS ;
-	}
 	return erFAILURE ;
 }
 
-int32_t xHttpClientCheckUpgrades(void) {
+int32_t xHttpClientCheckUpgrades(bool bCheck) {
 	/* To create a hierarchy of firmware upgrades, we need to define a descending order:
 	 * #1 would be MAC based "1234567890ab.bin" hence 100% specific
 	 * #2 would be "[site-token].bin"
 	 * #3 would define a level to accommodate a specific client/tenant
 	 * #4 would be the broadest "[device-specification-token].bin"
 	 */
-	int32_t iRV = xHttpClientFirmwareUpgrade((void *) idSTA) ;
+	int32_t iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck) ;
+	IF_TRACK(debugTRACK, "iRV=%d", iRV) ;
 	#if 0
-	if (bRtosCheckStatus(flagAPP_UPGRADE)) {
-		iRV = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN) ;
-	}
+	if (bRtosCheckStatus(flagAPP_UPGRADE))
+		iRV = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN, bCheck) ;
+	IF_TRACK(debugTRACK, "iRV=%d", iRV) ;
 	#endif
-	if (bRtosCheckStatus(flagAPP_UPGRADE)) {
-		iRV = xHttpClientFirmwareUpgrade((void *) mqttSPECIFICATION_TOKEN) ;
-	}
-	if (iRV == erSUCCESS) { 							// no [newer] upgrade there
+	if (bRtosCheckStatus(flagAPP_UPGRADE))
+		iRV = xHttpClientFirmwareUpgrade((void *) mqttSPECIFICATION_TOKEN, bCheck) ;
+	IF_TRACK(debugTRACK, "iRV=%d", iRV) ;
+	if (iRV == erSUCCESS)								// no [newer] upgrade there
 		xRtosClearStatus(flagAPP_UPGRADE) ;				// then clear the flag
-	}
 	return iRV ;
 }
 
