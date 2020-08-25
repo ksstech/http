@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-19 Andre M Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-20 Andre M Maree / KSS Technologies (Pty) Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -44,11 +44,11 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG						0xC000
+#define	debugFLAG					0xC000
 
-#define	debugPARSE						(debugFLAG & 0x0001)
-#define	debugURL						(debugFLAG & 0x0002)
-#define	debugBUILD						(debugFLAG & 0x0004)
+#define	debugPARSE					(debugFLAG & 0x0001)
+#define	debugURL					(debugFLAG & 0x0002)
+#define	debugBUILD					(debugFLAG & 0x0004)
 
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
@@ -128,9 +128,7 @@ int32_t	xHttpCommonFindMatch(const char ** pcTable, uint32_t xSize, const char *
 // ################################### Common HTTP API functions ###################################
 
 int 	xHttpCommonMessageBeginHandler(http_parser * psParser) {
-	if (((http_reqres_t *) psParser->data)->f_debug) {
-		PRINT("MESSAGE BEGIN\n") ;
-	}
+	IF_PRINT(debugTRACK && ((http_reqres_t *) psParser->data)->f_debug, "MESSAGE BEGIN\n") ;
 	return erSUCCESS ;
 }
 
@@ -163,27 +161,21 @@ int 	xHttpCommonUrlHandler(http_parser * psParser, const char* pBuf, size_t xLen
 		psRes->NumQuery = 0 ;
 	}
 
-#if	(debugTRACK == 1)
-	if (psRes->f_debug) {
+	if (debugTRACK && psRes->f_debug) {
 		PRINT("Struct: scheme:%s  host:%s  port:%d  path:%s  query:%s  fragment:%s\n",
 				psRes->url.scheme, psRes->url.host, psRes->url.port, *psRes->url.path == CHR_NUL ? "/" : psRes->url.path,
 				psRes->url.query, psRes->url.fragment) ;
 		for (Idx = 0; Idx < psRes->NumParts; ++Idx) PRINT("Path part[%d]: '%s'\n", Idx, psRes->parts[Idx]) ;
 		for (Idx = 0; Idx < psRes->NumQuery; ++Idx) PRINT("Parameter[%d]: name='%s' value='%s'\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val) ;
 	}
-#endif
 	return erSUCCESS ;
 }
 
 int 	xHttpCommonStatusHandler(http_parser * psParser, const char* pBuf, size_t xLen) {
 	http_reqres_t * psReq = psParser->data ;
-#if     (debugTRACK == 1)
-	if (psReq->f_debug) {
-		PRINT("Status: %d = '%.*s'\n", psParser->status_code, xLen, pBuf) ;
-	}
-#endif
+	IF_PRINT(debugTRACK && psReq->f_debug, "Status: %d = '%.*s'\n", psParser->status_code, xLen, pBuf) ;
 	psReq->hvStatus		= psParser->status_code ;
-	*((char *) pBuf + xLen)		= CHR_NUL ;
+	*((char*) pBuf+xLen)= CHR_NUL ;
 	psReq->hvStatusMess = (char *) pBuf ;
 	return erSUCCESS ;
 }
@@ -192,21 +184,13 @@ int 	xHttpCommonHeaderFieldHandler(http_parser * psParser, const char* pBuf, siz
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(pBuf) && (xLen > 0)) ;
 	http_reqres_t * psReq = psParser->data ;
 	psReq->HdrField	= xHttpCommonFindMatch(hfValues, NUM_OF_MEMBERS(hfValues), pBuf, xLen) ;
-#if     (debugTRACK == 1)
-	if (psReq->f_debug) {
-		PRINT("Header field: '%.*s'\n", (int)xLen, pBuf) ;
-	}
-#endif
+	IF_PRINT(debugTRACK && psReq->f_debug, "Header field: '%.*s'\n", (int)xLen, pBuf);
 	return erSUCCESS ;
 }
 
 int 	xHttpCommonHeaderValueHandler(http_parser * psParser, const char* pBuf, size_t xLen) {
 	http_reqres_t * psReq = psParser->data ;
-#if     (debugTRACK == 1)
-	if (psReq->f_debug) {
-		PRINT("Header value: '%.*s'\n", (int)xLen, pBuf);
-	}
-#endif
+	IF_PRINT(debugTRACK && psReq->f_debug, "Header value: '%.*s'\n", (int)xLen, pBuf);
 	struct tm sTM ;
 	switch (psReq->HdrField) {
 	case hfAcceptRanges:
@@ -249,26 +233,20 @@ int 	xHttpCommonHeaderValueHandler(http_parser * psParser, const char* pBuf, siz
 
 int 	xHttpCommonHeadersCompleteHandler(http_parser * psParser) {
 	http_reqres_t * psReq = psParser->data ;
-	if (psReq->f_debug) {
-		PRINT("HEADERS COMPLETE: ar=%d  co=%d  ct=%d  host=%d  len=%llu  date=%R  last=%R\n",
-				psReq->f_ac_rng, psReq->hvConnect, psReq->hvContentType, psReq->f_host, psParser->content_length,
-				xTimeMakeTimestamp(psReq->hvDate, 0), xTimeMakeTimestamp(psReq->hvLastModified, 0)) ;
-	}
+	IF_PRINT(debugTRACK && psReq->f_debug, "HEADERS COMPLETE: ar=%d  co=%d  ct=%d  host=%d  len=%llu  date=%R  last=%R\n",
+			psReq->f_ac_rng, psReq->hvConnect, psReq->hvContentType, psReq->f_host, psParser->content_length,
+			xTimeMakeTimestamp(psReq->hvDate, 0), xTimeMakeTimestamp(psReq->hvLastModified, 0)) ;
 	// if we return 1 here the parser will believe there is no body in the message
 	return erSUCCESS ;
 }
 
 int 	xHttpCommonChunkHeaderHandler(http_parser * psParser) {
-	if (((http_reqres_t *) psParser->data)->f_debug) {
-		PRINT("CHUNK HEADER\n") ;
-	}
+	IF_PRINT(debugTRACK && ((http_reqres_t *) psParser->data)->f_debug, "CHUNK HEADER\n") ;
 	return erSUCCESS ;
 }
 
 int		xHttpCommonChunkCompleteHandler(http_parser * psParser) {
-	if (((http_reqres_t *) psParser->data)->f_debug) {
-		PRINT("CHUNK COMPLETE\n") ;
-	}
+	IF_PRINT(debugTRACK && ((http_reqres_t *) psParser->data)->f_debug, "CHUNK COMPLETE\n") ;
 	return erSUCCESS ;
 }
 
@@ -310,9 +288,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, si
 }
 
 int 	xHttpCommonMessageCompleteHandler(http_parser * psParser) {
-	if (((http_reqres_t *) psParser->data)->f_debug) {
-		PRINT("MESSAGE COMPLETE\n") ;
-	}
+	IF_PRINT(debugTRACK && ((http_reqres_t *) psParser->data)->f_debug, "MESSAGE COMPLETE\n") ;
 	return erSUCCESS ;
 }
 
@@ -327,19 +303,17 @@ size_t	xHttpCommonDoParsing(http_parser * psParser) {
 	psRR->sfCB.on_status		= xHttpCommonStatusHandler ;
 	psRR->sfCB.on_header_field	= xHttpCommonHeaderFieldHandler ;
 	psRR->sfCB.on_header_value	= xHttpCommonHeaderValueHandler ;
-	if (debugTRACK && psRR->sfCB.on_body == NULL) {
+	if (debugTRACK && psRR->sfCB.on_body == NULL)
 		psRR->sfCB.on_body		= xHttpCommonMessageBodyHandler ;
-	}
 
-#if     (debugTRACK == 1)
-	if (psRR->f_debug == 1) {
+	if (debugTRACK && psRR->f_debug) {
 		psRR->sfCB.on_message_begin		= xHttpCommonMessageBeginHandler ;
 		psRR->sfCB.on_chunk_header		= xHttpCommonChunkHeaderHandler ;
 		psRR->sfCB.on_chunk_complete	= xHttpCommonChunkCompleteHandler ;
 		psRR->sfCB.on_headers_complete	= xHttpCommonHeadersCompleteHandler ;
 		psRR->sfCB.on_message_complete	= xHttpCommonMessageCompleteHandler ;
 	}
-#endif
+
 	int32_t iRV = http_parser_execute(psParser, &psRR->sfCB, psRR->sBuf.pBuf, psRR->sBuf.Used) ;
 	if (psRR->f_debug) {
 		if (iRV <= 0) {

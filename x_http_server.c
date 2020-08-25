@@ -191,7 +191,7 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	va_end(vArgs) ;
 	iRV += socprintfx(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 
-	IF_CPRINT((debugTRACK == 1) && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
+	IF_CPRINT(debugTRACK && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	return iRV ;
 }
 
