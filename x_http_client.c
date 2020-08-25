@@ -85,11 +85,11 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 		if (psRR->hvContentType) {
 			uprintfx(&psRR->sBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
-			// assume pcBody is pointing to actual binary payload
-//				IF_myASSERT(debugTRACK, INRANGE_MEM(psRR->handler) && INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
-				IF_myASSERT(debugTRACK, INRANGE(1, psRR->hvContentLength, MEGA, uint64_t)) ;
-				/* Since the actual binary payload will only be added in the callback from xHttpClientExecuteRequest()
-				 * we will only add a single "\r\n" pair here, the second added at the end of this function
+				IF_myASSERT(debugTRACK, INRANGE_MEM(psRR->handler)) ;
+				IF_myASSERT(debugTRACK, INRANGE(1, psRR->hvContentLength, 2*MEGA, uint64_t)) ;
+				/* Since the actual binary payload will only be added in the callback
+				 * from xHttpClientExecuteRequest() we will only add a single "\r\n"
+				 * pair here, the second added at the end of this function.
 				 * The callback will be responsible for adding the final terminating "\r\n" */
 				uprintfx(&psRR->sBuf, "Content-Length: %d\r\n", psRR->hvContentLength) ;
 				// no actual binary content added, done later...
@@ -107,7 +107,7 @@ int32_t	xHttpBuildRequest(http_parser * psParser) {
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
 	uprintfx(&psRR->sBuf, "\r\n") ;
-	IF_SL_DBG(debugTRACK && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
+	IF_PRINT(debugTRACK && psRR->f_debug, "Content:\n%.*s\n", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	return psRR->sBuf.Used ;
 }
 
@@ -150,19 +150,19 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 					psRR->sBuf.Used = iRV ;
 					iRV = xHttpCommonDoParsing(&sParser) ;	// return erFAILURE or some 0+ number
 				} else {
-					IF_SL_DBG(debugTRACK, " nothing read ie to parse") ;
+					IF_PRINT(debugTRACK, " nothing read ie to parse\n") ;
 					iRV = erFAILURE ;
 				}
 			} else {
-				IF_SL_DBG(debugTRACK, " nothing written (by handler) so can't expect to read") ;
+				IF_PRINT(debugTRACK, " nothing written (by handler) so can't expect to read\n") ;
 				iRV = erFAILURE ;
 			}
 		} else {
-			IF_SL_DBG(debugTRACK, " no header written, so can't expect to read") ;
+			IF_PRINT(debugTRACK, " no header written, so can't expect to read\n") ;
 			iRV = erFAILURE ;
 		}
 	} else {
-		IF_SL_DBG(debugTRACK, " could not open connection (%d)", iRV) ;
+		IF_PRINT(debugTRACK, " could not open connection (%d)\n", iRV) ;
 		iRV = erFAILURE ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
@@ -173,7 +173,7 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, ...) {
 
 int32_t	xHttpClientFileDownloadCheck(http_parser * psParser, const char * pBuf, size_t xLen) {
 	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_SL_DBG(debugTRACK, "File not found") ;
+		IF_PRINT(debugTRACK, "File not found\n") ;
 		return erFAILURE ;
 	}
 	http_reqres_t * psReq = psParser->data ;
