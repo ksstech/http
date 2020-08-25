@@ -11,6 +11,7 @@
 #include	"x_time.h"
 
 #include	"stdint.h"
+#include	"stdbool.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,8 +98,7 @@ int32_t xHttpGetWeather(void) ;
 int32_t	xHttpHowsMySSL(void) ;
 int32_t	xHttpBadSSL(void) ;
 
-int32_t	xHttpClientFirmwareUpgrade(void * pvPara) ;
-int32_t xHttpClientCheckUpgrades(void) ;
+int32_t xHttpClientCheckUpgrades(bool bCheck) ;
 
 int32_t xHttpGetLocation(void) ;
 int32_t	xHttpGetElevation(void) ;
