@@ -320,31 +320,30 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
 
 		} else {
-			// all IP parameter keys matched, parsed them now
-			memset(&nvsWifi, 0, sizeof(nvsWifi)) ;
+			nvs_wifi_t tmpWifi = { 0 } ;
 			i = 0 ;
-			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.ssid) ;
+			// all IP parameter keys matched, parse them
+			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ssid) ;
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseString(psRR->params[i++].val, (char *) nvsWifi.pswd) ;
+				iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.pswd) ;
 #if		(halNET_EXTEND_IP == 1)
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipNM) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipNM) ;
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipGW) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipGW) ;
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipSTA) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipSTA) ;
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipDNS1) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS1) ;
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipDNS2) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS2) ;
 #endif
 			if (iRV == erSUCCESS)						// last parameter in the list
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &nvsWifi.ipMQTT) ;
-			// if all IP parameters parsed successfully then we can persist them...
-			if (iRV == erSUCCESS)
-				iRV = halSTORAGE_WriteBlob(halSTORAGE_STORE, halSTORAGE_KEY_WIFI, &nvsWifi, sizeof(nvsWifi)) ;
-			// inform the client of success or not....
-			if (iRV == erSUCCESS) {
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipMQTT) ;
+
+			// Check if values allow successful Wifi connection (& persist if successful)
+			iRV = halWL_TestCredentials(tmpWifi.ssid, tmpWifi.pswd) ;
+			if (iRV == erSUCCESS) {						// inform client of success or not....
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 				psRR->pcBody	= (char *) HtmlAPconfigOK ;
 				xRtosSetStatus(flagAPP_RESTART) ;
