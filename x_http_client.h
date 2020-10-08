@@ -28,8 +28,10 @@
 
 int32_t	xHttpCompleteRequest(http_reqres_t * psReq) ;
 int32_t	xHttpParseResponse(char * pBuf, size_t xLen) ;
-int32_t	xHttpClientExecuteRequest(http_reqres_t * psReq, ...) ;
-int32_t	xHttpClientFileDownloadCheck(http_parser * psParser, const char * pBuf, size_t xLen) ;
+int32_t	xHttpClientExecuteRequest(http_reqres_t * psReq, va_list vArgs) ;
+int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, void * pvBody, pcu8_t pCert,
+					void * OnBodyCB, uint32_t DataSize, uint32_t hvValues,
+					uint16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) ;
 
 int32_t xHttpGetWeather(void) ;
 int32_t	xHttpHowsMySSL(void) ;
