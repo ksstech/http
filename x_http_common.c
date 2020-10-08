@@ -44,7 +44,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xC000
+#define	debugFLAG					0xE000
 
 #define	debugPARSE					(debugFLAG & 0x0001)
 #define	debugURL					(debugFLAG & 0x0002)
@@ -163,10 +163,13 @@ int 	xHttpCommonUrlHandler(http_parser * psParser, const char* pBuf, size_t xLen
 
 	if (debugTRACK && psRes->f_debug) {
 		PRINT("Struct: scheme:%s  host:%s  port:%d  path:%s  query:%s  fragment:%s\n",
-				psRes->url.scheme, psRes->url.host, psRes->url.port, *psRes->url.path == CHR_NUL ? "/" : psRes->url.path,
+				psRes->url.scheme, psRes->url.host, psRes->url.port,
+				*psRes->url.path == CHR_NUL ? "/" : psRes->url.path,
 				psRes->url.query, psRes->url.fragment) ;
-		for (Idx = 0; Idx < psRes->NumParts; ++Idx) PRINT("Path part[%d]: '%s'\n", Idx, psRes->parts[Idx]) ;
-		for (Idx = 0; Idx < psRes->NumQuery; ++Idx) PRINT("Parameter[%d]: name='%s' value='%s'\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val) ;
+		for (Idx = 0; Idx < psRes->NumParts; ++Idx)
+			PRINT("Path part[%d]: '%s'\n", Idx, psRes->parts[Idx]) ;
+		for (Idx = 0; Idx < psRes->NumQuery; ++Idx)
+			PRINT("Parameter[%d]: name='%s' value='%s'\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val) ;
 	}
 	return erSUCCESS ;
 }
@@ -184,13 +187,13 @@ int 	xHttpCommonHeaderFieldHandler(http_parser * psParser, const char* pBuf, siz
 	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(pBuf) && (xLen > 0)) ;
 	http_reqres_t * psReq = psParser->data ;
 	psReq->HdrField	= xHttpCommonFindMatch(hfValues, NUM_OF_MEMBERS(hfValues), pBuf, xLen) ;
-	IF_PRINT(debugTRACK && psReq->f_debug, "Header field: '%.*s'\n", (int)xLen, pBuf);
+	IF_PRINT(debugTRACK && psReq->f_debug, "'%.*s' = ", (int)xLen, pBuf);
 	return erSUCCESS ;
 }
 
 int 	xHttpCommonHeaderValueHandler(http_parser * psParser, const char* pBuf, size_t xLen) {
 	http_reqres_t * psReq = psParser->data ;
-	IF_PRINT(debugTRACK && psReq->f_debug, "Header value: '%.*s'\n", (int)xLen, pBuf);
+	IF_PRINT(debugTRACK && psReq->f_debug, "'%.*s'\n", (int)xLen, pBuf);
 	struct tm sTM ;
 	switch (psReq->HdrField) {
 	case hfAcceptRanges:
@@ -258,23 +261,23 @@ int		xHttpCommonChunkCompleteHandler(http_parser * psParser) {
  * @param xLen
  * @return
  */
-int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, size_t xLen) {
+int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, size_t xLen) {
 	http_reqres_t * psReq = psParser->data ;
 	switch (psReq->hvContentType) {
 	case ctTextPlain:
 	case ctTextHtml:
 	case ctApplicationXml:
-		PRINT("BODY (plain/html/xml)\n%.*s", xLen, pBuf) ;
+		PRINT("BODY (plain/html/xml)\n%.*s", xLen, pcBuf) ;
 		break ;
 	case ctApplicationJson:
 	{	// test parse (count tokens) then allocate memory & parse
 		jsmntok_t *	psTokenList ;
 		jsmn_parser	sParser ;
-		int32_t iRV = xJsonParse((uint8_t *) pBuf, xLen, &sParser, &psTokenList) ;
+		int32_t iRV = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
 		if (iRV > erSUCCESS) {							// print parsed tokens
-			iRV = xJsonPrintTokens((uint8_t *) pBuf, psTokenList, iRV, 0) ;
+			iRV = xJsonPrintTokens(pcBuf, psTokenList, iRV, 0) ;
 		} else {
-			PRINT("BODY (json)\n%!'+b", xLen, pBuf) ;	// not parsed, just dump...
+			PRINT("BODY (json)\n%!'+b", xLen, pcBuf) ;	// not parsed, just dump...
 		}
 		if (psTokenList) {								// if allocated,
 			vPortFree(psTokenList) ;					// free the memory allocated in xJsonParse()
@@ -282,7 +285,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, si
 		break ;
 	}
 	default:
-		PRINT("BODY (other)\n%!'+b", xLen, pBuf) ;
+		PRINT("BODY (other)\n%!'+b", xLen, pcBuf) ;
 	}
     return erSUCCESS ;
 }
