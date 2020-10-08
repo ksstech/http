@@ -45,6 +45,8 @@ extern "C" {
 #define configHTTP_TX_WAIT						500		// 1000
 #define configHTTP_RX_WAIT						5000	// 500
 
+#define	HostGoogle					"maps.googleapis.com"
+
 // ######################################### enumerations ##########################################
 
 enum {													// Header Fields
@@ -121,33 +123,38 @@ struct http_reqres_s {
 	netx_t					sCtx ;						// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
  * a) the pcQuery format string; and
- * b) the pcBody format string			*/
+ * b) the pcBody format string
+ */
 	union {
-		const char *	pcQuery ;							// client: 'format' GET/PUT/POST/DELETE/PATCH .....
-		const char *	pcStatMes ;							// server: status message
+		pci8_t	pcQuery ;								// client: 'format' GET/PUT/POST/DELETE/PATCH .....
+		pci8_t	pcStatMes ;								// server: status message
 	} ;
-	union {
-		const char * pcBody ;								// both (client 'format' string)
-		int32_t (* handler) (http_reqres_t *) ;				// client
-		int32_t	(* hdlr_rsp) (http_parser *) ;				// server
-	} ;
-	va_list					VaList ;						// Client
-	void *					pvArg ;							// Client
-	http_parser_settings 	sfCB ;							// Both
-	struct	yuarel			url ;							// Both
+	union http_rr_u1 {
+		void *	pVoid ;
+		pci8_t	pcBody ;								// both (client 'format' string)
+		int32_t (* hdlr_req) (http_reqres_t *) ;		// client
+		int32_t	(* hdlr_rsp) (http_parser *) ;			// server
+	} u1 ;
+	va_list					VaList ;					// Client
+	void *					pvArg ;						// Client
+	http_parser_settings 	sfCB ;						// Both
+	struct	yuarel			url ;						// Both
 	struct	yuarel_param	params[httpYUAREL_MAX_QUERY] ;	// Both
 	char *					parts[httpYUAREL_MAX_PARTS] ;	// Both
-	uint64_t				hvContentLength ;				// Both
-	uint32_t				hvDate ;						// Both
-	uint32_t				hvLastModified ;				// Both
-	char * 					hvStatusMess ;					// Both
-	uint16_t				hvStatus ;						// Client (response to request)
-	uint8_t					hvAccept ;						// Both
-	uint8_t					hvConnect ;						// Both
-	uint8_t					hvContentType ;					// Both
-	uint8_t					HdrField ;						// Both
-	int8_t					NumParts ;						// recognize -1 as error/none
-	int8_t					NumQuery ;						// recognize -1 as error/none
+	uint64_t				hvContentLength ;			// Both
+	uint32_t				hvDate ;					// Both
+	uint32_t				hvLastModified ;			// Both
+	char * 					hvStatusMess ;				// Both
+	uint16_t				hvStatus ;					// Client (response to request)
+	union {
+		struct {
+			uint8_t			Spare, hvConnect, hvAccept, hvContentType ;
+		} ;
+		uint32_t			hvValues ;
+	};
+	uint8_t					HdrField ;					// Both
+	int8_t					NumParts ;					// recognize -1 as error/none
+	int8_t					NumQuery ;					// recognize -1 as error/none
 	union {
 		struct {
 			uint8_t	f_debug : 1 ;
@@ -157,9 +164,12 @@ struct http_reqres_s {
 			uint8_t	f_host	: 1 ;		// host info provided, or not ?
 			uint8_t	f_ac_rng: 1 ;		// accept ranges
 		} ;
-		uint16_t	f_allflags ;
+		uint8_t		f_allflags ;
 	} ;
 } ;
+typedef	union http_rr_u1	http_rr_t1 ;
+
+#define	httpHDR_VALUES(a,b,c,d) ((a<<24)|(b<<16)|(c<<8)|d)
 
 // ################################### Global variables ############################################
 
