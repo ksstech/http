@@ -416,16 +416,11 @@ void	vTaskHttp(void * pvParameters) {
 
 		case stateHTTP_INIT:
 			IF_CTRACK(debugTRACK, "init") ;
-			memset(&sServHttpCtx, 0 , sizeof(netx_t)) ;
-			sServHttpCtx.sa_in.sin_family		= AF_INET ;
-			sServHttpCtx.type					= SOCK_STREAM ;
-#if 0
-//			sServHttpCtx.psSec					= ? ;
-			sServHttpCtx.d_data					= 1 ;
-			sServHttpCtx.d_read					= 1 ;
-			sServHttpCtx.d_write				= 1 ;
-#endif
-			sServHttpCtx.sa_in.sin_port			= htons(sServHttpCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
+			memset(&sServHttpCtx, 0 , sizeof(sServHttpCtx)) ;
+			sServHttpCtx.sa_in.sin_family	= AF_INET ;
+			sServHttpCtx.type				= SOCK_STREAM ;
+			sServHttpCtx.sa_in.sin_port		= htons(IP_PORT_HTTP) ;
+			sServHttpCtx.flags				|= SO_REUSEADDR ;
 			iRV = xNetOpen(&sServHttpCtx) ;
 			if (iRV < erSUCCESS) {
 				HttpState = stateHTTP_DEINIT ;
@@ -466,7 +461,7 @@ void	vTaskHttp(void * pvParameters) {
 				http_parser_init(&sParser, HTTP_REQUEST) ;
 				sParser.data		= &sRR ;
 				// setup guidelines for parsing the request
-				sRR.hdlr_rsp		= 0 ;
+				sRR.u1.pVoid		= NULL ;
 				sRR.hvContentLength	= 0UL ;
 				sRR.hvDate			= 0 ;
 				sRR.hvLastModified	= 0 ;
