@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-19 Andre M Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-20 Andre M Maree / KSS Technologies (Pty) Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -392,14 +392,8 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  * @param pvParameters
  *
  * Responsibilities:
- * 1. Scheduled checks for FW upgrades
- * 2. Initial Priority 1 FOTA
- * 3. GeoLocation, alternative to host
- * 4. GeoTimeZone, alternative to host
- * 5. Rules download, test & Plan B only
- * 6. IDENT download, test & Plan B only (To be done)
- * 7. Serve HTML to capture SSID & PSWD from client
- * 8. Respond to /restart (as emergency)
+ * 	Serve HTML to capture SSID & PSWD from client
+ * 	Respond to /restart (as emergency)
  */
 void	vTaskHttp(void * pvParameters) {
 	IF_CTRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
