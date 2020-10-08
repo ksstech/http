@@ -272,25 +272,25 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	int32_t	iURL = -1, iRV, i ;
 	if (psParser->http_errno) {
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
-		psRR->pcBody	= (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
+		psRR->u1.pcBody	= (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
 		psRR->hvContentType = ctTextPlain ;
-		SL_ERR("%s (%s)", psRR->pcBody, http_errno_name(HTTP_PARSER_ERRNO(psParser))) ;
+		SL_ERR("%s (%s)", psRR->u1.pcBody, http_errno_name(HTTP_PARSER_ERRNO(psParser))) ;
 
 	} else if (psParser->method != HTTP_GET) {			// Invalid METHOD
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_IMPLEMENTED) ;
-		psRR->pcBody	= (char *) HtmlErrorInvMethod ;
+		psRR->u1.pcBody	= (char *) HtmlErrorInvMethod ;
 		SL_ERR("Method not supported (%d)", psParser->method) ;
 
 	} else if (psRR->f_host == 0) {						// host not provided
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
-		psRR->pcBody	= (char *) HtmlErrorNoHost ;
+		psRR->u1.pcBody	= (char *) HtmlErrorNoHost ;
 		SL_ERR("Host name/IP not provided") ;
 
 	} else {		// at this stage all parsing results are OK, just the URL to be matched and processed.
 		if (*psRR->url.path == CHR_NUL) {				// STEP1: start by matching the URL
 			iURL = urlROOT ;							// do NOT try to match, lost single '/'
 		} else {
-			iURL = xHttpCommonFindMatch(UrlTable, NUM_OF_MEMBERS(UrlTable), psRR->url.path, strlen(psRR->url.path)) ;
+			iURL = xHttpCommonFindMatch(UrlTable, NUM_OF_MEMBERS(UrlTable), psRR->url.path, xstrlen(psRR->url.path)) ;
 			if (iURL == 0)	{
 				iURL = urlNOTFOUND ;
 			}
@@ -300,7 +300,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	switch(iURL) {
 	case urlROOT:
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
-		psRR->pcBody = (CurWifiMode & WIFI_MODE_STA) ? (char *) HtmlSTAdetails : (char *) HtmlAPdetails ;
+		psRR->u1.pcBody = (CurWifiMode & WIFI_MODE_STA) ? (char *) HtmlSTAdetails : (char *) HtmlAPdetails ;
 		break ;
 
 	case urlSAVE_AP:
@@ -317,7 +317,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_MQTT) != 0)) {
 			// missing/corrupted/wrong key for an IP parameter, stop parsing & complain...
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
-			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
+			psRR->u1.pcBody	= (char *) HtmlErrorBadQuery ;
 
 		} else {
 			nvs_wifi_t tmpWifi = { 0 } ;
@@ -345,11 +345,11 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			iRV = halWL_TestCredentials(tmpWifi.ssid, tmpWifi.pswd) ;
 			if (iRV == erSUCCESS) {						// inform client of success or not....
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
-				psRR->pcBody	= (char *) HtmlAPconfigOK ;
+				psRR->u1.pcBody	= (char *) HtmlAPconfigOK ;
 				xRtosSetStatus(flagAPP_RESTART) ;
 			} else {
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
-				psRR->pcBody	= (char *) HtmlAPconfigFAIL ;
+				psRR->u1.pcBody	= (char *) HtmlAPconfigFAIL ;
 			}
 		}
 		break ;
@@ -358,26 +358,26 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		if (psRR->NumParts == 2) {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 			psRR->f_bodyCB 	= 1 ;
-			psRR->hdlr_rsp	= xHttpHandle_API ;
+			psRR->u1.hdlr_rsp	= xHttpHandle_API ;
 		} else {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
-			psRR->pcBody 	= "<html><body><h2>** API command option Required **</h2></body></html>" ;
+			psRR->u1.pcBody 	= "<html><body><h2>** API command option Required **</h2></body></html>" ;
 		}
 		break ;
 
 	case urlNOTFOUND:
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_FOUND) ;
-		psRR->pcBody 	= "<html><body><h2>** URL Nor found **</h2></body></html>" ;
+		psRR->u1.pcBody 	= "<html><body><h2>** URL Nor found **</h2></body></html>" ;
 		break ;
 
 	default:
 		break ;
 	}
 
-	if (psRR->f_bodyCB && psRR->hdlr_rsp) {
-		iRV = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
+	if (psRR->f_bodyCB && psRR->u1.hdlr_rsp) {
+		iRV = psRR->u1.hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
-		iRV = xHttpSendResponse(psParser, psRR->pcBody) ;
+		iRV = xHttpSendResponse(psParser, psRR->u1.pcBody) ;
 		IF_CPRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
 	}
 	if (sServHttpCtx.maxTx < iRV) {
