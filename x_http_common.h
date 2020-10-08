@@ -117,8 +117,8 @@ enum {													// HTTP flags
 typedef struct http_reqres_s http_reqres_t ;
 
 struct http_reqres_s {
-	ubuf_t					sBuf ;							// both
-	netx_t					sCtx ;							// both
+	ubuf_t					sBuf ;						// both
+	netx_t					sCtx ;						// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
  * a) the pcQuery format string; and
  * b) the pcBody format string			*/
@@ -163,9 +163,9 @@ struct http_reqres_s {
 
 // ################################### Global variables ############################################
 
-const char * ctValues[ctNUMBER] ;
-const char * coValues[coNUMBER] ;
-const char * hfValues[hfNUMBER] ;
+extern	const char * ctValues[] ;
+extern	const char * coValues[] ;
+extern	const char * hfValues[] ;
 
 // ###################################### public functions #########################################
 
