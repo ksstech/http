@@ -524,7 +524,7 @@ int32_t	xHttpGetTimeZone(void) {
  * Google elevation API
  *		https://developers.google.com/maps/documentation/elevation/start
  * Example:
- *		https://maps.googleapis.com/maps/api/elevation/json?locations=39.7391536,-104.9847034&key=AIzaSyBWDhQelQg6etP00ROnqLfYtmWTZZBuJYU
+ *		https://maps.googleapis.com/maps/api/elevation/json?locations=39.7391536,-104.9847034&key=API_KEY
  */
 int32_t	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) {
 	int32_t		iRV = erFAILURE ;
