@@ -400,7 +400,7 @@ int32_t xHttpClientCheckUpgrades(bool bCheck) {
 		iRV = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN, bCheck) ;
 #endif
 	if (bRtosCheckStatus(flagAPP_RESTART) == false)
-		iRV = xHttpClientFirmwareUpgrade((void *) mqttSPECIFICATION_TOKEN, bCheck) ;
+		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck) ;
 	xRtosClearStatus(flagAPP_UPGRADE) ;				// all options exhausted
 	return iRV ;
 }
