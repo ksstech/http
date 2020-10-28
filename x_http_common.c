@@ -63,7 +63,7 @@
 
 // ###################################### global variables #########################################
 
-const char * hfValues[hfNUMBER]	= {
+const char * const hfValues[hfNUMBER]	= {
 	[hfUNDEFINED]						= "",
 	[hfAccept]							= "accept",
 	[hfAcceptCharset]					= "accept-charset",
@@ -84,7 +84,7 @@ const char * hfValues[hfNUMBER]	= {
 	[hfTransferEncoding]				= "transfer-encoding",
 } ;
 
-const char * ctValues[ctNUMBER]	= {
+const char * const ctValues[ctNUMBER]	= {
 	[ctUNDEFINED]						= "",
 	[ctApplicationOctetStream]			= "application/octet-stream",
 	[ctApplicationJson]					= "application/json",
@@ -94,7 +94,7 @@ const char * ctValues[ctNUMBER]	= {
 	[ctTextHtml]						= "text/html",
 } ;
 
-const char * coValues[coNUMBER]	= {
+const char * const coValues[coNUMBER]	= {
 	[coUNDEFINED]						= "",
 	[coKeepAlive]						= "keep-alive",
 	[coUpgrade]							= "upgrade",
@@ -108,7 +108,7 @@ const char * coValues[coNUMBER]	= {
  * also used by the HTTP server to do a simple match for URL's, brining in the limit
  * of only being able to match ie use single part URL's meaning "/api/something"
  * is not supported since it will not be matched */
-int32_t	xHttpCommonFindMatch(const char ** pcTable, uint32_t xSize, const char * pcMatch, size_t xLen) {
+int32_t	xHttpCommonFindMatch(const char * const pcTable[], uint32_t xSize, const char * pcMatch, size_t xLen) {
 	int32_t	Idx = 0 ;
 	while (Idx < xSize) {
 		int32_t ySize = xstrlen(*pcTable) ;				// get length of string in table to compare against

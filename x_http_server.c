@@ -73,7 +73,7 @@ enum {
 
 // ###################################### local ie static variables ################################
 
-static	const char * UrlTable[] = {
+static	const char * const UrlTable[] = {
 	[urlROOT]		= "/",
 	[urlSAVE_AP]	= "save_ap",
 	[urlAPI]		= "api",

@@ -173,13 +173,13 @@ typedef	union http_rr_u1	http_rr_t1 ;
 
 // ################################### Global variables ############################################
 
-extern	const char * ctValues[] ;
-extern	const char * coValues[] ;
-extern	const char * hfValues[] ;
+extern	const char * const ctValues[] ;
+extern	const char * const coValues[] ;
+extern	const char * const hfValues[] ;
 
 // ###################################### public functions #########################################
 
-int32_t	xHttpCommonFindMatch(const char ** pcTable, uint32_t xSize, const char * pcMatch, size_t xLen) ;
+int32_t	xHttpCommonFindMatch(const char * const pcTable[], uint32_t xSize, const char * pcMatch, size_t xLen) ;
 
 int		xHttpCommonMessageBeginHandler(http_parser * psParser) ;
 int 	xHttpCommonUrlHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
