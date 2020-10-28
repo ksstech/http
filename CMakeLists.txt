@@ -6,5 +6,5 @@ idf_component_register(
 		"libyuarel/."
 		"http-parser/."
 	REQUIRES irmacos
-	PRIV_REQUIRES commands printf rtos-support rules sitewhere stringsX systiming x_json
+	PRIV_REQUIRES commands printfx rtos-support rules sitewhere stringsX systiming x_json
 )
