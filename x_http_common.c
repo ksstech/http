@@ -27,8 +27,8 @@
 
 #include	"x_json_parser.h"
 #include	"x_errors_events.h"
-#include	"syslog.h"
 #include	"printfx.h"
+#include	"syslog.h"
 #include	"x_buffers.h"
 #include	"x_complex_vars.h"
 #include	"x_string_to_values.h"

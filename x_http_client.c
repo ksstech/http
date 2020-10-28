@@ -32,8 +32,8 @@
 #include	"x_json_parser.h"							// parsing location & TZ requests
 #include	"x_errors_events.h"
 #include	"x_string_general.h"
-#include	"syslog.h"
 #include	"printfx.h"
+#include	"syslog.h"
 #include	"systiming.h"
 
 #include	"hal_config.h"
@@ -46,7 +46,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0x0000
+#define	debugFLAG					0xC004
 
 #define	debugJSON					(debugFLAG & 0x0001)
 #define	debugGEOLOC					(debugFLAG & 0x0002)
@@ -312,7 +312,7 @@ int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t x
 	/* BuildSeconds			: halfway(?) time of running FW
 	 * hvLastModified		: creation time of available FW
 	 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
-	 *						: How much later must avail FW be to be considered new?
+	 *						: How much later must FW be to be considered new?
 	 */
 	int32_t i32Diff = psReq->hvLastModified - BuildSeconds ;
 	IF_PRINT(debugFOTA, "Found=%r  Running=%r  Diff=%d\n", psReq->hvLastModified, BuildSeconds, i32Diff) ;
@@ -574,6 +574,7 @@ int32_t	xHttpClientCheckGeoLoc(void) {
 
 // ###################################### Various gateways #########################################
 
+#if		defined(configPUSHOVER_TOKEN) && defined(configPUSHOVER_USER)
 int32_t	xHttpClientPushOver(const char * pcMess, uint32_t u32Val) {
 	return xHttpRequest("api.pushover.net",
 			"POST /1/messages.json",
@@ -583,6 +584,7 @@ int32_t	xHttpClientPushOver(const char * pcMess, uint32_t u32Val) {
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
 			nameSTA, pcMess, u32Val) ;
 }
+#endif
 
 // ######################################## Rules download #########################################
 
