@@ -35,12 +35,12 @@
 #include	"x_string_general.h"
 #include	"x_time.h"
 
+#include	"hal_config.h"
 #include	"hal_debug.h"
 
 #include	<stdlib.h>
 #include	<stdint.h>
 #include	<string.h>
-#include	<time.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
