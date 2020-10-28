@@ -210,14 +210,14 @@ int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, void * pvBody, pcu8_t pcu8Cert
 	if (pcu8Cert) {
 		sock_sec_t sSecure	= { 0 } ;
 		sRR.sCtx.psSec			= &sSecure ;
-		sRR.sCtx.psSec->pCert	= pcu8Cert ;
+		sRR.sCtx.psSec->pcCert	= pcu8Cert ;
 		/* This is a workaround for a bug introduced somewhere during Sept 2020
 		 * This most probably is related to the new 2020r3 toolkit and relates
 		 * to optimization in some way. Using strlen() returns ZERO !!!! */
-		sRR.sCtx.psSec->sCert	= xstrlen((pi8_t) pcu8Cert) + 1 ;	// + '\0'
-		IF_PRINT(debugREQUEST, (pi8_t) sRR.sCtx.psSec->pCert) ;
-		IF_myASSERT(debugREQUEST, INRANGE_FLASH(sRR.sCtx.psSec->pCert)) ;
-		IF_myASSERT(debugREQUEST, sRR.sCtx.psSec->sCert > 1) ;
+		sRR.sCtx.psSec->szCert	= xstrlen((pi8_t) pcu8Cert) + 1 ;	// + '\0'
+		IF_PRINT(debugREQUEST, (pi8_t) sRR.sCtx.psSec->pcCert) ;
+		IF_myASSERT(debugREQUEST, INRANGE_FLASH(sRR.sCtx.psSec->pcCert)) ;
+		IF_myASSERT(debugREQUEST, sRR.sCtx.psSec->szCert > 1) ;
 	}
 	if (Debug.u32) {
 		sRR.f_debug			= Debug.http ;
