@@ -25,7 +25,6 @@
 #include	"x_http_client.h"
 
 #include	"sitewhere.h"
-#include	"sitewhere-text.h"							// for vMqttSubscribeRulesTEXT()
 #include	"FreeRTOS_Support.h"
 #include	"actuators.h"
 
@@ -595,6 +594,8 @@ int32_t	xHttpClientPushOver(const char * pcMess, uint32_t u32Val) {
 
 // ######################################## Rules download #########################################
 
+#if 0
+#include	"sitewhere-text.h"							// for vMqttSubscribeRulesTEXT()
 int32_t xHttpClientRulesDownloadHandler(http_parser * psParser, const char * pBuf, size_t xLen) {
 	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE)
 		return erFAILURE ;
@@ -614,7 +615,7 @@ int32_t	xHttpClientRulesDownload(void) {
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
 			idSTA ) ;
 }
-
+#endif
 // ################################## POST IDENT info to host ######################################
 
 /**
