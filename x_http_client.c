@@ -305,18 +305,18 @@ int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t x
 	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE)
 		return erFAILURE ;
 
-	http_reqres_t * psReq = psParser->data ;
+	http_reqres_t * psRR = psParser->data ;
 	/* BuildSeconds			: halfway(?) time of running FW
 	 * hvLastModified		: creation time of available FW
 	 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
 	 *						: How much later must FW be to be considered new?
 	 */
-	int32_t i32Diff = psReq->hvLastModified - BuildSeconds ;
-	IF_PRINT(debugFOTA, "Found=%r  Running=%r  Diff=%d\n", psReq->hvLastModified, BuildSeconds, i32Diff) ;
-	if (i32Diff < fotaMIN_DIF_SECONDS) {
-		IF_PRINT(debugFOTA, " => No newer firmware found\n") ;
+	#define	fotaMIN_DIF_SECONDS					240
+	int32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
+	IF_PRINT(debugNEWER, "'%s' found  %r vs %r  Diff=%d  FW %snewer\n", psRR->pvArg,
+						psRR->hvLastModified, BuildSeconds, i32Diff, i32Diff < 0 ? "NOT " : "") ;
+	if (i32Diff < 0)
 		return erSUCCESS ;
-	}
 	xRtosSetStatus(flagAPP_RESTART) ;
 	return 1 ;
 }
