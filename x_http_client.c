@@ -326,13 +326,13 @@ int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t x
 
 int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int32_t iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen) ;
-	if (iRV != 1)					return iRV ;
-
+	if (iRV != 1)
+		return iRV ;
 	xRtosClearStatus(flagAPP_RESTART) ;
 	fota_info_t	sFI ;
 	iRV = halFOTA_Begin(&sFI) ;
-	if (iRV < erSUCCESS)			return erFAILURE ;
-
+	if (iRV < erSUCCESS)
+		return erFAILURE ;
 	IF_PRINT(debugFOTA, "OTA begin OK\n") ;
 
 	sFI.pBuf	= (void *) pBuf ;
@@ -343,7 +343,8 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 
 	while (xLen) {										// deal with all received packets
 		iRV = halFOTA_Write(&sFI) ;
-		if (iRV != ESP_OK)			break ;
+		if (iRV != ESP_OK)
+			break ;
 		xLenDone += sFI.xLen ;
 		IF_PRINT(debugFOTA, "%d%% (%d)\r", (xLenDone * 100)/xLenFull, xLenDone) ;
 		if (xLenDone == xLenFull) {						// if all done
@@ -353,9 +354,11 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 		IF_SYSTIMER_START(debugTIMING, systimerFOTA) ;
 		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sBuf.pBuf), psReq->sBuf.Size, configHTTP_RX_WAIT) ;
 		IF_SYSTIMER_STOP(debugTIMING, systimerFOTA) ;
-		if (iRV > 0)								sFI.xLen = iRV ;
-		else if (psReq->sCtx.error == EAGAIN)		continue ;
-		else {
+		if (iRV > 0) {
+			sFI.xLen = iRV ;
+		} else if (psReq->sCtx.error == EAGAIN) {
+			continue ;
+		} else {
 			sFI.iRV = iRV ;								// save for halFOTA_End() reuse
 			break ;										// no need for error reporting, already done in xNetRead()
 		}
@@ -545,7 +548,8 @@ int32_t	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xL
 	} else {
 		SL_ERR("Error parsing '%s' key", pKey) ;
 	}
-	if (psTokenList)				free(psTokenList) ;
+	if (psTokenList)
+		free(psTokenList) ;
     return iRV ;
 }
 
