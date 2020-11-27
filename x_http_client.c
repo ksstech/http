@@ -281,23 +281,18 @@ int32_t	xHttpBadSSL(void) {
 
 int32_t	xHttpClientFileDownloadCheck(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
+	int32_t iRV = erFAILURE ;
 	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_PRINT(debugFOTA, "Not found: file '%s'\n", psRR->pvArg) ;
-		return erFAILURE ;
-	}
-	if (psRR->hvContentLength == 0ULL) {
-		SL_ERR("Invalid size: file '%s' (%llu)", psRR->pvArg, psRR->hvContentLength) ;
-		return erFAILURE ;
-	}
-	if (psRR->hvContentType != ctApplicationOctetStream) {
-		SL_ERR("Invalid content: file '%s' (%d/%s)", psRR->pvArg, psRR->hvContentType, ctValues[psRR->hvContentType]) ;
-		return erFAILURE ;
-	}
-	if (psRR->hvConnect == coClose) {
+		IF_PRINT(debugFOTA, "'%s' not found\n", psRR->pvArg) ;
+	} else if (psRR->hvContentLength == 0ULL)
+		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength) ;
+	else if (psRR->hvContentType != ctApplicationOctetStream)
+		SL_ERR("'%s' invalid content (%d/%s)", psRR->pvArg, psRR->hvContentType, ctValues[psRR->hvContentType]) ;
+	else if (psRR->hvConnect == coClose)
 		SL_ERR("Connection closed unexpectedly") ;
-		return erFAILURE ;
-	}
-	return erSUCCESS ;
+	else
+		iRV = erSUCCESS ;
+	return iRV ;
 }
 
 /**
