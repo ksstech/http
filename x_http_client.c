@@ -46,14 +46,17 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xC004
+#define	debugFLAG					0xC020
 
 #define	debugJSON					(debugFLAG & 0x0001)
 #define	debugGEOLOC					(debugFLAG & 0x0002)
-#define	debugFOTA					(debugFLAG & 0x0004)
-#define	debugCOREDUMP				(debugFLAG & 0x0008)
+#define	debugCOREDUMP				(debugFLAG & 0x0004)
+// All FOTA related
+#define	debugFOTA					(debugFLAG & 0x0010)
+#define	debugNEWER					(debugFLAG & 0x0020)
+#define	debugWRITE					(debugFLAG & 0x0040)
 
-#define	debugREQUEST				(debugFLAG & 0x0010)
+#define	debugREQUEST				(debugFLAG & 0x0100)
 
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
@@ -346,9 +349,9 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 		if (iRV != ESP_OK)
 			break ;
 		xLenDone += sFI.xLen ;
-		IF_PRINT(debugFOTA, "%d%% (%d)\r", (xLenDone * 100)/xLenFull, xLenDone) ;
+		IF_PRINT(debugWRITE, "%d%% (%d)\r", (xLenDone * 100)/xLenFull, xLenDone) ;
 		if (xLenDone == xLenFull) {						// if all done
-			IF_PRINT(debugFOTA, "\n") ;
+			IF_PRINT(debugWRITE, "\n") ;
 			break ;										// get out...
 		}
 		IF_SYSTIMER_START(debugTIMING, systimerFOTA) ;
@@ -365,7 +368,7 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 	}
 
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, systimerFOTA) ;
-	IF_PRINT(debugFOTA, "Wrote %u/%u from '%s/%s'\n", xLenDone, xLenFull, psReq->sCtx.pHost, psReq->pvArg) ;
+	IF_PRINT(debugWRITE, "Wrote %u/%u from '%s/%s'\n", xLenDone, xLenFull, psReq->sCtx.pHost, psReq->pvArg) ;
 
 	iRV = halFOTA_End(&sFI) ;
 	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
