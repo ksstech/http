@@ -24,7 +24,6 @@
 
 #include	"x_http_client.h"
 
-#include	"sitewhere.h"
 #include	"FreeRTOS_Support.h"
 #include	"actuators.h"
 
