@@ -28,7 +28,7 @@
 #include	"yuarel.h"
 
 #include	"x_ubuf.h"
-#include	"x_sockets.h"
+#include	"socketsX.h"
 
 #ifdef __cplusplus
 extern "C" {

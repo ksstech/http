@@ -27,7 +27,7 @@
 #include	"FreeRTOS_Support.h"
 #include	"actuators.h"
 
-#include	"x_json_parser.h"							// parsing location & TZ requests
+#include	"parserX.h"									// parsing location & TZ requests
 #include	"x_errors_events.h"
 #include	"x_string_general.h"
 #include	"printfx.h"
