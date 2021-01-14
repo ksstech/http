@@ -520,7 +520,7 @@ void	vHttpReport(void) {
 	if (bRtosCheckStatus(flagNET_HTTP_SERV)) {
 		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0) ;
 	} else {
-		PRINT("%CHTTP%C\t", xpfSGR(attrRESET, colourFG_CYAN, 0, 0), attrRESET) ;
+		PRINT("%CHTTP%C\t", xpfSGR(attrRESET, colourFG_CYAN, 0, 0), xpfSGR(attrRESET, 0, 0, 0)) ;
 	}
 	PRINT("\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 }
