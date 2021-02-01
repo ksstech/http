@@ -60,6 +60,7 @@
 
 // ########################################### macros ##############################################
 
+#define halNET_EXTEND_IP			0
 
 // ###################################### enumerations #############################################
 
@@ -164,7 +165,7 @@ int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
 
 int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	http_reqres_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psRR) && INRANGE_SRAM(psRR->sBuf.pBuf)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sBuf.pBuf)) ;
 	int32_t iRV ;
 	iRV = socprintfx(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
 	iRV += socprintfx(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
@@ -266,9 +267,9 @@ void	vHttpServerCloseClient(netx_t * psCtx) {
  * @return	size of the response created (bytes)
  */
 int32_t	xHttpServerResponseHandler(http_parser * psParser) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(psParser->data)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psParser->data)) ;
 	http_reqres_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR->sBuf.pBuf)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sBuf.pBuf)) ;
 
 	int32_t	iURL = -1, iRV, i ;
 	if (psParser->http_errno) {

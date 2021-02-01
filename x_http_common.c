@@ -184,7 +184,7 @@ int 	xHttpCommonStatusHandler(http_parser * psParser, const char* pBuf, size_t x
 }
 
 int 	xHttpCommonHeaderFieldHandler(http_parser * psParser, const char* pBuf, size_t xLen) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser) && INRANGE_SRAM(pBuf) && (xLen > 0)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	http_reqres_t * psReq = psParser->data ;
 	psReq->HdrField	= xHttpCommonFindMatch(hfValues, NUM_OF_MEMBERS(hfValues), pBuf, xLen) ;
 	IF_PRINT(debugTRACK && psReq->f_debug, "'%.*s' = ", (int)xLen, pBuf);

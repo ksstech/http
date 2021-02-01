@@ -69,9 +69,9 @@
 
 int32_t	xHttpBuildHeader(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psParser)) ;
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR)) ;
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR->sBuf.pBuf)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sBuf.pBuf)) ;
 
 	vuprintfx(&psRR->sBuf, psRR->pcQuery, psRR->VaList) ;
 	uprintfx(&psRR->sBuf, " HTTP/1.1\r\n") ;
@@ -118,7 +118,7 @@ int32_t	xHttpBuildHeader(http_parser * psParser) {
  * @return	erFAILURE or result of xHttpCommonDoParsing() being 0 or more
  */
 int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, va_list vArgs) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psRR)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR)) ;
 	IF_SYSTIMER_INIT(debugTIMING, systimerHTTP, systimerTICKS, "HTTPclnt", myMS_TO_TICKS(configHTTP_RX_WAIT/100), myMS_TO_TICKS(configHTTP_RX_WAIT)) ;
 	IF_SYSTIMER_START(debugTIMING, systimerHTTP) ;
 	http_parser sParser ;
@@ -184,9 +184,9 @@ int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, void * pvBody, pcu8_t pcu8Cert
 	IF_PRINT(debugREQUEST, "H='%s'  Q='%s'  B=", sRR.sCtx.pHost, sRR.pcQuery) ;
 	IF_PRINT(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p" : "'%s'", sRR.u1.pVoid) ;
 	IF_PRINT(debugREQUEST, "  cb=%p  hv=%-I\n", sRR.sfCB.on_body, sRR.hvValues) ;
-	IF_myASSERT(debugREQUEST, INRANGE_FLASH(sRR.sCtx.pHost)) ;
-	IF_myASSERT(debugREQUEST, INRANGE_FLASH(sRR.pcQuery)) ;
-	IF_myASSERT(debugREQUEST, INRANGE_FLASH(sRR.sfCB.on_body)) ;
+	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.sCtx.pHost)) ;
+	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.pcQuery)) ;
+	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.sfCB.on_body)) ;
 	IF_myASSERT(debugREQUEST, sRR.hvContentType != ctUNDEFINED) ;
 
 	if (pcu8Cert) {
@@ -198,7 +198,7 @@ int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, void * pvBody, pcu8_t pcu8Cert
 		 * to optimization in some way. Using strlen() returns ZERO !!!! */
 		sRR.sCtx.psSec->szCert	= xstrlen((pi8_t) pcu8Cert) + 1 ;	// + '\0'
 		IF_PRINT(debugREQUEST, (pi8_t) sRR.sCtx.psSec->pcCert) ;
-		IF_myASSERT(debugREQUEST, INRANGE_FLASH(sRR.sCtx.psSec->pcCert)) ;
+		IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.sCtx.psSec->pcCert)) ;
 		IF_myASSERT(debugREQUEST, sRR.sCtx.psSec->szCert > 1) ;
 	}
 	if (Debug.u32) {
