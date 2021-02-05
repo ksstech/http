@@ -255,10 +255,10 @@ int		xHttpCommonChunkCompleteHandler(http_parser * psParser) {
 
 /**
  * xHttpCommonMessageBodyHandler() default handler for body content
- * @brief			If content is JSON format, will parse and display, else just debug dump
- * @param psParser
- * @param pBuf
- * @param xLen
+ * @brief	If content is JSON format, will parse and display, else just debug dump
+ * @param	psParser
+ * @param	pBuf
+ * @param	xLen
  * @return
  */
 int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, size_t xLen) {
@@ -267,7 +267,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, s
 	case ctTextPlain:
 	case ctTextHtml:
 	case ctApplicationXml:
-		PRINT("BODY (plain/html/xml)\n%.*s", xLen, pcBuf) ;
+		IF_PRINT(debugTRACK, "BODY (plain/html/xml)\n%.*s", xLen, pcBuf) ;
 		break ;
 	case ctApplicationJson:
 	{	// test parse (count tokens) then allocate memory & parse
@@ -277,7 +277,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, s
 		if (iRV > erSUCCESS) {							// print parsed tokens
 			iRV = xJsonPrintTokens(pcBuf, psTokenList, iRV, 0) ;
 		} else {
-			PRINT("BODY (json)\n%!'+b", xLen, pcBuf) ;	// not parsed, just dump...
+			IF_PRINT(debugTRACK, "BODY (json)\n%!'+b", xLen, pcBuf) ;	// not parsed, just dump...
 		}
 		if (psTokenList) {								// if allocated,
 			vPortFree(psTokenList) ;					// free the memory allocated in xJsonParse()
@@ -285,7 +285,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, s
 		break ;
 	}
 	default:
-		PRINT("BODY (other)\n%!'+b", xLen, pcBuf) ;
+		IF_PRINT(debugTRACK, "BODY (other)\n%!'+b", xLen, pcBuf) ;
 	}
     return erSUCCESS ;
 }
