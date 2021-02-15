@@ -293,7 +293,7 @@ int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t x
 	 */
 	#define	fotaMIN_DIF_SECONDS					240
 	int32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
-	IF_SL_DBG(debugNEWER, "'%s' found  %r vs %r  Diff=%d  FW %snewer", psRR->pvArg,
+	IF_SL_INFO(debugNEWER, "'%s' found  %r vs %r  Diff=%d  FW %snewer", psRR->pvArg,
 						psRR->hvLastModified, BuildSeconds, i32Diff, i32Diff < 0 ? "NOT " : "") ;
 	if (i32Diff < 0)
 		return erSUCCESS ;
