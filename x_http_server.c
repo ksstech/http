@@ -302,7 +302,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	switch(iURL) {
 	case urlROOT:
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
-		psRR->u1.pcBody = (CurWifiMode & WIFI_MODE_STA) ? (char *) HtmlSTAdetails : (char *) HtmlAPdetails ;
+		psRR->u1.pcBody = (WLstate.CurSTA) ? (char *) HtmlSTAdetails : (char *) HtmlAPdetails ;
 		break ;
 
 	case urlSAVE_AP:
