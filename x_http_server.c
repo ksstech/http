@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-20 Andre M Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-21 Andre M Maree / KSS Technologies (Pty) Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -37,8 +37,8 @@
 #include	"x_time.h"
 #include	"actuators.h"
 #include	"commands.h"
+#include	"global_vars.h"
 
-#include	"hal_debug.h"
 #include	"hal_network.h"
 #include	"hal_fota.h"
 #include	"hal_storage.h"

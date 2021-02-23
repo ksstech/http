@@ -36,7 +36,6 @@
 #include	"x_time.h"
 
 #include	"hal_config.h"
-#include	"hal_debug.h"
 
 #include	<stdlib.h>
 #include	<stdint.h>
