@@ -515,13 +515,12 @@ void	vTaskHttp(void * pvParameters) {
 void	vTaskHttpInit(void) { xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ; }
 
 void	vHttpReport(void) {
+	if (bRtosCheckStatus(flagNET_HTTP_SERV)) {
+		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0) ;
+		printfx("%CHTTP%C\t", xpfSGR(attrRESET, colourFG_CYAN, 0, 0), xpfSGR(attrRESET, 0, 0, 0)) ;
+		printfx(" =>\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
+	}
 	if (bRtosCheckStatus(flagNET_HTTP_CLNT)) {
 		xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0) ;
 	}
-	if (bRtosCheckStatus(flagNET_HTTP_SERV)) {
-		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0) ;
-	} else {
-		PRINT("%CHTTP%C\t", xpfSGR(attrRESET, colourFG_CYAN, 0, 0), xpfSGR(attrRESET, 0, 0, 0)) ;
-	}
-	PRINT("\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 }
