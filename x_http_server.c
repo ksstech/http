@@ -344,7 +344,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipMQTT) ;
 
 			// Check if values allow successful Wifi connection (& persist if successful)
-			iRV = halWL_TestCredentials(tmpWifi.ssid, tmpWifi.pswd) ;
+			iRV = halWL_TestCredentials((char *) tmpWifi.ssid, (char *) tmpWifi.pswd) ;
 			if (iRV == erSUCCESS) {						// inform client of success or not....
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 				psRR->u1.pcBody	= (char *) HtmlAPconfigOK ;
