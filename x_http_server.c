@@ -37,13 +37,12 @@
 #include	"x_time.h"
 #include	"actuators.h"
 #include	"commands.h"
-#include	"global_vars.h"
 
 #include	"hal_network.h"
 #include	"hal_fota.h"
 #include	"hal_storage.h"
 #include	"hal_mcu.h"									// for halMCU_Restart()
-#include	"hal_nvs.h"
+#include	"hal_variables.h"
 
 #include	<stdlib.h>
 #include	<string.h>

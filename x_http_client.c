@@ -14,13 +14,12 @@
 #include	"printfx.h"
 #include	"syslog.h"
 #include	"systiming.h"
-#include	"hal_timer.h"
-#include	"global_vars.h"
 
+#include	"hal_timer.h"
+#include	"hal_variables.h"
 #include	"hal_config.h"
 #include	"hal_network.h"
 #include	"hal_fota.h"								// firmware download handler
-#include	"hal_nvs.h"
 
 #include	<string.h>
 
