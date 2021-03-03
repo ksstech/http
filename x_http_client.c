@@ -15,7 +15,6 @@
 #include	"syslog.h"
 #include	"systiming.h"
 
-#include	"hal_timer.h"
 #include	"hal_variables.h"
 #include	"hal_config.h"
 #include	"hal_network.h"
