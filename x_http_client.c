@@ -414,18 +414,18 @@ int32_t	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen
 	jsmntok_t *	psTokenList ;
 	NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {									// parse Latitude
-		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lat", &sNVSvars.GeoLocation[Latitude], vfFXX) ;
+		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lat", &sNVSvars.GeoLocation[geoLAT], vfFXX) ;
 		if (iRV >= erSUCCESS) {							// parse Longitude
-			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lng", &sNVSvars.GeoLocation[Longitude], vfFXX) ;
+			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lng", &sNVSvars.GeoLocation[geoLON], vfFXX) ;
 			if (iRV >= erSUCCESS)						// parse accuracy
-				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "accuracy", &sNVSvars.GeoLocation[Accuracy], vfFXX) ;
+				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "accuracy", &sNVSvars.GeoLocation[geoACC], vfFXX) ;
 		}
 	}
-	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[Latitude] && sNVSvars.GeoLocation[Longitude]) {
+	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
 		sNVSvars.fGeoLoc = 1 ;
 		VarsFlag |= varFLAG_LOCATION ;
 		SL_INFO("lat=%.7f  lng=%.7f  acc=%.7f",
-				sNVSvars.GeoLocation[Latitude], sNVSvars.GeoLocation[Longitude], sNVSvars.GeoLocation[Accuracy]) ;
+				sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else
 		SL_ERR("Error parsing '%s' key", pKey) ;
@@ -494,7 +494,7 @@ int32_t	xHttpGetTimeZone(void) {
 			NULL, CertGoogle, xHttpParseTimeZone, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
-			sNVSvars.GeoLocation[Latitude], sNVSvars.GeoLocation[Longitude]) ;
+			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]) ;
 }
 
 // ########################################## Elevation #############################################
@@ -512,14 +512,14 @@ int32_t	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xL
 	jsmntok_t *	psTokenList ;
 	int32_t NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {								// parse Elevation
-		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "elevation", &sNVSvars.GeoLocation[Altitude], vfFXX) ;
+		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "elevation", &sNVSvars.GeoLocation[geoALT], vfFXX) ;
 		if (iRV >= erSUCCESS)					// parse Resolution
-			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "resolution", &sNVSvars.GeoLocation[Resolution], vfFXX) ;
+			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "resolution", &sNVSvars.GeoLocation[geoRES], vfFXX) ;
 	}
-	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[Altitude]) {
+	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoALT]) {
 		sNVSvars.fGeoAlt = 1 ;
 		VarsFlag |= varFLAG_ELEVATION ;
-		SL_INFO("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[Altitude], sNVSvars.GeoLocation[Resolution]) ;
+		SL_INFO("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else {
 		SL_ERR("Error parsing '%s' key", pKey) ;
@@ -538,7 +538,7 @@ int32_t	xHttpGetElevation(void) {
 			xHttpParseElevation, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
-			sNVSvars.GeoLocation[Latitude], sNVSvars.GeoLocation[Longitude]) ;
+			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]) ;
 }
 
 // ############################## Combined GeoLoc dependent info ###################################
