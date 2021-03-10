@@ -540,12 +540,11 @@ int32_t	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xL
 }
 
 int32_t	xHttpGetElevation(void) {
-	if (sNVSvars.fGeoAlt)			return erSUCCESS ;
+	if (sNVSvars.fGeoAlt)
+		return erSUCCESS ;
 	return xHttpRequest("maps.googleapis.com",
 			"GET /maps/api/elevation/json?locations=%.7f,%.7f&key="configGOOGLE_KEY,
-			NULL,
-			CertGoogle,
-			xHttpParseElevation, 0,
+			NULL, CertGoogle, xHttpParseElevation, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
 			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]) ;
@@ -600,6 +599,7 @@ int32_t	xHttpClientRulesDownload(void) {
 			idSTA ) ;
 }
 #endif
+
 // ################################## POST IDENT info to host ######################################
 
 /**
