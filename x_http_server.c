@@ -253,7 +253,7 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 // ################################### Common HTTP API functions ###################################
 
 void	vHttpServerCloseClient(netx_t * psCtx) {
-	xRtosClearStatus(flagNET_HTTP_CLNT) ;
+	xRtosClearStatus(flagHTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
 	xNetClose(psCtx) ;
 	IF_CTRACK(debugTRACK, "closing") ;
@@ -408,7 +408,7 @@ void	vTaskHttp(void * pvParameters) {
 		int32_t	iRV ;
 		case stateHTTP_DEINIT:
 			IF_CTRACK(debugTRACK, "de-init") ;
-			xRtosClearStatus(flagNET_HTTP_SERV | flagNET_HTTP_CLNT) ;
+			xRtosClearStatus(flagHTTP_SERV | flagHTTP_CLNT) ;
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
 			HttpState = stateHTTP_INIT ;
@@ -426,7 +426,7 @@ void	vTaskHttp(void * pvParameters) {
 				HttpState = stateHTTP_DEINIT ;
 				break ;
 			}
-			xRtosSetStatus(flagNET_HTTP_SERV) ;
+			xRtosSetStatus(flagHTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
 			IF_CTRACK(debugTRACK, "waiting") ;
 			/* FALLTHRU */ /* no break */
@@ -445,7 +445,7 @@ void	vTaskHttp(void * pvParameters) {
 				HttpState = stateHTTP_DEINIT ;
 				break ;
 			}
-			xRtosSetStatus(flagNET_HTTP_CLNT) ;			// mark as having a client connection
+			xRtosSetStatus(flagHTTP_CLNT) ;			// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
 			IF_CTRACK(debugTRACK, "connected") ;
 			/* FALLTHRU */ /* no break */
@@ -514,11 +514,11 @@ void	vTaskHttp(void * pvParameters) {
 void	vTaskHttpInit(void) { xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ; }
 
 void	vHttpReport(void) {
-	if (bRtosCheckStatus(flagNET_HTTP_SERV)) {
+	if (bRtosCheckStatus(flagHTTP_SERV) == 1) {
 		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0) ;
 		printfx("\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 	}
-	if (bRtosCheckStatus(flagNET_HTTP_CLNT)) {
+	if (bRtosCheckStatus(flagHTTP_CLNT) == 1) {
 		xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0) ;
 	}
 }
