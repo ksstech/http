@@ -435,12 +435,22 @@ int32_t	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen
 }
 
 int32_t	xHttpGetLocation(void) {
-	if (sNVSvars.fGeoLoc)			return erSUCCESS ;
+	if (sNVSvars.fGeoLoc)
+		return erSUCCESS ;
+#if 0
+	#define P1 LSC("POST /geolocation/v1/geolocate?key=")
+	#define	P2 configGOOGLE_KEY
+	return xHttpRequest("www.googleapis.com", CONCAT(P1,P2),
+			"{ }\r\n", CertGoogle, xHttpParseGeoLoc, 0,
+			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
+			0, xnetDEBUG_FLAGS(1,0,0,0,1,0,0,0,0), NULL) ;
+#else
 	return xHttpRequest("www.googleapis.com",
 			"POST /geolocation/v1/geolocate?key="configGOOGLE_KEY,
 			"{ }\r\n", CertGoogle, xHttpParseGeoLoc, 0,
 			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
+#endif
 }
 
 // ##################################### TIMEZONE support ##########################################
