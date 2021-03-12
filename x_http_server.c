@@ -504,6 +504,7 @@ void	vTaskHttp(void * pvParameters) {
 		}
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
+	xRtosClearStatus(flagHTTP_SERV) ;
 	vPortFree(sRR.sBuf.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
