@@ -24,7 +24,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xC000
+#define	debugFLAG					0xC177
 
 #define	debugJSON					(debugFLAG & 0x0001)
 #define	debugGEOLOC					(debugFLAG & 0x0002)
@@ -263,14 +263,15 @@ int32_t	xHttpClientFileDownloadCheck(http_parser * psParser) {
 	int32_t iRV = erFAILURE ;
 	if (psParser->status_code != HTTP_STATUS_OK) {
 		IF_PRINT(debugFOTA, "'%s' not found\n", psRR->pvArg) ;
-	} else if (psRR->hvContentLength == 0ULL)
+	} else if (psRR->hvContentLength == 0ULL) {
 		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength) ;
-	else if (psRR->hvContentType != ctApplicationOctetStream)
+	} else if (psRR->hvContentType != ctApplicationOctetStream) {
 		SL_ERR("'%s' invalid content (%d/%s)", psRR->pvArg, psRR->hvContentType, ctValues[psRR->hvContentType]) ;
-	else if (psRR->hvConnect == coClose)
+	} else if (psRR->hvConnect == coClose) {
 		SL_ERR("Connection closed unexpectedly") ;
-	else
+	} else {
 		iRV = erSUCCESS ;
+	}
 	return iRV ;
 }
 
@@ -281,21 +282,21 @@ int32_t	xHttpClientFileDownloadCheck(http_parser * psParser) {
  * 			erFAILURE if file not found/empty file/invalid content/connection closed
  */
 int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
-	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE)
+	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE) {
 		return erFAILURE ;
-
+	}
 	http_reqres_t * psRR = psParser->data ;
 	/* BuildSeconds			: halfway(?) time of running FW
 	 * hvLastModified		: creation time of available FW
 	 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
-	 *						: How much later must FW be to be considered new?
-	 */
+	 *						: How much later must FW be to be considered new? */
 	#define	fotaMIN_DIF_SECONDS					240
 	int32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
 	IF_SL_INFO(debugNEWER, "'%s' found  %r vs %r  Diff=%d  FW %snewer", psRR->pvArg,
 						psRR->hvLastModified, BuildSeconds, i32Diff, i32Diff < 0 ? "NOT " : "") ;
-	if (i32Diff < 0)
+	if (i32Diff < 0) {
 		return erSUCCESS ;
+	}
 	xRtosSetStatus(flagAPP_RESTART) ;
 	return 1 ;
 }
