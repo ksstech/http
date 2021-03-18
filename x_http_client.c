@@ -24,7 +24,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xC177
+#define	debugFLAG					0xC000
 
 #define	debugJSON					(debugFLAG & 0x0001)
 #define	debugGEOLOC					(debugFLAG & 0x0002)

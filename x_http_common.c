@@ -1,21 +1,5 @@
 /*
- * Copyright 2014-20 Andre M Maree / KSS Technologies (Pty) Ltd.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
- * and associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
- * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
+ * Copyright 2014-21 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
 /*
@@ -26,14 +10,11 @@
 #include	"FreeRTOS_Support.h"
 
 #include	"parserX.h"
-#include	"x_errors_events.h"
-#include	"printfx.h"
-#include	"syslog.h"
 #include	"x_buffers.h"
-#include	"x_complex_vars.h"
 #include	"x_string_to_values.h"
 #include	"x_string_general.h"
-#include	"x_time.h"
+#include	"x_errors_events.h"
+#include	"printfx.h"
 
 #include	"hal_config.h"
 
@@ -319,13 +300,14 @@ size_t	xHttpCommonDoParsing(http_parser * psParser) {
 	int32_t iRV = http_parser_execute(psParser, &psRR->sfCB, psRR->sBuf.pBuf, psRR->sBuf.Used) ;
 	if (psRR->f_debug) {
 		if (iRV <= 0) {
-			SL_ERR("parse %s (%s) url=%s/%s/%s", http_errno_name(HTTP_PARSER_ERRNO(psParser)),
-												http_errno_description(HTTP_PARSER_ERRNO(psParser)),
-												psRR->url.host, psRR->url.path, psRR->url.query) ;
+			IF_PRINT(debugRESULT, "parse %s (%s) url=%s/%s/%s\n",
+					http_errno_name(HTTP_PARSER_ERRNO(psParser)),
+					http_errno_description(HTTP_PARSER_ERRNO(psParser)),
+					psRR->url.host, psRR->url.path, psRR->url.query) ;
 			iRV = erFAILURE ;
 		}
 		if (INRANGE(HTTP_STATUS_BAD_REQUEST, psParser->status_code, HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED, int16_t)) {
-			SL_ERR("http error=%d (%s)", psParser->status_code, psRR->hvStatusMess) ;
+			IF_PRINT(debugRESULT, "http error=%d (%s)\n", psParser->status_code, psRR->hvStatusMess) ;
 			iRV = erFAILURE ;
 		}
 	}
