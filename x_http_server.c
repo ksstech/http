@@ -228,11 +228,11 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 		xStringParseEncoded(pcCommand, pcCommand) ;
 		IF_CPRINT(debugTRACK, "#%d = '%s'\n", i, pcCommand) ;
 		while (*pcCommand != CHR_NUL) {
-			vCommandInterpret((int) *pcCommand, false) ;
+			vCommandInterpret((int) *pcCommand, 0) ;
 			++pcCommand ;
 		}
 		if (pcCommand - psRR->parts[i] > 1) {
-			vCommandInterpret((int) CHR_CR, false) ;
+			vCommandInterpret((int) CHR_CR, 0) ;
 		}
 	}
 	if (xUBufAvail(&sRTCvars.sRTCbuf) > 0) {
