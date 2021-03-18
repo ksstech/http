@@ -355,7 +355,7 @@ int32_t	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 			"GET /firmware/%s.bin",
 			NULL,
 			HostInfo[sNVSvars.HostFOTA].pcu8Cert,
-			bCheck ? xHttpClientCheckFOTA : xHttpClientPerformFOTA,
+			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA,
 			0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,1,0,4), pvPara, pvPara) ;
