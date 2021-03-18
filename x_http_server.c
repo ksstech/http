@@ -209,7 +209,7 @@ int32_t	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
 		return erFAILURE ;
 	}
 	IF_CPRINT(debugTRACK, "%s->%s", pSrc) ;
-	if (pcStringParseIpAddr(pSrc, (p32_t) pDst) == pcFAILURE) {
+	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
 		*pDst = 0 ;
 		return erFAILURE ;
 	}
