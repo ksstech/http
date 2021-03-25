@@ -142,14 +142,14 @@ int 	xHttpCommonUrlHandler(http_parser * psParser, const char* pBuf, size_t xLen
 	}
 
 	if (debugTRACK && psRes->f_debug) {
-		PRINT("Struct: scheme:%s  host:%s  port:%d  path:%s  query:%s  fragment:%s\n",
+		printfx("Struct: scheme:%s  host:%s  port:%d  path:%s  query:%s  fragment:%s\n",
 				psRes->url.scheme, psRes->url.host, psRes->url.port,
 				*psRes->url.path == CHR_NUL ? "/" : psRes->url.path,
 				psRes->url.query, psRes->url.fragment) ;
 		for (Idx = 0; Idx < psRes->NumParts; ++Idx)
-			PRINT("Path part[%d]: '%s'\n", Idx, psRes->parts[Idx]) ;
+			printfx("Path part[%d]: '%s'\n", Idx, psRes->parts[Idx]) ;
 		for (Idx = 0; Idx < psRes->NumQuery; ++Idx)
-			PRINT("Parameter[%d]: name='%s' value='%s'\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val) ;
+			printfx("Parameter[%d]: name='%s' value='%s'\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val) ;
 	}
 	return erSUCCESS ;
 }

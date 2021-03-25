@@ -89,7 +89,7 @@ int32_t	xHttpBuildHeader(http_parser * psParser) {
 		if (psRR->hvContentType) {
 			uprintfx(&psRR->sBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
-				IF_myASSERT(debugTRACK, INRANGE(1, psRR->hvContentLength, 2*MEGA, uint64_t)) ;
+				IF_myASSERT(debugREQUEST, INRANGE(1, psRR->hvContentLength, 2*MEGA, uint64_t)) ;
 				/* Since the actual binary payload will only be added in the callback
 				 * from xHttpClientExecuteRequest() we will only add a single "\r\n"
 				 * pair here, the second added at the end of this function.
@@ -107,8 +107,8 @@ int32_t	xHttpBuildHeader(http_parser * psParser) {
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
 	uprintfx(&psRR->sBuf, "\r\n") ;
-	IF_PRINT(debugTRACK && psRR->f_debug, "Content:\n%.*s\n", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
 	return psRR->sBuf.Used ;
+	IF_CTRACK(debugREQUEST && psRR->f_debug, "Content:\n%.*s\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
 }
 
 /**
@@ -148,19 +148,19 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, va_list vArgs) {
 					psRR->sBuf.Used = iRV ;
 					iRV = xHttpCommonDoParsing(&sParser) ;	// return erFAILURE or some 0+ number
 				} else {
-					IF_PRINT(debugTRACK, " nothing read ie to parse\n") ;
+					IF_CTRACK(debugREQUEST, " nothing read ie to parse\n") ;
 					iRV = erFAILURE ;
 				}
 			} else {
-				IF_PRINT(debugTRACK, " nothing written (by handler) so can't expect to read\n") ;
+				IF_CTRACK(debugREQUEST, " nothing written (by handler) so can't expect to read\n") ;
 				iRV = erFAILURE ;
 			}
 		} else {
-			IF_PRINT(debugTRACK, " no header written, so can't expect to read\n") ;
+			IF_CTRACK(debugREQUEST, " no header written, so can't expect to read\n") ;
 			iRV = erFAILURE ;
 		}
 	} else {
-		IF_PRINT(debugTRACK, " could not open connection (%d)\n", iRV) ;
+		IF_CTRACK(debugREQUEST, " could not open connection (%d)\n", iRV) ;
 		iRV = erFAILURE ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
@@ -180,12 +180,12 @@ int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, void * pvBody, pcu8_t pcu8Cert
 	sRR.hvValues		= hvValues ;
 	sRR.sBuf.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
 	sRR.pvArg			= pvArg ;
-	IF_PRINT(debugREQUEST, "H='%s'  Q='%s'  B=", sRR.sCtx.pHost, sRR.pcQuery) ;
-	IF_PRINT(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p" : "'%s'", sRR.u1.pVoid) ;
-	IF_PRINT(debugREQUEST, "  cb=%p  hv=%-I\n", sRR.sfCB.on_body, sRR.hvValues) ;
 	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.sCtx.pHost)) ;
 	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.pcQuery)) ;
 	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.sfCB.on_body)) ;
+	IF_CPRINT(debugREQUEST, "H='%s'  Q='%s'  B=", sRR.sCtx.pHost, sRR.pcQuery) ;
+	IF_CPRINT(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p" : "'%s'", sRR.pVoid) ;
+	IF_CPRINT(debugREQUEST, "  cb=%p  hv=%-I\n", sRR.sfCB.on_body, sRR.hvValues) ;
 	IF_myASSERT(debugREQUEST, sRR.hvContentType != ctUNDEFINED) ;
 
 	if (pcu8Cert) {
@@ -262,7 +262,7 @@ int32_t	xHttpClientFileDownloadCheck(http_parser * psParser) {
 	http_reqres_t * psRR = psParser->data ;
 	int32_t iRV = erFAILURE ;
 	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_PRINT(debugFOTA, "'%s' not found\n", psRR->pvArg) ;
+		IF_CTRACK(debugFOTA, "'%s' not found\n", psRR->pvArg) ;
 	} else if (psRR->hvContentLength == 0ULL) {
 		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength) ;
 	} else if (psRR->hvContentType != ctApplicationOctetStream) {
@@ -292,7 +292,7 @@ int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t x
 	 *						: How much later must FW be to be considered new? */
 	#define	fotaMIN_DIF_SECONDS					240
 	int32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
-	IF_SL_INFO(debugNEWER, "'%s' found  %r vs %r  Diff=%d  FW %snewer", psRR->pvArg,
+	IF_CTRACK(debugNEWER, "'%s' found  %r vs %r  Diff=%d  FW %snewer", psRR->pvArg,
 						psRR->hvLastModified, BuildSeconds, i32Diff, i32Diff < 0 ? "NOT " : "") ;
 	if (i32Diff < 0) {
 		return erSUCCESS ;
@@ -310,7 +310,7 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 	iRV = halFOTA_Begin(&sFI) ;
 	if (iRV < erSUCCESS)
 		return erFAILURE ;
-	IF_PRINT(debugFOTA, "OTA begin OK\n") ;
+	IF_CTRACK(debugFOTA, "OTA begin OK") ;
 
 	sFI.pBuf	= (void *) pBuf ;
 	sFI.xLen	= xLen ;
@@ -323,9 +323,9 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 		if (iRV != ESP_OK)
 			break ;
 		xLenDone += sFI.xLen ;
-		IF_PRINT(debugWRITE, "%d%% (%d)\r", (xLenDone * 100)/xLenFull, xLenDone) ;
+		IF_CPRINT(debugWRITE, "%d%% (%d)\r", (xLenDone * 100)/xLenFull, xLenDone) ;
 		if (xLenDone == xLenFull) {						// if all done
-			IF_PRINT(debugWRITE, "\n") ;
+			IF_CPRINT(debugWRITE, "\n") ;
 			break ;										// get out...
 		}
 		IF_SYSTIMER_START(debugTIMING, systimerFOTA) ;
@@ -342,7 +342,7 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 	}
 
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, systimerFOTA) ;
-	IF_PRINT(debugWRITE, "Wrote %u/%u from '%s/%s'\n", xLenDone, xLenFull, psReq->sCtx.pHost, psReq->pvArg) ;
+	IF_CTRACK(debugWRITE, "Wrote %u/%u from '%s/%s'", xLenDone, xLenFull, psReq->sCtx.pHost, psReq->pvArg) ;
 
 	iRV = halFOTA_End(&sFI) ;
 	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
@@ -621,13 +621,13 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 	int32_t	iRV = erFAILURE ;
 	/* see https://github.com/espressif/esp-idf/issues/1650 */
 	size_t		xNow, xLeft, xDone = 0 ;
-	IF_PRINT(debugCOREDUMP, "Coredump START upload %lld\n", psReq->hvContentLength) ;
+	IF_CTRACK(debugCOREDUMP, "Coredump START upload %lld\n", psReq->hvContentLength) ;
 
 	while (xDone < psReq->hvContentLength) {			// deal with all data to be sent
 		xLeft	= psReq->hvContentLength - xDone ;
 		xNow	= (xLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLeft ;
-		IF_PRINT(debugCOREDUMP, "Start:%u  Write:%u  Left:%u\n", xDone, xNow, xLeft) ;
 		iRV = esp_partition_read((esp_partition_t *) psReq->pvArg, xDone, psReq->sBuf.pBuf, xNow) ;
+		IF_CTRACK(debugCOREDUMP, "Start:%u  Write:%u  Left:%u", xDone, xNow, xLeft) ;
 		if (iRV != ESP_OK) {
 			SL_ERR("flash read err=0x%x (%s)", iRV, esp_err_to_name(iRV)) ;
 			return -iRV ;
@@ -667,7 +667,7 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 
 	cd_hdr_t	sCDhdr ;
 	int32_t iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(sCDhdr)) ;
-	IF_PRINT(debugCOREDUMP, "L=%d  T=%u  TCB=%u  V=%-I\n", sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
+	IF_CTRACK(debugCOREDUMP, "L=%d  T=%u  TCB=%u  V=%-I", sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
 
 	if (iRV != ESP_OK || (sCDhdr.data_len == sCDhdr.tasks_num && sCDhdr.tcb_sz == sCDhdr.version)) {
 		SL_ALRT("Error =%d (%s) L=%d  T=%u  TCB=%u  V=%-I", iRV, esp_err_to_name(iRV), sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
