@@ -687,7 +687,7 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	if (iRV == ESP_OK) {
 		iRV = xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, "PUT /coredump/%m_%X_%X_%llu.bin",
 				xHttpClientCoredumpUploadCB,
-				HostInfo[sNVSvars.HostFOTA].pcu8Cert,
+				HostInfo[sNVSvars.HostFOTA].pcCert,HostInfo[sNVSvars.HostFOTA].szCert,
 				NULL, sCDhdr.data_len,
 				httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
 				0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), (void *) psPart,
