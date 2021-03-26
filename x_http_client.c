@@ -68,48 +68,48 @@
 // ################################### Common HTTP API functions ###################################
 
 int32_t	xHttpBuildHeader(http_parser * psParser) {
-	http_reqres_t * psRR = psParser->data ;
+	http_rr_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser)) ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR)) ;
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sBuf.pBuf)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
 
-	vuprintfx(&psRR->sBuf, psRR->pcQuery, psRR->VaList) ;
-	uprintfx(&psRR->sBuf, " HTTP/1.1\r\n") ;
-	uprintfx(&psRR->sBuf, "Host: %s\r\n", psRR->sCtx.pHost) ;
-	uprintfx(&psRR->sBuf, "From: %s\r\n", httpFROM_NAME) ;
-	uprintfx(&psRR->sBuf, "User-Agent: %s\r\n", httpAGENT_NAME) ;
+	vuprintfx(&psRR->sUB, psRR->pcQuery, psRR->VaList) ;
+	uprintfx(&psRR->sUB, " HTTP/1.1\r\n") ;
+	uprintfx(&psRR->sUB, "Host: %s\r\n", psRR->sCtx.pHost) ;
+	uprintfx(&psRR->sUB, "From: %s\r\n", "admin@kss.co.za") ;
+	uprintfx(&psRR->sUB, "User-Agent: %s\r\n", "irmacos") ;
 	if (psRR->hvAccept) {
-		uprintfx(&psRR->sBuf, "Accept: %s\r\n", ctValues[psRR->hvAccept]) ;
+		uprintfx(&psRR->sUB, "Accept: %s\r\n", ctValues[psRR->hvAccept]) ;
 		psRR->hvAccept	= ctUNDEFINED ;
 	}
 	if (psRR->hvConnect) {
-		uprintfx(&psRR->sBuf, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
+		uprintfx(&psRR->sUB, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
 	}
 	// from here on items common to requests and responses...
-	if (psRR->u1.pcBody) {
+	if (psRR->pcBody) {
 		if (psRR->hvContentType) {
-			uprintfx(&psRR->sBuf, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
+			uprintfx(&psRR->sUB, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 				IF_myASSERT(debugREQUEST, INRANGE(1, psRR->hvContentLength, 2*MEGA, uint64_t)) ;
 				/* Since the actual binary payload will only be added in the callback
 				 * from xHttpClientExecuteRequest() we will only add a single "\r\n"
 				 * pair here, the second added at the end of this function.
 				 * The callback will be responsible for adding the final terminating "\r\n" */
-				uprintfx(&psRR->sBuf, "Content-Length: %d\r\n", psRR->hvContentLength) ;
+				uprintfx(&psRR->sUB, "Content-Length: %d\r\n", psRR->hvContentLength) ;
 				// no actual binary content added, done later...
 			} else {									// currently handle json/xml/text/html here
-				psRR->hvContentLength = vsprintfx(NULL, psRR->u1.pcBody, psRR->VaList) ;	// determine body length
-				uprintfx(&psRR->sBuf, "Content-Length: %d\r\n\r\n", psRR->hvContentLength) ;
-				vuprintfx(&psRR->sBuf, psRR->u1.pcBody, psRR->VaList) ;// add actual content
+				psRR->hvContentLength = vsprintfx(NULL, psRR->pcBody, psRR->VaList) ;	// determine body length
+				uprintfx(&psRR->sUB, "Content-Length: %d\r\n\r\n", psRR->hvContentLength) ;
+				vuprintfx(&psRR->sUB, psRR->pcBody, psRR->VaList) ;// add actual content
 			}
 		} else {
 			SL_ERR(debugAPPL_PLACE) ;
 		}
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
-	uprintfx(&psRR->sBuf, "\r\n") ;
-	return psRR->sBuf.Used ;
+	uprintfx(&psRR->sUB, "\r\n") ;
 	IF_CTRACK(debugREQUEST && psRR->f_debug, "Content:\n%.*s\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
+	return psRR->sUB.Used ;
 }
 
 /**
@@ -117,7 +117,7 @@ int32_t	xHttpBuildHeader(http_parser * psParser) {
  * @param psRR
  * @return	erFAILURE or result of xHttpCommonDoParsing() being 0 or more
  */
-int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, va_list vArgs) {
+int32_t	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR)) ;
 	IF_SYSTIMER_INIT(debugTIMING, systimerHTTP, systimerTICKS, "HTTPclnt", myMS_TO_TICKS(configHTTP_RX_WAIT/100), myMS_TO_TICKS(configHTTP_RX_WAIT)) ;
 	IF_SYSTIMER_START(debugTIMING, systimerHTTP) ;
@@ -126,7 +126,7 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, va_list vArgs) {
 	sParser.data = psRR ;
 
 	// setup the uubuf_t structure for printing
-	xUBufCreate(&psRR->sBuf, NULL, psRR->sBuf.Size, 0) ;
+	xUBufCreate(&psRR->sUB, NULL, psRR->sUB.Size, 0) ;
 
 	psRR->VaList = vArgs ;
 	int32_t xLen = xHttpBuildHeader(&sParser) ;
@@ -138,15 +138,15 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, va_list vArgs) {
 	}
 	int32_t iRV = xNetOpen(&psRR->sCtx) ;
 	if (iRV == erSUCCESS) {								// if socket=open, write request
-		iRV = xNetWrite(&psRR->sCtx, psRR->sBuf.pBuf, xLen) ;
+		iRV = xNetWrite(&psRR->sCtx, psRR->sUB.pBuf, xLen) ;
 		if (iRV > 0) {									// successfully written some (or all)
 			if (psRR->hvContentType == ctApplicationOctetStream) {
-				iRV = psRR->u1.hdlr_req(psRR) ;			// should return same as xNetWrite()
+				iRV = psRR->hdlr_req(psRR) ;			// should return same as xNetWrite()
 			}
 			if (iRV > 0) {								// now do the actual read
-				iRV = xNetReadBlocks(&psRR->sCtx, psRR->sBuf.pBuf, psRR->sBuf.Size, configHTTP_RX_WAIT) ;
+				iRV = xNetReadBlocks(&psRR->sCtx, psRR->sUB.pBuf, psRR->sUB.Size, configHTTP_RX_WAIT) ;
 				if (iRV > 0) {							// actually read something
-					psRR->sBuf.Used = iRV ;
+					psRR->sUB.Used = iRV ;
 					iRV = xHttpCommonDoParsing(&sParser) ;	// return erFAILURE or some 0+ number
 				} else {
 					IF_CTRACK(debugREQUEST, " nothing read ie to parse\n") ;
@@ -165,22 +165,22 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, va_list vArgs) {
 		iRV = erFAILURE ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
-	vUBufDestroy(&psRR->sBuf) ;							// return memory allocated
+	vUBufDestroy(&psRR->sUB) ;							// return memory allocated
 	IF_SYSTIMER_STOP(debugTIMING, systimerHTTP) ;
 	return iRV ;
 }
 
-	http_reqres_t sRR	= { 0 } ;
 int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 		pci8_t pcCert, size_t szCert, void * OnBodyCB, uint32_t DataSize,
 		uint32_t hvValues, uint16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
+	http_rr_t sRR		= { 0 } ;
 	sRR.sCtx.pHost		= pHost ;
 	sRR.pcQuery			= pQuery ;
-	sRR.u1.pVoid		= pvBody ;
+	sRR.pVoid			= pvBody ;
 	sRR.sfCB.on_body	= OnBodyCB ? (http_data_cb) OnBodyCB : xHttpCommonMessageBodyHandler ;
 	sRR.hvContentLength	= (uint64_t) DataSize ;
 	sRR.hvValues		= hvValues ;
-	sRR.sBuf.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
+	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
 	sRR.pvArg			= pvArg ;
 	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.sCtx.pHost)) ;
 	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.pcQuery)) ;
@@ -253,7 +253,7 @@ int32_t	xHttpBadSSL(void) {
 // ################################# Firmware Over The Air support #################################
 
 int32_t	xHttpClientFileDownloadCheck(http_parser * psParser) {
-	http_reqres_t * psRR = psParser->data ;
+	http_rr_t * psRR = psParser->data ;
 	int32_t iRV = erFAILURE ;
 	if (psParser->status_code != HTTP_STATUS_OK) {
 		IF_CTRACK(debugFOTA, "'%s' not found\n", psRR->pvArg) ;
@@ -279,7 +279,7 @@ int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t x
 	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE) {
 		return erFAILURE ;
 	}
-	http_reqres_t * psRR = psParser->data ;
+	http_rr_t * psRR = psParser->data ;
 	/* BuildSeconds			: halfway(?) time of running FW
 	 * hvLastModified		: creation time of available FW
 	 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
@@ -310,7 +310,7 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 
 	sFI.pBuf	= (void *) pBuf ;
 	sFI.xLen	= xLen ;
-	http_reqres_t * psReq = psParser->data ;
+	http_rr_t * psReq = psParser->data ;
 	size_t	xLenDone = 0, xLenFull = psReq->hvContentLength ;
 	IF_SYSTIMER_INIT(debugTIMING, systimerFOTA, systimerTICKS, "halFOTA", myMS_TO_TICKS(configHTTP_RX_WAIT/10), myMS_TO_TICKS(configHTTP_RX_WAIT)) ;
 
@@ -326,7 +326,7 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 			break ;										// get out...
 		}
 		IF_SYSTIMER_START(debugTIMING, systimerFOTA) ;
-		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sBuf.pBuf), psReq->sBuf.Size, configHTTP_RX_WAIT) ;
+		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
 		IF_SYSTIMER_STOP(debugTIMING, systimerFOTA) ;
 		if (iRV > 0) {
 			sFI.xLen = iRV ;
@@ -628,7 +628,7 @@ int32_t	xHttpClientIdentUpload(void * psRomID) {
 
 // ################################## PUT core dump to host ########################################
 
-int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
+int32_t xHttpClientCoredumpUploadCB(http_rr_t * psReq) {
 	int32_t	iRV = erFAILURE ;
 	/* see https://github.com/espressif/esp-idf/issues/1650 */
 	size_t		xNow, xLeft, xDone = 0 ;
@@ -636,14 +636,14 @@ int32_t xHttpClientCoredumpUploadCB(http_reqres_t * psReq) {
 
 	while (xDone < psReq->hvContentLength) {			// deal with all data to be sent
 		xLeft	= psReq->hvContentLength - xDone ;
-		xNow	= (xLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLeft ;
-		iRV = esp_partition_read((esp_partition_t *) psReq->pvArg, xDone, psReq->sBuf.pBuf, xNow) ;
+		xNow	= (xLeft > psReq->sUB.Size) ? psReq->sUB.Size : xLeft ;
 		IF_CTRACK(debugCOREDUMP, "Start:%u  Write:%u  Left:%u", xDone, xNow, xLeft) ;
+		iRV = esp_partition_read((esp_partition_t *) psReq->pvArg, xDone, psReq->sUB.pBuf, xNow) ;
 		if (iRV != ESP_OK) {
 			SL_ERR("flash read err=0x%x (%s)", iRV, esp_err_to_name(iRV)) ;
 			return -iRV ;
 		}
-		iRV = xNetWrite(&psReq->sCtx, (char *) psReq->sBuf.pBuf, (xLeft > psReq->sBuf.Size) ? psReq->sBuf.Size : xLeft) ;
+		iRV = xNetWrite(&psReq->sCtx, (char *) psReq->sUB.pBuf, (xLeft > psReq->sUB.Size) ? psReq->sUB.Size : xLeft) ;
 		if (iRV > 0) {
 			xDone += iRV ;
 		} else if (psReq->sCtx.error == EAGAIN) {

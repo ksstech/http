@@ -132,7 +132,7 @@ static	const char HtmlErrorBadQuery[] =
 
 uint8_t			HttpState ;
 netx_t			sServHttpCtx ;
-http_reqres_t	sRR = { 0 } ;
+http_rr_t	sRR = { 0 } ;
 
 // ###################################### global variables #########################################
 
@@ -140,7 +140,7 @@ http_reqres_t	sRR = { 0 } ;
 // ################################## local/static support functions ###############################
 
 int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
-	http_reqres_t * psRR	= psParser->data ;
+	http_rr_t * psRR	= psParser->data ;
 	psParser->status_code	= Status ;
 
 	// set common defaults for responses
@@ -163,8 +163,8 @@ int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
 }
 
 int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
-	http_reqres_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sBuf.pBuf)) ;
+	http_rr_t * psRR = psParser->data ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
 	int32_t iRV ;
 	iRV = socprintfx(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
 	iRV += socprintfx(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
@@ -192,7 +192,7 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	va_end(vArgs) ;
 	iRV += socprintfx(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 
-	IF_CPRINT(debugTRACK && psRR->f_debug, "Content:\n%.*s", psRR->sBuf.Used, psRR->sBuf.pBuf) ;
+	IF_CPRINT(debugTRACK && psRR->f_debug, "Content:\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf) ;
 	return iRV ;
 }
 
@@ -221,7 +221,7 @@ int32_t	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
 
 int32_t	xHttpHandle_API(http_parser * psParser) {
 	static const char format[] = "<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>" ;
-	http_reqres_t * psRR = psParser->data ;
+	http_rr_t * psRR = psParser->data ;
 	int32_t iRV ;
 	for (int32_t i = 1; i < httpYUAREL_MAX_PARTS && psRR->parts[i] != NULL; ++i) {
 		char * pcCommand = psRR->parts[i] ;
@@ -267,24 +267,24 @@ void	vHttpServerCloseClient(netx_t * psCtx) {
  */
 int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psParser->data)) ;
-	http_reqres_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sBuf.pBuf)) ;
+	http_rr_t * psRR = psParser->data ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
 
 	int32_t	iURL = -1, iRV, i ;
 	if (psParser->http_errno) {
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
-		psRR->u1.pcBody	= (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
+		psRR->pcBody	= (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
+		SL_ERR("%s (%s)", psRR->pcBody, http_errno_name(HTTP_PARSER_ERRNO(psParser))) ;
 		psRR->hvContentType = ctTextPlain ;
-		SL_ERR("%s (%s)", psRR->u1.pcBody, http_errno_name(HTTP_PARSER_ERRNO(psParser))) ;
 
 	} else if (psParser->method != HTTP_GET) {			// Invalid METHOD
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_IMPLEMENTED) ;
-		psRR->u1.pcBody	= (char *) HtmlErrorInvMethod ;
+		psRR->pcBody	= (char *) HtmlErrorInvMethod ;
 		SL_ERR("Method not supported (%d)", psParser->method) ;
 
 	} else if (psRR->f_host == 0) {						// host not provided
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
-		psRR->u1.pcBody	= (char *) HtmlErrorNoHost ;
+		psRR->pcBody	= (char *) HtmlErrorNoHost ;
 		SL_ERR("Host name/IP not provided") ;
 
 	} else {		// at this stage all parsing results are OK, just the URL to be matched and processed.
@@ -301,7 +301,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 	switch(iURL) {
 	case urlROOT:
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
-		psRR->u1.pcBody = (WLstate.CurSTA) ? (char *) HtmlSTAdetails : (char *) HtmlAPdetails ;
+		psRR->pcBody = (WLstate.CurSTA) ? (char *) HtmlSTAdetails : (char *) HtmlAPdetails ;
 		break ;
 
 	case urlSAVE_AP:
@@ -318,7 +318,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_MQTT) != 0)) {
 			// missing/corrupted/wrong key for an IP parameter, stop parsing & complain...
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
-			psRR->u1.pcBody	= (char *) HtmlErrorBadQuery ;
+			psRR->pcBody	= (char *) HtmlErrorBadQuery ;
 
 		} else {
 			nvs_wifi_t tmpWifi = { 0 } ;
@@ -346,11 +346,11 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			iRV = halWL_TestCredentials((char *) tmpWifi.ssid, (char *) tmpWifi.pswd) ;
 			if (iRV == erSUCCESS) {						// inform client of success or not....
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
-				psRR->u1.pcBody	= (char *) HtmlAPconfigOK ;
+				psRR->pcBody	= (char *) HtmlAPconfigOK ;
 				xRtosSetStatus(flagAPP_RESTART) ;
 			} else {
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
-				psRR->u1.pcBody	= (char *) HtmlAPconfigFAIL ;
+				psRR->pcBody	= (char *) HtmlAPconfigFAIL ;
 			}
 		}
 		break ;
@@ -359,26 +359,26 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		if (psRR->NumParts == 2) {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 			psRR->f_bodyCB 	= 1 ;
-			psRR->u1.hdlr_rsp	= xHttpHandle_API ;
+			psRR->hdlr_rsp	= xHttpHandle_API ;
 		} else {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
-			psRR->u1.pcBody 	= "<html><body><h2>** API command option Required **</h2></body></html>" ;
+			psRR->pcBody 	= "<html><body><h2>** API command option Required **</h2></body></html>" ;
 		}
 		break ;
 
 	case urlNOTFOUND:
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_FOUND) ;
-		psRR->u1.pcBody 	= "<html><body><h2>** URL Nor found **</h2></body></html>" ;
+		psRR->pcBody 	= "<html><body><h2>** URL Nor found **</h2></body></html>" ;
 		break ;
 
 	default:
 		break ;
 	}
 
-	if (psRR->f_bodyCB && psRR->u1.hdlr_rsp) {
-		iRV = psRR->u1.hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
+	if (psRR->f_bodyCB && psRR->hdlr_rsp) {
+		iRV = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
-		iRV = xHttpSendResponse(psParser, psRR->u1.pcBody) ;
+		iRV = xHttpSendResponse(psParser, psRR->pcBody) ;
 		IF_CPRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
 	}
 	if (sServHttpCtx.maxTx < iRV) {
@@ -398,7 +398,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  */
 void	vTaskHttp(void * pvParameters) {
 	IF_CTRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
-	sRR.sBuf.pBuf	= malloc(sRR.sBuf.Size = httpSERVER_BUFSIZE) ;
+	sRR.sUB.pBuf	= malloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
 	xRtosSetStateRUN(taskHTTP) ;
 
@@ -451,7 +451,7 @@ void	vTaskHttp(void * pvParameters) {
 			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_CONNECTED:
-			iRV = xNetRead(&sRR.sCtx, sRR.sBuf.pBuf, sRR.sBuf.Size) ;
+			iRV = xNetRead(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size) ;
 			if (iRV > 0) {							// read something ?
 				IF_CTRACK(debugTRACK, "start parsing") ;
 				if (sServHttpCtx.maxRx < iRV) {		// yes, update the Rx packet stats
@@ -461,7 +461,7 @@ void	vTaskHttp(void * pvParameters) {
 				http_parser_init(&sParser, HTTP_REQUEST) ;
 				sParser.data		= &sRR ;
 				// setup guidelines for parsing the request
-				sRR.u1.pVoid		= NULL ;
+				sRR.pVoid		= NULL ;
 				sRR.hvContentLength	= 0UL ;
 				sRR.hvDate			= 0 ;
 				sRR.hvLastModified	= 0 ;
@@ -475,7 +475,7 @@ void	vTaskHttp(void * pvParameters) {
 				sRR.f_parts			= 1 ;				// break URL up in parts
 				sRR.f_query			= 1 ;				// break query up in parts
 //				sRR.f_debug			= 1 ;				// enable debug output
-				sRR.sBuf.Used		= iRV ;
+				sRR.sUB.Used		= iRV ;
 				iRV = xHttpCommonDoParsing(&sParser) ;
 				if (iRV > 0) {							// build response if something was parsed....
 					IF_CTRACK(debugTRACK, "start response handler") ;
@@ -505,7 +505,7 @@ void	vTaskHttp(void * pvParameters) {
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
 	xRtosClearStatus(flagHTTP_SERV) ;
-	vPortFree(sRR.sBuf.pBuf) ;
+	vPortFree(sRR.sUB.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
 	IF_CTRACK(debugAPPL_THREADS, debugAPPL_MESS_DN) ;

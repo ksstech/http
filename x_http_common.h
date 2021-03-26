@@ -116,10 +116,8 @@ enum {													// HTTP flags
 
 // ######################################### structures ############################################
 
-typedef struct http_reqres_s http_reqres_t ;
-
-struct http_reqres_s {
-	ubuf_t					sBuf ;						// both
+typedef struct http_rr_t {
+	ubuf_t					sUB ;						// both
 	netx_t					sCtx ;						// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
  * a) the pcQuery format string; and
@@ -129,12 +127,12 @@ struct http_reqres_s {
 		pci8_t	pcQuery ;								// client: 'format' GET/PUT/POST/DELETE/PATCH .....
 		pci8_t	pcStatMes ;								// server: status message
 	} ;
-	union http_rr_u1 {
-		void *	pVoid ;
+	union {
+		const void * pVoid ;
 		pci8_t	pcBody ;								// both (client 'format' string)
-		int32_t (* hdlr_req) (http_reqres_t *) ;		// client
+		int32_t (* hdlr_req) (struct http_rr_t *) ;		// client
 		int32_t	(* hdlr_rsp) (http_parser *) ;			// server
-	} u1 ;
+	} ;
 	va_list					VaList ;					// Client
 	void *					pvArg ;						// Client
 	http_parser_settings 	sfCB ;						// Both
@@ -166,8 +164,7 @@ struct http_reqres_s {
 		} ;
 		uint8_t		f_allflags ;
 	} ;
-} ;
-typedef	union http_rr_u1	http_rr_t1 ;
+} http_rr_t ;
 
 #define	httpHDR_VALUES(a,b,c,d) ((a<<24)|(b<<16)|(c<<8)|d)
 
