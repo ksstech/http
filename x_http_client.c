@@ -44,6 +44,7 @@
 // ###################################### BUILD : CONFIG definitions ###############################
 
 #define configHTTP_BUFSIZE			4096
+#define configHTTP_RX_WAIT			5000	// 500
 
 // ########################################### macros #############################################
 
@@ -52,14 +53,14 @@
 /*
  * EurekAPI.com (basic free 30day, 2017/06/06)
  */
-#define	configHTTP_HOST_EUREKAPI				"api.eurekapi.com"
-#define	configHTTP_QUERY_EUREKAPI				"GET /iplocation/v1.8/locateip?key="configEUREKA_KEY"&ip=%I&format=JSON&compact=Y"
+#define	configHTTP_HOST_EUREKAPI	"api.eurekapi.com"
+#define	configHTTP_QUERY_EUREKAPI	"GET /iplocation/v1.8/locateip?key="keyEUREKA"&ip=%I&format=JSON&compact=Y"
 
 /*
  * free geo-ip service definition
  */
-#define	configHTTP_HOST_FREE_GEO_IP				"freegeoip.net"
-#define	configHTTP_FORMAT_FREE_GEO_IP			"GET /json"
+#define	configHTTP_HOST_FREE_GEO_IP	"freegeoip.net"
+#define	configHTTP_FORMAT_FREE_GEO_IP	"GET /json"
 
 // ################################### global/public variables #####################################
 
@@ -122,7 +123,7 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, va_list vArgs) {
 	IF_SYSTIMER_START(debugTIMING, systimerHTTP) ;
 	http_parser sParser ;
 	http_parser_init(&sParser, HTTP_RESPONSE) ;			// clear all parser fields/values
-	sParser.data	= psRR ;
+	sParser.data = psRR ;
 
 	// setup the uubuf_t structure for printing
 	xUBufCreate(&psRR->sBuf, NULL, psRR->sBuf.Size, 0) ;
@@ -132,9 +133,9 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, va_list vArgs) {
 
 	psRR->sCtx.type				= SOCK_STREAM ;
 	psRR->sCtx.sa_in.sin_family	= AF_INET ;
-	if (psRR->sCtx.sa_in.sin_port	== 0)
+	if (psRR->sCtx.sa_in.sin_port	== 0) {
 		psRR->sCtx.sa_in.sin_port	= htons(psRR->sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
-
+	}
 	int32_t iRV = xNetOpen(&psRR->sCtx) ;
 	if (iRV == erSUCCESS) {								// if socket=open, write request
 		iRV = xNetWrite(&psRR->sCtx, psRR->sBuf.pBuf, xLen) ;
@@ -169,9 +170,10 @@ int32_t	xHttpClientExecuteRequest(http_reqres_t * psRR, va_list vArgs) {
 	return iRV ;
 }
 
-int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, void * pvBody, pcu8_t pcu8Cert, void * OnBodyCB,
-		uint32_t DataSize, uint32_t hvValues, uint16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
 	http_reqres_t sRR	= { 0 } ;
+int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
+		pci8_t pcCert, size_t szCert, void * OnBodyCB, uint32_t DataSize,
+		uint32_t hvValues, uint16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
 	sRR.sCtx.pHost		= pHost ;
 	sRR.pcQuery			= pQuery ;
 	sRR.u1.pVoid		= pvBody ;
@@ -207,7 +209,7 @@ int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, void * pvBody, pcu8_t pcu8Cert
 		sRR.sCtx.d_read		= Debug.read ;
 		sRR.sCtx.d_data		= Debug.data ;
 		sRR.sCtx.d_eagain	= Debug.eagain ;
-		if (pcu8Cert) {
+		if (pcCert) {
 			sRR.sCtx.psSec->Verify	= Debug.verify ;
 			sRR.sCtx.d_secure		= Debug.secure ;
 			sRR.sCtx.d_level		= Debug.level ;
@@ -223,11 +225,9 @@ int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, void * pvBody, pcu8_t pcu8Cert
 // ###################################### WEATHER support ##########################################
 
 int32_t xHttpGetWeather(void) {
-	return xHttpRequest("api.openweathermap.org",
-			"GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID=cf177bb6e86c95045841c63e99ad2ff4",
-			NULL,
-			NULL,
-			NULL, 0,
+	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID=cf177bb6e86c95045841c63e99ad2ff4" ;
+	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
+			NULL, 0, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
 			16384, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
@@ -235,11 +235,8 @@ int32_t xHttpGetWeather(void) {
 // ################################### How's my SSL support ########################################
 
 int32_t	xHttpHowsMySSL(void) {
-	return xHttpRequest("www.howsmyssl.com",
-			"GET /a/check",
-			NULL,
-			HostInfo[sNVSvars.HostFOTA].pcu8Cert,
-			NULL, 0,
+	return xHttpRequest("www.howsmyssl.com", "GET /a/check", NULL,
+			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
@@ -247,11 +244,8 @@ int32_t	xHttpHowsMySSL(void) {
 // ####################################### Bad SSL support #########################################
 
 int32_t	xHttpBadSSL(void) {
-	return xHttpRequest("www.badssl.com",
-			"GET /dashboard",
-			NULL,
-			HostInfo[sNVSvars.HostFOTA].pcu8Cert,
-			NULL, 0,
+	return xHttpRequest("www.badssl.com", "GET /dashboard", NULL,
+			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
@@ -303,13 +297,15 @@ int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t x
 
 int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int32_t iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen) ;
-	if (iRV != 1)
+	if (iRV != 1) {
 		return iRV ;
+	}
 	xRtosClearStatus(flagAPP_RESTART) ;
 	fota_info_t	sFI ;
 	iRV = halFOTA_Begin(&sFI) ;
-	if (iRV < erSUCCESS)
+	if (iRV < erSUCCESS) {
 		return erFAILURE ;
+	}
 	IF_CTRACK(debugFOTA, "OTA begin OK") ;
 
 	sFI.pBuf	= (void *) pBuf ;
@@ -320,8 +316,9 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 
 	while (xLen) {										// deal with all received packets
 		iRV = halFOTA_Write(&sFI) ;
-		if (iRV != ESP_OK)
+		if (iRV != ESP_OK) {
 			break ;
+		}
 		xLenDone += sFI.xLen ;
 		IF_CPRINT(debugWRITE, "%d%% (%d)\r", (xLenDone * 100)/xLenFull, xLenDone) ;
 		if (xLenDone == xLenFull) {						// if all done
@@ -345,20 +342,18 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 	IF_CTRACK(debugWRITE, "Wrote %u/%u from '%s/%s'", xLenDone, xLenFull, psReq->sCtx.pHost, psReq->pvArg) ;
 
 	iRV = halFOTA_End(&sFI) ;
-	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
+	if (iRV == erSUCCESS && sFI.iRV == ESP_OK) {
 		xRtosSetStatus(flagAPP_RESTART) ;
+	}
 	return sFI.iRV ;
 }
 
 int32_t	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
-	int32_t iRV = xHttpRequest(HostInfo[sNVSvars.HostFOTA].pName,
-			"GET /firmware/%s.bin",
-			NULL,
-			HostInfo[sNVSvars.HostFOTA].pcu8Cert,
-			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA,
-			0,
+	int32_t iRV = xHttpRequest(HostInfo[sNVSvars.HostFOTA].pName, "GET /firmware/%s.bin", NULL,
+			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert,
+			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,1,0,4), pvPara, pvPara) ;
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,4), pvPara, pvPara) ;
 	return iRV ;
 }
 
@@ -376,11 +371,13 @@ int32_t xHttpClientCheckUpgrades(bool bCheck) {
 	 */
 	int32_t iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck) ;
 #if 0
-	if (bRtosCheckStatus(flagAPP_RESTART) == 0)
+	if (bRtosCheckStatus(flagAPP_RESTART) == 0) {
 		iRV = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN, bCheck) ;
+	}
 #endif
-	if (bRtosCheckStatus(flagAPP_RESTART) == 0)
+	if (bRtosCheckStatus(flagAPP_RESTART) == 0) {
 		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck) ;
+	}
 	xRtosClearStatus(flagAPP_UPGRADE) ;				// all options exhausted
 	return iRV ;
 }
@@ -418,8 +415,9 @@ int32_t	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen
 		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lat", &sNVSvars.GeoLocation[geoLAT], vfFXX) ;
 		if (iRV >= erSUCCESS) {							// parse Longitude
 			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lng", &sNVSvars.GeoLocation[geoLON], vfFXX) ;
-			if (iRV >= erSUCCESS)						// parse accuracy
+			if (iRV >= erSUCCESS) {						// parse accuracy
 				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "accuracy", &sNVSvars.GeoLocation[geoACC], vfFXX) ;
+			}
 		}
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
@@ -428,30 +426,29 @@ int32_t	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen
 		SL_INFO("lat=%.7f  lng=%.7f  acc=%.7f",
 				sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
-	} else
+	} else {
 		SL_ERR("Error parsing '%s' key", pKey) ;
-	if (psTokenList)
+	}
+	if (psTokenList) {
 		free(psTokenList) ;
+	}
     return iRV ;
 }
 
-int32_t	xHttpGetLocation(void) {
-	if (sNVSvars.fGeoLoc)
-		return erSUCCESS ;
-#if 0
-	#define P1 LSC("POST /geolocation/v1/geolocate?key=")
-	#define	P2 configGOOGLE_KEY
-	return xHttpRequest("www.googleapis.com", CONCAT(P1,P2),
-			"{ }\r\n", CertGoogle, xHttpParseGeoLoc, 0,
-			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(1,0,0,0,1,0,0,0,0), NULL) ;
-#else
-	return xHttpRequest("www.googleapis.com",
-			"POST /geolocation/v1/geolocate?key="configGOOGLE_KEY,
-			"{ }\r\n", CertGoogle, xHttpParseGeoLoc, 0,
-			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
+#ifndef keyGOOGLE
+	#define	keyGOOGLE		"fakegoogle"
 #endif
+
+int32_t	xHttpGetLocation(void) {
+	if (sNVSvars.fGeoLoc) {
+		return erSUCCESS ;
+	}
+	const char caQuery[] = "POST /geolocation/v1/geolocate?key="keyGOOGLE ;
+	int32_t iRV = xHttpRequest("www.googleapis.com", caQuery, "{ }\r\n",
+			&CertGoogle[0], SizeGoogle, xHttpParseGeoLoc, 0,
+			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,4), NULL) ;
+	return iRV ;
 }
 
 // ##################################### TIMEZONE support ##########################################
@@ -477,8 +474,9 @@ int32_t	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xL
 			if (iRV >= erSUCCESS) {
 				sTZ.timezone = sNVSvars.timezone = xVal.i32 ;				// store value
 				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneId", sNVSvars.TimeZoneId, vfSXX) ;
-				if (iRV >= erSUCCESS)
+				if (iRV >= erSUCCESS) {
 					iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneName", sNVSvars.TimeZoneName, vfSXX) ;
+				}
 			}
 		}
 	}
@@ -490,7 +488,9 @@ int32_t	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xL
 	} else {
 		SL_ERR("Error parsing '%s' key", pKey) ;
 	}
-	if (psTokenList)				free(psTokenList) ;
+	if (psTokenList) {
+		free(psTokenList) ;
+	}
     return iRV ;
 }
 
@@ -500,12 +500,13 @@ int32_t	xHttpGetTimeZone(void) {
 		sTZ.timezone	= sNVSvars.timezone ;
 		return erSUCCESS ;
 	}
-	return xHttpRequest("maps.googleapis.com",
-			"GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="configGOOGLE_KEY,
-			NULL, CertGoogle, xHttpParseTimeZone, 0,
+	char const * caQuery = "GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="keyGOOGLE ;
+	int32_t iRV = xHttpRequest("maps.googleapis.com", caQuery, NULL,
+			CertGoogle, sizeof(CertGoogle), xHttpParseTimeZone, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
 			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]) ;
+	return iRV ;
 }
 
 // ########################################## Elevation #############################################
@@ -522,10 +523,11 @@ int32_t	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xL
 	jsmn_parser	sParser ;
 	jsmntok_t *	psTokenList ;
 	int32_t NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
-	if (NumTok > 0) {								// parse Elevation
+	if (NumTok > 0) {									// parse Elevation
 		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "elevation", &sNVSvars.GeoLocation[geoALT], vfFXX) ;
-		if (iRV >= erSUCCESS)					// parse Resolution
+		if (iRV >= erSUCCESS) {							// parse Resolution
 			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "resolution", &sNVSvars.GeoLocation[geoRES], vfFXX) ;
+		}
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoALT]) {
 		sNVSvars.fGeoAlt = 1 ;
@@ -535,20 +537,23 @@ int32_t	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xL
 	} else {
 		SL_ERR("Error parsing '%s' key", pKey) ;
 	}
-	if (psTokenList)
+	if (psTokenList) {
 		free(psTokenList) ;
+	}
     return iRV ;
 }
 
 int32_t	xHttpGetElevation(void) {
-	if (sNVSvars.fGeoAlt)
+	if (sNVSvars.fGeoAlt) {
 		return erSUCCESS ;
-	return xHttpRequest("maps.googleapis.com",
-			"GET /maps/api/elevation/json?locations=%.7f,%.7f&key="configGOOGLE_KEY,
-			NULL, CertGoogle, xHttpParseElevation, 0,
+	}
+	const char caQuery[] = "GET /maps/api/elevation/json?locations=%.7f,%.7f&key="keyGOOGLE ;
+	int32_t iRV = xHttpRequest("maps.googleapis.com", caQuery, NULL,
+			CertGoogle, sizeof(CertGoogle), xHttpParseElevation, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
 			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]) ;
+	return iRV ;
 }
 
 // ############################## Combined GeoLoc dependent info ###################################
@@ -564,17 +569,23 @@ int32_t	xHttpClientCheckGeoLoc(void) {
 
 // ###################################### Various gateways #########################################
 
-#if		defined(configPUSHOVER_TOKEN) && defined(configPUSHOVER_USER)
+#ifndef	tokenPUSHOVER
+	#define	tokenPUSHOVER "faketoken"
+#endif
+
+#ifndef	userPUSHOVER
+	#define	userPUSHOVER "fakeuser"
+#endif
+
 int32_t	xHttpClientPushOver(const char * pcMess, uint32_t u32Val) {
-	return xHttpRequest("api.pushover.net",
-			"POST /1/messages.json",
-			"token="configPUSHOVER_TOKEN "&user="configPUSHOVER_USER "&title=%U&message=%U%%40%u",
-			CertGoogle, NULL, 0,
+	const char caBody[] = "token="tokenPUSHOVER "&user="userPUSHOVER "&title=%U&message=%U%%40%u" ;
+	int32_t iRV = xHttpRequest("api.pushover.net", "POST /1/messages.json", caBody,
+			CertGoogle, sizeof(CertGoogle), NULL, 0,
 			httpHDR_VALUES(ctApplicationXwwwFormUrlencoded, ctApplicationJson, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
 			nameSTA, pcMess, u32Val) ;
+	return iRV ;
 }
-#endif
 
 // ######################################## Rules download #########################################
 
@@ -610,7 +621,7 @@ int32_t	xHttpClientRulesDownload(void) {
 int32_t	xHttpClientIdentUpload(void * psRomID) {
 	return xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, "PATCH /ibuttons.dat",
 			"'%m' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\n",
-			NULL, NULL, 0, httpHDR_VALUES(ctTextPlain, 0, 0, 0),
+			NULL, 0, NULL, 0, httpHDR_VALUES(ctTextPlain, 0, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
 			psRomID) ;
 }
