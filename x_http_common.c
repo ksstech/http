@@ -6,6 +6,7 @@
  * http_common.c
  */
 
+#include	"hal_config.h"
 #include 	"x_http_common.h"
 #include	"FreeRTOS_Support.h"
 
@@ -15,8 +16,6 @@
 #include	"x_string_general.h"
 #include	"x_errors_events.h"
 #include	"printfx.h"
-
-#include	"hal_config.h"
 
 #include	<stdlib.h>
 #include	<stdint.h>

@@ -3,10 +3,10 @@
  * Copyright 2014-20 Andre M Maree / KSS Technologies (Pty) Ltd.
  */
 
+#include	"hal_variables.h"
 #include	"x_http_client.h"
 
 #include	"FreeRTOS_Support.h"
-#include	"actuators.h"
 
 #include	"parserX.h"									// parsing location & TZ requests
 #include	"x_errors_events.h"
@@ -15,16 +15,15 @@
 #include	"syslog.h"
 #include	"systiming.h"
 
-#include	"hal_variables.h"
-#include	"hal_config.h"
 #include	"hal_network.h"
 #include	"hal_fota.h"								// firmware download handler
 
 #include	<string.h>
+#include	<stdarg.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xC000
+#define	debugFLAG					0xE000
 
 #define	debugJSON					(debugFLAG & 0x0001)
 #define	debugGEOLOC					(debugFLAG & 0x0002)
@@ -686,8 +685,7 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	}
 
 	if (iRV == ESP_OK) {
-		iRV = xHttpRequest(HostInfo[sNVSvars.HostCONF].pName,
-				"PUT /coredump/%m_%X_%X_%llu.bin",
+		iRV = xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, "PUT /coredump/%m_%X_%X_%llu.bin",
 				xHttpClientCoredumpUploadCB,
 				HostInfo[sNVSvars.HostFOTA].pcu8Cert,
 				NULL, sCDhdr.data_len,

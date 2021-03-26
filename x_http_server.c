@@ -325,8 +325,9 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			i = 0 ;
 			// all IP parameter keys matched, parse them
 			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ssid) ;
-			if (iRV == erSUCCESS)
+			if (iRV == erSUCCESS) {
 				iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.pswd) ;
+			}
 #if		(halNET_EXTEND_IP == 1)
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipNM) ;
@@ -339,9 +340,9 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS2) ;
 #endif
-			if (iRV == erSUCCESS)						// last parameter in the list
+			if (iRV == erSUCCESS) {						// last parameter in the list
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipMQTT) ;
-
+			}
 			// Check if values allow successful Wifi connection (& persist if successful)
 			iRV = halWL_TestCredentials((char *) tmpWifi.ssid, (char *) tmpWifi.pswd) ;
 			if (iRV == erSUCCESS) {						// inform client of success or not....
@@ -512,7 +513,9 @@ void	vTaskHttp(void * pvParameters) {
 	vTaskDelete(NULL) ;
 }
 
-void	vTaskHttpInit(void) { xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ; }
+void	vTaskHttpInit(void) {
+	xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ;
+}
 
 void	vHttpReport(void) {
 	if (bRtosCheckStatus(flagHTTP_SERV) == 1) {
