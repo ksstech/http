@@ -172,7 +172,9 @@ int32_t	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 		pci8_t pcCert, size_t szCert, void * OnBodyCB, uint32_t DataSize,
 		uint32_t hvValues, uint16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
+	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(OnBodyCB)) ;
 	http_rr_t sRR		= { 0 } ;
+	sock_sec_t sSecure	= { 0 } ;				// LEAVE here else pcCert/szCert gets screwed
 	sRR.sCtx.pHost		= pHost ;
 	sRR.pcQuery			= pQuery ;
 	sRR.pVoid			= pvBody ;
@@ -181,25 +183,15 @@ int32_t	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	sRR.hvValues		= hvValues ;
 	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
 	sRR.pvArg			= pvArg ;
-	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.sCtx.pHost)) ;
-	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.pcQuery)) ;
-	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.sfCB.on_body)) ;
 	IF_CPRINT(debugREQUEST, "H='%s'  Q='%s'  B=", sRR.sCtx.pHost, sRR.pcQuery) ;
 	IF_CPRINT(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p" : "'%s'", sRR.pVoid) ;
 	IF_CPRINT(debugREQUEST, "  cb=%p  hv=%-I\n", sRR.sfCB.on_body, sRR.hvValues) ;
 	IF_myASSERT(debugREQUEST, sRR.hvContentType != ctUNDEFINED) ;
 
-	if (pcu8Cert) {
-		sock_sec_t sSecure	= { 0 } ;
-		sRR.sCtx.psSec			= &sSecure ;
-		sRR.sCtx.psSec->pcCert	= pcu8Cert ;
-		/* This is a workaround for a bug introduced somewhere during Sept 2020
-		 * This most probably is related to the new 2020r3 toolkit and relates
-		 * to optimization in some way. Using strlen() returns ZERO !!!! */
-		sRR.sCtx.psSec->szCert	= xstrlen((pi8_t) pcu8Cert) + 1 ;	// + '\0'
-		IF_PRINT(debugREQUEST, (pi8_t) sRR.sCtx.psSec->pcCert) ;
-		IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(sRR.sCtx.psSec->pcCert)) ;
-		IF_myASSERT(debugREQUEST, sRR.sCtx.psSec->szCert > 1) ;
+	if (pcCert) {
+		sRR.sCtx.psSec	= &sSecure ;
+		sSecure.pcCert	= pcCert ;
+		sSecure.szCert	= szCert ;
 	}
 	if (Debug.u32) {
 		sRR.f_debug			= Debug.http ;
