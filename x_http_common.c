@@ -256,7 +256,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, s
 		if (iRV > erSUCCESS) {							// print parsed tokens
 			iRV = xJsonPrintTokens(pcBuf, psTokenList, iRV, 0) ;
 		} else {
-			IF_PRINT(debugTRACK, "BODY (json)\n%!'+b", xLen, pcBuf) ;	// not parsed, just dump...
+			IF_PRINT(debugTRACK, "BODY (json)\n%!'+B", xLen, pcBuf) ;	// not parsed, just dump...
 		}
 		if (psTokenList) {								// if allocated,
 			vPortFree(psTokenList) ;					// free the memory allocated in xJsonParse()
@@ -264,7 +264,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, s
 		break ;
 	}
 	default:
-		IF_PRINT(debugTRACK, "BODY (other)\n%!'+b", xLen, pcBuf) ;
+		IF_PRINT(debugTRACK, "BODY (other)\n%!'+B", xLen, pcBuf) ;
 	}
     return erSUCCESS ;
 }
