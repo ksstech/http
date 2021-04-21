@@ -23,11 +23,12 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xE000
+#define	debugFLAG					0xF000
 
 #define	debugPARSE					(debugFLAG & 0x0001)
 #define	debugURL					(debugFLAG & 0x0002)
 #define	debugBUILD					(debugFLAG & 0x0004)
+#define	debugBODY					(debugFLAG & 0x0004)
 
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
@@ -246,7 +247,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, s
 	case ctTextPlain:
 	case ctTextHtml:
 	case ctApplicationXml:
-		IF_PRINT(debugTRACK, "BODY (plain/html/xml)\n%.*s", xLen, pcBuf) ;
+		IF_PRINT(debugTRACK && psReq->f_debug, "BODY (plain/html/xml)\n%.*s", xLen, pcBuf) ;
 		break ;
 	case ctApplicationJson:
 	{	// test parse (count tokens) then allocate memory & parse
@@ -256,7 +257,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, s
 		if (iRV > erSUCCESS) {							// print parsed tokens
 			iRV = xJsonPrintTokens(pcBuf, psTokenList, iRV, 0) ;
 		} else {
-			IF_PRINT(debugTRACK, "BODY (json)\n%!'+B", xLen, pcBuf) ;	// not parsed, just dump...
+			IF_PRINT(debugTRACK && psReq->f_debug, "BODY (json)\n%!'+B", xLen, pcBuf) ;	// not parsed, just dump...
 		}
 		if (psTokenList) {								// if allocated,
 			vPortFree(psTokenList) ;					// free the memory allocated in xJsonParse()
@@ -264,7 +265,7 @@ int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pcBuf, s
 		break ;
 	}
 	default:
-		IF_PRINT(debugTRACK, "BODY (other)\n%!'+B", xLen, pcBuf) ;
+		IF_PRINT(debugTRACK && psReq->f_debug, "BODY (other)\n%!'+B", xLen, pcBuf) ;
 	}
     return erSUCCESS ;
 }
