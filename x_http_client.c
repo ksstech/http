@@ -660,6 +660,12 @@ typedef struct {
     uint32_t tcb_sz;    // size of TCB
 } cd_hdr_t;
 
+#if		defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN)
+	const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.bin" ;
+#elif	defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
+	const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.elf" ;
+#endif
+
 int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	// for binary uploads the address and content length+type must be correct
 	esp_partition_iterator_t sIter ;
@@ -679,7 +685,7 @@ int32_t	xHttpClientCoredumpUpload(void * pvPara) {
 	}
 
 	if (iRV == ESP_OK) {
-		iRV = xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, "PUT /coredump/%m_%X_%X_%llu.bin",
+		iRV = xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, caQuery,
 				xHttpClientCoredumpUploadCB,
 				HostInfo[sNVSvars.HostFOTA].pcCert,HostInfo[sNVSvars.HostFOTA].szCert,
 				NULL, sCDhdr.data_len,
