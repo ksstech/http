@@ -192,7 +192,7 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	va_end(vArgs) ;
 	iRV += socprintfx(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 
-	IF_CPRINT(debugTRACK && psRR->f_debug, "Content:\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf) ;
+	IF_PRINT(debugTRACK && psRR->f_debug, "Content:\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf) ;
 	return iRV ;
 }
 
@@ -200,7 +200,7 @@ int32_t	xHttpServerParseString(char * pVal, char * pDst) {
 	if (xStringParseEncoded(pVal, pDst) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s->%s\n", pVal, pDst) ;
+	IF_PRINT(debugTRACK, "%s->%s\n", pVal, pDst) ;
 	return erSUCCESS ;
 }
 
@@ -208,12 +208,12 @@ int32_t	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
 	if (xStringParseEncoded(pSrc, NULL) == erFAILURE) {
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, "%s->%s", pSrc) ;
+	IF_PRINT(debugTRACK, "%s->%s", pSrc) ;
 	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
 		*pDst = 0 ;
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK, " : %-I\n", *pDst) ;
+	IF_PRINT(debugTRACK, " : %-I\n", *pDst) ;
 	return erSUCCESS ;
 }
 
@@ -226,7 +226,7 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 	for (int32_t i = 1; i < httpYUAREL_MAX_PARTS && psRR->parts[i] != NULL; ++i) {
 		char * pcCommand = psRR->parts[i] ;
 		xStringParseEncoded(pcCommand, pcCommand) ;
-		IF_CPRINT(debugTRACK, "#%d = '%s'\n", i, pcCommand) ;
+		IF_PRINT(debugTRACK, "#%d = '%s'\n", i, pcCommand) ;
 		while (*pcCommand != CHR_NUL) {
 			vCommandInterpret((int) *pcCommand, 0) ;
 			++pcCommand ;
@@ -256,7 +256,7 @@ void	vHttpServerCloseClient(netx_t * psCtx) {
 	xRtosClearStatus(flagHTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
 	xNetClose(psCtx) ;
-	IF_CTRACK(debugTRACK, "closing") ;
+	IF_CTRACK(debugTRACK, "closing\n") ;
 }
 
 /**
@@ -380,7 +380,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		iRV = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
 		iRV = xHttpSendResponse(psParser, psRR->pcBody) ;
-		IF_CPRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
+		IF_PRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
 	}
 	if (sServHttpCtx.maxTx < iRV) {
 		sServHttpCtx.maxTx = iRV ;
@@ -398,7 +398,8 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  * 	Respond to /restart (as emergency)
  */
 void	vTaskHttp(void * pvParameters) {
-	IF_CTRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
+	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
+	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP) ;
 	sRR.sUB.pBuf	= malloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
 	xRtosSetStateRUN(taskHTTP) ;
@@ -408,7 +409,7 @@ void	vTaskHttp(void * pvParameters) {
 		switch(HttpState) {
 		int32_t	iRV ;
 		case stateHTTP_DEINIT:
-			IF_CTRACK(debugTRACK, "de-init") ;
+			IF_CTRACK(debugTRACK, "de-init\n") ;
 			xRtosClearStatus(flagHTTP_SERV | flagHTTP_CLNT) ;
 			xNetClose(&sRR.sCtx) ;
 			xNetClose(&sServHttpCtx) ;
@@ -416,7 +417,7 @@ void	vTaskHttp(void * pvParameters) {
 			break ;					// must NOT fall through since the Lx status might have changed
 
 		case stateHTTP_INIT:
-			IF_CTRACK(debugTRACK, "init") ;
+			IF_CTRACK(debugTRACK, "init\n") ;
 			memset(&sServHttpCtx, 0 , sizeof(sServHttpCtx)) ;
 			sServHttpCtx.sa_in.sin_family	= AF_INET ;
 			sServHttpCtx.type				= SOCK_STREAM ;
@@ -429,7 +430,7 @@ void	vTaskHttp(void * pvParameters) {
 			}
 			xRtosSetStatus(flagHTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
-			IF_CTRACK(debugTRACK, "waiting") ;
+			IF_CTRACK(debugTRACK, "waiting\n") ;
 			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_WAITING:
@@ -448,13 +449,13 @@ void	vTaskHttp(void * pvParameters) {
 			}
 			xRtosSetStatus(flagHTTP_CLNT) ;			// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
-			IF_CTRACK(debugTRACK, "connected") ;
+			IF_CTRACK(debugTRACK, "connected\n") ;
 			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_CONNECTED:
 			iRV = xNetRead(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size) ;
 			if (iRV > 0) {							// read something ?
-				IF_CTRACK(debugTRACK, "start parsing") ;
+				IF_CTRACK(debugTRACK, "start parsing\n") ;
 				if (sServHttpCtx.maxRx < iRV) {		// yes, update the Rx packet stats
 					sServHttpCtx.maxRx = iRV ;
 				}
@@ -479,26 +480,26 @@ void	vTaskHttp(void * pvParameters) {
 				sRR.sUB.Used		= iRV ;
 				iRV = xHttpCommonDoParsing(&sParser) ;
 				if (iRV > 0) {							// build response if something was parsed....
-					IF_CTRACK(debugTRACK, "start response handler") ;
+					IF_CTRACK(debugTRACK, "start response handler\n") ;
 					xStdioBufLock(portMAX_DELAY) ;
 					iRV = xHttpServerResponseHandler(&sParser) ;
 					xStdioBufUnLock() ;
 				}
-				IF_CTRACK(debugTRACK, "Parsing done") ;
+				IF_CTRACK(debugTRACK, "Parsing done\n") ;
 				// socket closed or error occurred or coClose was set, close the connection
 				if (iRV == 0 || 						// nothing parsed or socket closed?
 					sRR.sCtx.error != 0 || 				// any error (even EAGAIN) on write ?
 					sRR.hvConnect == coClose) {			// or connection must be closed ?
 					vHttpServerCloseClient(&sRR.sCtx) ;	// then close the damn thing
-					IF_CTRACK(debugTRACK, "client closed") ;
+					IF_CTRACK(debugTRACK, "client closed\n") ;
 				} else {
 					// both parse & response handler & write was successful
 				}
 			} else if (sRR.sCtx.error != EAGAIN) {		// not EAGAIN/EWOULDBLOCK, socket closed OR real error
 				vHttpServerCloseClient(&sRR.sCtx) ;
-				IF_CTRACK(debugTRACK, "client closed") ;
+				IF_CTRACK(debugTRACK, "client closed\n") ;
 			}
-			IF_CTRACK(debugTRACK, "Tx done") ;
+			IF_CTRACK(debugTRACK, "Tx done\n") ;
 			break ;
 
 		default:	SL_ERR(debugAPPL_PLACE) ;
@@ -509,12 +510,12 @@ void	vTaskHttp(void * pvParameters) {
 	vPortFree(sRR.sUB.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
-	IF_CTRACK(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
+	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
 	vTaskDelete(NULL) ;
 }
 
 void	vTaskHttpInit(void) {
-	xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, INT_MAX) ;
+	xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, tskNO_AFFINITY) ;
 }
 
 void	vHttpReport(void) {
