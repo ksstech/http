@@ -291,7 +291,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		if (*psRR->url.path == CHR_NUL) {				// STEP1: start by matching the URL
 			iURL = urlROOT ;							// do NOT try to match, lost single '/'
 		} else {
-			iURL = xHttpCommonFindMatch(UrlTable, NUM_OF_MEMBERS(UrlTable), psRR->url.path, xstrlen(psRR->url.path)) ;
+			iURL = xHttpCommonFindMatch(UrlTable, NO_MEM(UrlTable), psRR->url.path, xstrlen(psRR->url.path)) ;
 			if (iURL == 0)	{
 				iURL = urlNOTFOUND ;
 			}

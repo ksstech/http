@@ -116,8 +116,8 @@ int32_t	xHttpBuildHeader(http_parser * psParser) {
  */
 int32_t	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR)) ;
-	IF_SYSTIMER_INIT(debugTIMING, systimerHTTP, systimerTICKS, "HTTPclnt", myMS_TO_TICKS(configHTTP_RX_WAIT/100), myMS_TO_TICKS(configHTTP_RX_WAIT)) ;
-	IF_SYSTIMER_START(debugTIMING, systimerHTTP) ;
+	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT) ;
+	IF_SYSTIMER_START(debugTIMING, stHTTP) ;
 	http_parser sParser ;
 	http_parser_init(&sParser, HTTP_RESPONSE) ;			// clear all parser fields/values
 	sParser.data = psRR ;
@@ -163,7 +163,7 @@ int32_t	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
 	vUBufDestroy(&psRR->sUB) ;							// return memory allocated
-	IF_SYSTIMER_STOP(debugTIMING, systimerHTTP) ;
+	IF_SYSTIMER_STOP(debugTIMING, stHTTP) ;
 	return iRV ;
 }
 
@@ -301,7 +301,7 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 	sFI.xLen	= xLen ;
 	http_rr_t * psReq = psParser->data ;
 	size_t	xLenDone = 0, xLenFull = psReq->hvContentLength ;
-	IF_SYSTIMER_INIT(debugTIMING, systimerFOTA, systimerTICKS, "halFOTA", myMS_TO_TICKS(configHTTP_RX_WAIT/10), myMS_TO_TICKS(configHTTP_RX_WAIT)) ;
+	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT) ;
 
 	while (xLen) {										// deal with all received packets
 		iRV = halFOTA_Write(&sFI) ;
@@ -314,9 +314,9 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 			IF_CPRINT(debugFOTA, "\n") ;
 			break ;										// get out...
 		}
-		IF_SYSTIMER_START(debugTIMING, systimerFOTA) ;
+		IF_SYSTIMER_START(debugTIMING, stFOTA) ;
 		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
-		IF_SYSTIMER_STOP(debugTIMING, systimerFOTA) ;
+		IF_SYSTIMER_STOP(debugTIMING, stFOTA) ;
 		if (iRV > 0) {
 			sFI.xLen = iRV ;
 		} else if (psReq->sCtx.error == EAGAIN) {
@@ -327,7 +327,7 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 		}
 	}
 
-	IF_SYSTIMER_SHOW_NUM(debugTIMING, systimerFOTA) ;
+	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA) ;
 	IF_TRACK(debugFOTA, "Wrote %u/%u from '%s/%s'\n", xLenDone, xLenFull, psReq->sCtx.pHost, psReq->pvArg) ;
 
 	iRV = halFOTA_End(&sFI) ;
@@ -369,7 +369,7 @@ int32_t xHttpClientCheckUpgrades(bool bCheck) {
 	}
 	xRtosClearStatus(flagAPP_UPGRADE) ;				// all options exhausted
 	if (bCheck == PERFORM) {
-		xSyslog(SL_MOD2LOCAL(iRV == erFAILURE ? SL_SEV_ERROR : SL_SEV_NOTICE),
+		SL_LOG(iRV == erFAILURE ? SL_SEV_ERROR : SL_SEV_NOTICE,
 				"FW Upgrade %s", iRV == erFAILURE ? "Failed" : "Done") ;
 	}
 	return iRV ;

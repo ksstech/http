@@ -166,7 +166,7 @@ int 	xHttpCommonStatusHandler(http_parser * psParser, const char* pBuf, size_t x
 int 	xHttpCommonHeaderFieldHandler(http_parser * psParser, const char* pBuf, size_t xLen) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	http_rr_t * psReq = psParser->data ;
-	psReq->HdrField	= xHttpCommonFindMatch(hfValues, NUM_OF_MEMBERS(hfValues), pBuf, xLen) ;
+	psReq->HdrField	= xHttpCommonFindMatch(hfValues, NO_MEM(hfValues), pBuf, xLen) ;
 	IF_PRINT(debugTRACK && psReq->f_debug, "'%.*s' = ", (int)xLen, pBuf);
 	return erSUCCESS ;
 }
@@ -183,7 +183,7 @@ int 	xHttpCommonHeaderValueHandler(http_parser * psParser, const char* pBuf, siz
 		break ;
 
 	case hfConnection:
-		psReq->hvConnect = xHttpCommonFindMatch(coValues, NUM_OF_MEMBERS(coValues), pBuf, xLen) ;
+		psReq->hvConnect = xHttpCommonFindMatch(coValues, NO_MEM(coValues), pBuf, xLen) ;
 		break ;
 
 	case hfContentLength:
@@ -191,7 +191,7 @@ int 	xHttpCommonHeaderValueHandler(http_parser * psParser, const char* pBuf, siz
 		break ;
 
 	case hfContentType:
-		psReq->hvContentType = xHttpCommonFindMatch(ctValues, NUM_OF_MEMBERS(ctValues), pBuf, xLen) ;
+		psReq->hvContentType = xHttpCommonFindMatch(ctValues, NO_MEM(ctValues), pBuf, xLen) ;
 		break ;
 
 	case hfDate:
