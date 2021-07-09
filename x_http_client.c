@@ -23,7 +23,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xE010
+#define	debugFLAG					0xE000
 
 #define	debugJSON					(debugFLAG & 0x0001)
 #define	debugGEOLOC					(debugFLAG & 0x0002)
@@ -417,7 +417,7 @@ int32_t	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
 		sNVSvars.fGeoLoc = 1 ;
-		VarsFlag |= varFLAG_LOCATION ;
+		BlobsFlag |= varFLAG_LOCATION ;
 		SL_INFO("lat=%.7f  lng=%.7f  acc=%.7f",
 				sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
@@ -477,7 +477,7 @@ int32_t	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xL
 	}
 	if (iRV >= erSUCCESS && sNVSvars.TimeZoneId[0] && sNVSvars.TimeZoneName[0]) {
 		sNVSvars.fGeoTZ = 1 ;
-		VarsFlag |= varFLAG_TIMEZONE ;
+		BlobsFlag |= varFLAG_TIMEZONE ;
 		SL_INFO("%+Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else {
@@ -526,7 +526,7 @@ int32_t	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xL
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoALT]) {
 		sNVSvars.fGeoAlt = 1 ;
-		VarsFlag |= varFLAG_ELEVATION ;
+		BlobsFlag |= varFLAG_ELEVATION ;
 		SL_INFO("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else {
