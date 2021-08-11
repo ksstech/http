@@ -12,14 +12,12 @@
 
 #include	"parserX.h"
 #include	"x_buffers.h"
-#include	"x_string_to_values.h"
-#include	"x_string_general.h"
-#include	"x_errors_events.h"
 #include	"printfx.h"
 
-#include	<stdlib.h>
-#include	<stdint.h>
-#include	<string.h>
+#include	"x_string_to_values.h"
+#include	"x_string_general.h"
+
+#include	"x_errors_events.h"
 
 // ############################### BUILD: debug configuration options ##############################
 

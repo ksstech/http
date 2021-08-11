@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include 	"http_parser.h"
-#include	"yuarel.h"
-
 #include	"x_ubuf.h"
 #include	"socketsX.h"
+
+#include 	"http_parser.h"
+#include	"yuarel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,7 +88,7 @@ enum {													// HTTP flags
 
 // ######################################### structures ############################################
 
-typedef struct http_rr_t {
+typedef struct __attribute__((packed)) http_rr_t {
 	ubuf_t					sUB ;						// both
 	netx_t					sCtx ;						// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
@@ -117,7 +117,7 @@ typedef struct http_rr_t {
 	char * 					hvStatusMess ;				// Both
 	uint16_t				hvStatus ;					// Client (response to request)
 	union {
-		struct {
+		struct __attribute__((packed)) {
 			uint8_t			Spare, hvConnect, hvAccept, hvContentType ;
 		} ;
 		uint32_t			hvValues ;
@@ -126,7 +126,7 @@ typedef struct http_rr_t {
 	int8_t					NumParts ;					// recognize -1 as error/none
 	int8_t					NumQuery ;					// recognize -1 as error/none
 	union {
-		struct {
+		struct __attribute__((packed)) {
 			uint8_t	f_debug : 1 ;
 			uint8_t	f_parts : 1 ;		// set to break URL up into parts
 			uint8_t	f_query	: 1 ;		// set to break query up into parts
@@ -148,19 +148,17 @@ extern	const char * const hfValues[] ;
 
 // ###################################### public functions #########################################
 
-int32_t	xHttpCommonFindMatch(const char * const pcTable[], uint32_t xSize, const char * pcMatch, size_t xLen) ;
-
-int		xHttpCommonMessageBeginHandler(http_parser * psParser) ;
-int 	xHttpCommonUrlHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int 	xHttpCommonStatusHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int 	xHttpCommonHeaderFieldHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int 	xHttpCommonHeaderValueHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int 	xHttpCommonHeadersCompleteHandler(http_parser * psParser) ;
-int 	xHttpCommonChunkHeaderHandler(http_parser * psParser) ;
-int 	xHttpCommonChunkCompleteHandler(http_parser * psParser) ;
-int 	xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int 	xHttpCommonMessageCompleteHandler(http_parser * psParser) ;
-
+int	xHttpCommonFindMatch(const char * const pcTable[], uint32_t xSize, const char * pcMatch, size_t xLen) ;
+int	xHttpCommonMessageBeginHandler(http_parser * psParser) ;
+int xHttpCommonUrlHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
+int xHttpCommonStatusHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
+int xHttpCommonHeaderFieldHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
+int xHttpCommonHeaderValueHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
+int xHttpCommonHeadersCompleteHandler(http_parser * psParser) ;
+int xHttpCommonChunkHeaderHandler(http_parser * psParser) ;
+int xHttpCommonChunkCompleteHandler(http_parser * psParser) ;
+int xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
+int xHttpCommonMessageCompleteHandler(http_parser * psParser) ;
 size_t	xHttpCommonDoParsing(http_parser * psParser) ;
 
 #ifdef __cplusplus

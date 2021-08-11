@@ -6,9 +6,6 @@
 
 #include 	"x_http_common.h"
 
-#include	<stdint.h>
-#include	<stdbool.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

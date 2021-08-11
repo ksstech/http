@@ -21,32 +21,30 @@
  * http_client.c
  */
 
-#include	"FreeRTOS_Support.h"
+#include	"hal_variables.h"
 
 #include 	"x_http_server.h"
 #include 	"x_http_client.h"								// for xHttpFirmware????()
-#include	"rules_parse_text.h"
 #include	"task_control.h"
+#include	"rules_parse_text.h"
 
+//#include	"actuators.h"
+//#include	"commands.h"
+
+#include	"x_string_general.h"
+#include	"x_string_to_values.h"
 #include	"printfx.h"
 #include	"syslog.h"
 #include	"x_errors_events.h"
-#include	"x_string_general.h"
-#include	"x_string_to_values.h"
 #include	"x_stdio.h"
 #include	"x_time.h"
-#include	"actuators.h"
-#include	"commands.h"
 
 #include	"hal_network.h"
 #include	"hal_fota.h"
 #include	"hal_storage.h"
 #include	"hal_mcu.h"									// for halMCU_Restart()
-#include	"hal_variables.h"
 
-#include	<stdlib.h>
 #include	<string.h>
-#include	<limits.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
@@ -96,6 +94,18 @@ static	const char	HtmlAPdetails[] =
 	"<br><input type='submit' value='Submit'>"
 	"</form></body></html>" ;
 
+#if 1
+static	const char HtmlSTAdetails[] = LSC(
+	"<html><head><title>'IRMACOS: STA details'</title></head><body>"
+	"<h3>'IRMACOS: STA details'</h3>"
+	"<p>Manufacturer    : " halDEV_VENDOR "</p>"
+	"<p>Platform        : " halDEV_MODEL "</p>"
+	"<p>Wifi FW version : " mySTRINGIFY(DEV_WIFI_VER) "</p>"
+	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
+	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form>"
+	"</body></html>" ) ;
+
+#else
 static	const char	HtmlSTAdetails[] =
 	"<html><head><title>'IRMACOS: STA details'</title></head><body>"
 	"<h3>'IRMACOS: STA details'</h3>"
@@ -105,33 +115,29 @@ static	const char	HtmlSTAdetails[] =
 	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
 	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form>"
 	"</body></html>" ;
+#endif
 
 static	const char HtmlAPconfigOK[] =
 	"<html><body><h3>IRMACOS: AP details set, rebooting now..</h3>"
-	"<p>Please wait a minute and then confirm success</p>"
-	"</body></html>" ;
+	"<p>Please wait a minute and then confirm success</p></body></html>" ;
 
 static	const char HtmlAPconfigFAIL[] =
 	"<html><body><h3>IRMACOS: AP details NOT set, try again..</h3>"
-	"<p>Please make sure only using the allowed characters</p>"
-	"</body></html>" ;
+	"<p>Please make sure only using the allowed characters</p></body></html>" ;
 
 static	const char HtmlErrorNoHost[] =
 	"<html><body><h2>No Host: header received</h2>"
-	"<p>HTTP 1.1 requests must include the Host: header.</p>"
-	"</body></html>" ;
+	"<p>HTTP 1.1 requests must include the Host: header.</p></body></html>" ;
 
 static	const char HtmlErrorInvMethod[] =
 	"<html><body><h2>Invalid method request</h2>"
-	"<p>IRMACOS only support GET, not HEAD, POST, DELETE etc..</p>"
-	"</body></html>" ;
+	"<p>IRMACOS only support GET, not HEAD, POST, DELETE etc..</p></body></html>" ;
 
 static	const char HtmlErrorBadQuery[] =
-	"<html><body><h2>Query key:value pair(s) mismatched</h2>"
-	"</body></html>" ;
+	"<html><body><h2>Query key:value pair(s) mismatched</h2></body></html>" ;
 
-uint8_t			HttpState ;
-netx_t			sServHttpCtx ;
+uint8_t		HttpState ;
+netx_t		sServHttpCtx ;
 http_rr_t	sRR = { 0 } ;
 
 // ###################################### global variables #########################################
@@ -139,7 +145,7 @@ http_rr_t	sRR = { 0 } ;
 
 // ################################## local/static support functions ###############################
 
-int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
+int xHttpServerSetResponseStatus(http_parser * psParser, int Status) {
 	http_rr_t * psRR	= psParser->data ;
 	psParser->status_code	= Status ;
 
@@ -162,10 +168,10 @@ int32_t xHttpServerSetResponseStatus(http_parser * psParser, int32_t Status) {
 	return erSUCCESS ;
 }
 
-int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
+int	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	http_rr_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
-	int32_t iRV ;
+	int iRV ;
 	iRV = socprintfx(&psRR->sCtx, "HTTP/1.1 %d %s\r\n", psParser->status_code, psRR->pcStatMes) ;
 	iRV += socprintfx(&psRR->sCtx, "Date: %#Z\r\n", &sTSZ) ;
 	iRV += socprintfx(&psRR->sCtx, "Content-Language: en-US\r\n") ;
@@ -196,18 +202,14 @@ int32_t	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	return iRV ;
 }
 
-int32_t	xHttpServerParseString(char * pVal, char * pDst) {
-	if (xStringParseEncoded(pVal, pDst) == erFAILURE) {
-		return erFAILURE ;
-	}
+int	xHttpServerParseString(char * pVal, char * pDst) {
+	if (xStringParseEncoded(pVal, pDst) == erFAILURE) return erFAILURE;
 	IF_PRINT(debugTRACK, "%s->%s\n", pVal, pDst) ;
 	return erSUCCESS ;
 }
 
-int32_t	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
-	if (xStringParseEncoded(pSrc, NULL) == erFAILURE) {
-		return erFAILURE ;
-	}
+int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
+	if (xStringParseEncoded(pSrc, NULL) == erFAILURE) return erFAILURE ;
 	IF_PRINT(debugTRACK, "%s->%s", pSrc) ;
 	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
 		*pDst = 0 ;
@@ -219,21 +221,19 @@ int32_t	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
 
 // ######################################## URL handlers ###########################################
 
-int32_t	xHttpHandle_API(http_parser * psParser) {
+int	xHttpHandle_API(http_parser * psParser) {
 	static const char format[] = "<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>" ;
 	http_rr_t * psRR = psParser->data ;
-	int32_t iRV ;
-	for (int32_t i = 1; i < httpYUAREL_MAX_PARTS && psRR->parts[i] != NULL; ++i) {
+	int iRV ;
+	for (int i = 1; i < httpYUAREL_MAX_PARTS && psRR->parts[i] != NULL; ++i) {
 		char * pcCommand = psRR->parts[i] ;
 		xStringParseEncoded(pcCommand, pcCommand) ;
 		IF_PRINT(debugTRACK, "#%d = '%s'\n", i, pcCommand) ;
-		while (*pcCommand != CHR_NUL) {
+		while (*pcCommand != 0) {
 			vCommandInterpret((int) *pcCommand, 0) ;
 			++pcCommand ;
 		}
-		if (pcCommand - psRR->parts[i] > 1) {
-			vCommandInterpret((int) CHR_CR, 0) ;
-		}
+		if (pcCommand - psRR->parts[i] > 1) vCommandInterpret((int) '\r', 0) ;
 	}
 	if (xUBufAvail(&sRTCvars.sRTCbuf) > 0) {
 		/* Definitive problem here if the volume of output from vCommandInterpret() exceed the
@@ -252,7 +252,7 @@ int32_t	xHttpHandle_API(http_parser * psParser) {
 
 // ################################### Common HTTP API functions ###################################
 
-void	vHttpServerCloseClient(netx_t * psCtx) {
+void vHttpServerCloseClient(netx_t * psCtx) {
 	xRtosClearStatus(flagHTTP_CLNT) ;
 	HttpState = stateHTTP_WAITING ;
 	xNetClose(psCtx) ;
@@ -265,12 +265,12 @@ void	vHttpServerCloseClient(netx_t * psCtx) {
  * @param psParser
  * @return	size of the response created (bytes)
  */
-int32_t	xHttpServerResponseHandler(http_parser * psParser) {
+int	xHttpServerResponseHandler(http_parser * psParser) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psParser->data)) ;
 	http_rr_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
 
-	int32_t	iURL = -1, iRV, i ;
+	int	iURL = -1, iRV, i ;
 	if (psParser->http_errno) {
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
 		psRR->pcBody	= (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
@@ -288,7 +288,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 		SL_ERR("Host name/IP not provided") ;
 
 	} else {		// at this stage all parsing results are OK, just the URL to be matched and processed.
-		if (*psRR->url.path == CHR_NUL) {				// STEP1: start by matching the URL
+		if (*psRR->url.path == 0) {						// STEP1: start by matching the URL
 			iURL = urlROOT ;							// do NOT try to match, lost single '/'
 		} else {
 			iURL = xHttpCommonFindMatch(UrlTable, NO_MEM(UrlTable), psRR->url.path, xstrlen(psRR->url.path)) ;
@@ -325,9 +325,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			i = 0 ;
 			// all IP parameter keys matched, parse them
 			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ssid) ;
-			if (iRV == erSUCCESS) {
-				iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.pswd) ;
-			}
+			if (iRV == erSUCCESS) iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.pswd);
 #if		(halNET_EXTEND_IP == 1)
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipNM) ;
@@ -340,9 +338,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS2) ;
 #endif
-			if (iRV == erSUCCESS) {						// last parameter in the list
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipMQTT) ;
-			}
+			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipMQTT);
 			// Check if values allow successful Wifi connection (& persist if successful)
 			iRV = halWL_TestCredentials((char *) tmpWifi.ssid, (char *) tmpWifi.pswd) ;
 			if (iRV == erSUCCESS) {						// inform client of success or not....
@@ -397,7 +393,7 @@ int32_t	xHttpServerResponseHandler(http_parser * psParser) {
  * 	Serve HTML to capture SSID & PSWD from client
  * 	Respond to /restart (as emergency)
  */
-void	vTaskHttp(void * pvParameters) {
+void vTaskHttp(void * pvParameters) {
 	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
 	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP) ;
 	sRR.sUB.pBuf	= malloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
@@ -407,7 +403,7 @@ void	vTaskHttp(void * pvParameters) {
 	while (bRtosVerifyState(taskHTTP)) {
 		xRtosWaitStatusANY(flagL3_ANY, portMAX_DELAY) ;	// ensure IP is up and running...
 		switch(HttpState) {
-		int32_t	iRV ;
+		int	iRV ;
 		case stateHTTP_DEINIT:
 			IF_CTRACK(debugTRACK, "de-init\n") ;
 			xRtosClearStatus(flagHTTP_SERV | flagHTTP_CLNT) ;
@@ -436,9 +432,7 @@ void	vTaskHttp(void * pvParameters) {
 		case stateHTTP_WAITING:
 			iRV = xNetAccept(&sServHttpCtx, &sRR.sCtx, httpINTERVAL_MS) ;
 			if (iRV < 0) {
-				if (sServHttpCtx.error != EAGAIN) {
-					HttpState = stateHTTP_DEINIT ;
-				}
+				if (sServHttpCtx.error != EAGAIN) HttpState = stateHTTP_DEINIT;
 				break ;
 			}
 
@@ -463,7 +457,7 @@ void	vTaskHttp(void * pvParameters) {
 				http_parser_init(&sParser, HTTP_REQUEST) ;
 				sParser.data		= &sRR ;
 				// setup guidelines for parsing the request
-				sRR.pVoid		= NULL ;
+				sRR.pVoid			= NULL ;
 				sRR.hvContentLength	= 0UL ;
 				sRR.hvDate			= 0 ;
 				sRR.hvLastModified	= 0 ;
@@ -514,16 +508,14 @@ void	vTaskHttp(void * pvParameters) {
 	vTaskDelete(NULL) ;
 }
 
-void	vTaskHttpInit(void) {
+void vTaskHttpInit(void) {
 	xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, tskNO_AFFINITY) ;
 }
 
-void	vHttpReport(void) {
+void vHttpReport(void) {
 	if (bRtosCheckStatus(flagHTTP_SERV) == 1) {
 		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0) ;
 		printfx("\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 	}
-	if (bRtosCheckStatus(flagHTTP_CLNT) == 1) {
-		xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0) ;
-	}
+	if (bRtosCheckStatus(flagHTTP_CLNT) == 1) xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0);
 }

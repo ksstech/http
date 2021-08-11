@@ -7,19 +7,16 @@
 #include	"x_http_client.h"
 
 #include	"FreeRTOS_Support.h"
-
 #include	"parserX.h"									// parsing location & TZ requests
-#include	"x_errors_events.h"
-#include	"x_string_general.h"
 #include	"printfx.h"
 #include	"syslog.h"
 #include	"systiming.h"
 
+#include	"x_string_general.h"
+#include	"x_errors_events.h"
+
 #include	"hal_network.h"
 #include	"hal_fota.h"								// firmware download handler
-
-#include	<string.h>
-#include	<stdarg.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
