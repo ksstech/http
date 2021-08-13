@@ -15,6 +15,10 @@ extern "C" {
 
 // ########################################### macros #############################################
 
+#define	xnetDEBUG_FLAGS(A, B, C, D, E, F, G, H, I) (xnet_debug_t) \
+	{	.http=A, .open=B, .write=C, .read=D, .data=E,	\
+		.eagain=F,	.secure=G, .verify=H, .level=I	\
+	}
 
 // ######################################### enumerations ##########################################
 
@@ -22,6 +26,22 @@ enum { PERFORM = 0, CHECK = 1 } ;
 
 // ######################################### structures ############################################
 
+typedef	struct xnet_debug_t {
+	union {
+		uint32_t u32 ;
+		struct {
+			bool	http ;
+			bool	open ;
+			bool	write ;
+			bool	read ;
+			bool	data ;
+			bool	eagain ;
+			bool	secure ;
+			bool	verify ;
+			uint8_t	level	: 3 ;
+		} ;
+	} ;
+} xnet_debug_t ;
 
 // ################################### Global variables ############################################
 
