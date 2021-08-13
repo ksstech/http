@@ -20,7 +20,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xE000
+#define	debugFLAG					0xC010
 
 #define	debugJSON					(debugFLAG & 0x0001)
 #define	debugGEOLOC					(debugFLAG & 0x0002)
@@ -155,7 +155,7 @@ int32_t	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 			iRV = erFAILURE ;
 		}
 	} else {
-		IF_TRACK(debugREQUEST, " could not open connection (%d)\n", iRV) ;
+		IF_TRACK(debugREQUEST, " open/connect error (%d)\n", iRV) ;
 		iRV = erFAILURE ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
@@ -283,15 +283,11 @@ int32_t	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t x
 
 int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int32_t iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen) ;
-	if (iRV != 1) {
-		return iRV ;
-	}
+	if (iRV != 1) return iRV;
 	xRtosClearStatus(flagAPP_RESTART) ;
 	fota_info_t	sFI ;
 	iRV = halFOTA_Begin(&sFI) ;
-	if (iRV < erSUCCESS) {
-		return erFAILURE ;
-	}
+	if (iRV < erSUCCESS) return erFAILURE;
 	IF_TRACK(debugFOTA, "OTA begin OK\n") ;
 
 	sFI.pBuf	= (void *) pBuf ;
@@ -302,9 +298,7 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 
 	while (xLen) {										// deal with all received packets
 		iRV = halFOTA_Write(&sFI) ;
-		if (iRV != ESP_OK) {
-			break ;
-		}
+		if (iRV != ESP_OK) break;
 		xLenDone += sFI.xLen ;
 		IF_CPRINT(debugFOTA, "%d%% (%d)\r", (xLenDone * 100)/xLenFull, xLenDone) ;
 		if (xLenDone == xLenFull) {						// if all done
@@ -328,9 +322,7 @@ int32_t xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t
 	IF_TRACK(debugFOTA, "Wrote %u/%u from '%s/%s'\n", xLenDone, xLenFull, psReq->sCtx.pHost, psReq->pvArg) ;
 
 	iRV = halFOTA_End(&sFI) ;
-	if (iRV == erSUCCESS && sFI.iRV == ESP_OK) {
-		xRtosSetStatus(flagAPP_RESTART) ;
-	}
+	if (iRV == erSUCCESS && sFI.iRV == ESP_OK) xRtosSetStatus(flagAPP_RESTART) ;
 	return sFI.iRV ;
 }
 
@@ -361,9 +353,8 @@ int32_t xHttpClientCheckUpgrades(bool bCheck) {
 		iRV = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN, bCheck) ;
 	}
 #endif
-	if (bRtosCheckStatus(flagAPP_RESTART) == 0) {
+	if (bRtosCheckStatus(flagAPP_RESTART) == 0)
 		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck) ;
-	}
 	xRtosClearStatus(flagAPP_UPGRADE) ;				// all options exhausted
 	if (bCheck == PERFORM) {
 		SL_LOG(iRV == erFAILURE ? SL_SEV_ERROR : SL_SEV_NOTICE,
