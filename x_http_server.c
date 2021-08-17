@@ -94,18 +94,6 @@ static	const char	HtmlAPdetails[] =
 	"<br><input type='submit' value='Submit'>"
 	"</form></body></html>" ;
 
-#if 1
-static	const char HtmlSTAdetails[] = LSC(
-	"<html><head><title>'IRMACOS: STA details'</title></head><body>"
-	"<h3>'IRMACOS: STA details'</h3>"
-	"<p>Manufacturer    : " halDEV_VENDOR "</p>"
-	"<p>Platform        : " halDEV_MODEL "</p>"
-	"<p>Wifi FW version : " mySTRINGIFY(DEV_WIFI_VER) "</p>"
-	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
-	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form>"
-	"</body></html>" ) ;
-
-#else
 static	const char	HtmlSTAdetails[] =
 	"<html><head><title>'IRMACOS: STA details'</title></head><body>"
 	"<h3>'IRMACOS: STA details'</h3>"
@@ -115,7 +103,6 @@ static	const char	HtmlSTAdetails[] =
 	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
 	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form>"
 	"</body></html>" ;
-#endif
 
 static	const char HtmlAPconfigOK[] =
 	"<html><body><h3>IRMACOS: AP details set, rebooting now..</h3>"
