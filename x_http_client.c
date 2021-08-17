@@ -68,10 +68,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
 
 	vuprintfx(&psRR->sUB, psRR->pcQuery, psRR->VaList) ;
-	uprintfx(&psRR->sUB, " HTTP/1.1\r\n") ;
-	uprintfx(&psRR->sUB, "Host: %s\r\n", psRR->sCtx.pHost) ;
-	uprintfx(&psRR->sUB, "From: %s\r\n", "admin@kss.co.za") ;
-	uprintfx(&psRR->sUB, "User-Agent: %s\r\n", "irmacos") ;
+	uprintfx(&psRR->sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@kss.co.za\r\nUser-Agent: irmacos\r\n", psRR->sCtx.pHost) ;
 	if (psRR->hvAccept) {
 		uprintfx(&psRR->sUB, "Accept: %s\r\n", ctValues[psRR->hvAccept]) ;
 		psRR->hvAccept	= ctUNDEFINED ;
