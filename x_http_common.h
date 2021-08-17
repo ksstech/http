@@ -142,9 +142,9 @@ typedef struct __attribute__((packed)) http_rr_t {
 
 // ################################### Global variables ############################################
 
-extern	const char * const ctValues[] ;
-extern	const char * const coValues[] ;
-extern	const char * const hfValues[] ;
+extern const char * const ctValues[] ;
+extern const char * const coValues[] ;
+extern const char * const hfValues[] ;
 
 // ###################################### public functions #########################################
 
