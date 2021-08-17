@@ -501,7 +501,7 @@ void vTaskHttp(void * pvParameters) {
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
 	xRtosClearStatus(flagHTTP_SERV) ;
-	vPortFree(sRR.sUB.pBuf) ;
+	free(sRR.sUB.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
 	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
