@@ -88,7 +88,7 @@ enum {													// HTTP flags
 
 // ######################################### structures ############################################
 
-typedef struct __attribute__((packed)) http_rr_t {
+typedef struct http_rr_t {
 	ubuf_t					sUB ;						// both
 	netx_t					sCtx ;						// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
@@ -115,13 +115,13 @@ typedef struct __attribute__((packed)) http_rr_t {
 	uint32_t				hvDate ;					// Both
 	uint32_t				hvLastModified ;			// Both
 	char * 					hvStatusMess ;				// Both
-	uint16_t				hvStatus ;					// Client (response to request)
 	union {
 		struct __attribute__((packed)) {
 			uint8_t			Spare, hvConnect, hvAccept, hvContentType ;
 		} ;
 		uint32_t			hvValues ;
 	};
+	uint16_t				hvStatus ;					// Client (response to request)
 	uint8_t					HdrField ;					// Both
 	int8_t					NumParts ;					// recognize -1 as error/none
 	int8_t					NumQuery ;					// recognize -1 as error/none
