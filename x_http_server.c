@@ -162,9 +162,8 @@ int xHttpServerSetResponseStatus(http_parser * psParser, int Status) {
 	case HTTP_STATUS_NOT_IMPLEMENTED:	psRR->pcStatMes	= "Not Implemented" ;	break ;	// 501
 	default:							SL_ERR(debugAPPL_PLACE) ;
 	}
-	if (INRANGE(HTTP_STATUS_BAD_REQUEST, Status, HTTP_STATUS_UNAVAILABLE_FOR_LEGAL_REASONS, int32_t)) {
+	if (INRANGE(HTTP_STATUS_BAD_REQUEST, Status, HTTP_STATUS_UNAVAILABLE_FOR_LEGAL_REASONS, int))
 		psRR->hvConnect = coClose ;					// force connection to be closed
-	}
 	return erSUCCESS ;
 }
 
@@ -177,13 +176,11 @@ int	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	iRV += socprintfx(&psRR->sCtx, "Content-Language: en-US\r\n") ;
 	if (psRR->hvConnect) {
 		iRV += socprintfx(&psRR->sCtx, "Connection: %s\r\n", coValues[psRR->hvConnect]) ;
-		if (psRR->hvConnect == coKeepAlive) {
-			iRV += socprintfx(&psRR->sCtx, "Keep-Alive: timeout=3\r\n") ;
-		}
+		if (psRR->hvConnect == coKeepAlive)
+			iRV += socprintfx(&psRR->sCtx, "Keep-Alive: timeout=3\r\n");
 	}
-	if (psRR->hvContentType) {
-		iRV += socprintfx(&psRR->sCtx, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
-	}
+	if (psRR->hvContentType)
+		iRV += socprintfx(&psRR->sCtx, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]);
 
 	va_list vArgs ;
 	va_start(vArgs, format) ;
@@ -292,9 +289,7 @@ int	xHttpServerResponseHandler(http_parser * psParser) {
 			iURL = urlROOT ;							// do NOT try to match, lost single '/'
 		} else {
 			iURL = xHttpCommonFindMatch(UrlTable, NO_MEM(UrlTable), psRR->url.path, xstrlen(psRR->url.path)) ;
-			if (iURL == 0)	{
-				iURL = urlNOTFOUND ;
-			}
+			if (iURL == 0) iURL = urlNOTFOUND ;
 		}
 	}
 
@@ -378,9 +373,7 @@ int	xHttpServerResponseHandler(http_parser * psParser) {
 		iRV = xHttpSendResponse(psParser, psRR->pcBody) ;
 		IF_PRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
 	}
-	if (sServHttpCtx.maxTx < iRV) {
-		sServHttpCtx.maxTx = iRV ;
-	}
+	if (sServHttpCtx.maxTx < iRV) sServHttpCtx.maxTx = iRV ;
 
 	return iRV ;
 }
@@ -450,9 +443,7 @@ void vTaskHttp(void * pvParameters) {
 			iRV = xNetRead(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size) ;
 			if (iRV > 0) {							// read something ?
 				IF_CTRACK(debugTRACK, "start parsing\n") ;
-				if (sServHttpCtx.maxRx < iRV) {		// yes, update the Rx packet stats
-					sServHttpCtx.maxRx = iRV ;
-				}
+				if (sServHttpCtx.maxRx < iRV) sServHttpCtx.maxRx = iRV;
 				http_parser 	sParser ;				// then process the packet
 				http_parser_init(&sParser, HTTP_REQUEST) ;
 				sParser.data		= &sRR ;
