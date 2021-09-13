@@ -376,7 +376,7 @@ int	xHttpServerResponseHandler(http_parser * psParser) {
 void vTaskHttp(void * pvParameters) {
 	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
 	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP) ;
-	sRR.sUB.pBuf	= malloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
+	sRR.sUB.pBuf	= pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
 	xRtosSetStateRUN(taskHTTP) ;
 
@@ -479,7 +479,7 @@ void vTaskHttp(void * pvParameters) {
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
 	xRtosClearStatus(flagHTTP_SERV) ;
-	free(sRR.sUB.pBuf) ;
+	vRtosFree(sRR.sUB.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
 	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_DN) ;

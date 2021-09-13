@@ -384,7 +384,7 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 				sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else SL_ERR("Error parsing '%s' key", pKey) ;
-	if (psTokenList) free(psTokenList) ;
+	if (psTokenList) vRtosFree(psTokenList) ;
     return iRV ;
 }
 
