@@ -429,8 +429,8 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 	}
 	if (iRV >= erSUCCESS && sNVSvars.TimeZoneId[0] && sNVSvars.TimeZoneName[0]) {
 		sNVSvars.fGeoTZ = 1 ;
-		SL_INFO("%+Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
 		SystemFlag |= varFLAG_TIMEZONE ;
+		SL_INFO("%Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else SL_ERR("Error parsing '%s' key", pKey) ;
 	if (psTokenList) vRtosFree(psTokenList) ;
