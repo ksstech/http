@@ -450,10 +450,12 @@ void vTaskHttp(void * pvParameters) {
 				sRR.sUB.Used		= iRV ;
 				iRV = xHttpCommonDoParsing(&sParser) ;
 				if (iRV > 0) {							// build response if something was parsed....
-					IF_CTRACK(debugTRACK, "start response handler\n") ;
-					xStdioBufLock(portMAX_DELAY) ;
-					iRV = xHttpServerResponseHandler(&sParser) ;
-					xStdioBufUnLock() ;
+					IF_CTRACK(debugTRACK, "start response handler\n");
+					xStdioBufLock(portMAX_DELAY);
+					xRtosSetStatus(flagBUF_STDIO);
+					iRV = xHttpServerResponseHandler(&sParser);
+					xRtosClearStatus(flagBUF_STDIO);
+					xStdioBufUnLock();
 				}
 				IF_CTRACK(debugTRACK, "Parsing done\n") ;
 				// socket closed or error occurred or coClose was set, close the connection
