@@ -358,6 +358,10 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	"1voqZiegDfqnc1zqcPGUIWVEX/r87yloqaKHee9570+sB3c4\n"					\
 	"-----END CERTIFICATE-----\n"
 
+#ifndef keyGOOGLE
+	#define	keyGOOGLE		"fakegoogle"
+#endif
+
 const char CertGoogle[] = GooglePEM ;
 const size_t SizeGoogle = sizeof(GooglePEM) ;
 
@@ -386,10 +390,6 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
     return iRV ;
 }
 
-#ifndef keyGOOGLE
-	#define	keyGOOGLE		"fakegoogle"
-#endif
-
 int	xHttpGetLocation(void) {
 	if (sNVSvars.fGeoLoc) return erSUCCESS ;
 	const char caQuery[] = "POST /geolocation/v1/geolocate?key="keyGOOGLE ;
@@ -417,10 +417,10 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 		x32_t	xVal ;
 		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "dstOffset", &xVal.i32, vfIXX) ;
 		if (iRV >= erSUCCESS) {
-			sTZ.daylight = sNVSvars.daylight = xVal.i32 ;					// convert i32 -> i16 & store
+			sTZ.daylight = sNVSvars.daylight = xVal.i32;	// convert i32 -> i16 & store
 			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "rawOffset", &xVal.i32, vfIXX) ;
 			if (iRV >= erSUCCESS) {
-				sTZ.timezone = sNVSvars.timezone = xVal.i32 ;				// store value
+				sTZ.timezone = sNVSvars.timezone = xVal.i32;	// store value
 				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneId", sNVSvars.TimeZoneId, vfSXX) ;
 				if (iRV >= erSUCCESS)
 					iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneName", sNVSvars.TimeZoneName, vfSXX) ;
