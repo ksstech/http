@@ -474,7 +474,7 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 		SL_INFO("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else SL_ERR("Error parsing '%s' key", pKey) ;
-	if (psTokenList) free(psTokenList);
+	if (psTokenList) vRtosFree(psTokenList);
     return iRV ;
 }
 
