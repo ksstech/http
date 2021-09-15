@@ -275,15 +275,15 @@ int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLe
 	sFI.pBuf	= (void *) pBuf ;
 	sFI.xLen	= xLen ;
 	http_rr_t * psReq = psParser->data ;
-	size_t	xLenDone = 0, xLenFull = psReq->hvContentLength ;
+	sFI.xDone = 0;
+	sFI.xFull = psReq->hvContentLength;
 	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT) ;
 
 	while (xLen) {										// deal with all received packets
 		iRV = halFOTA_Write(&sFI) ;
 		if (iRV != ESP_OK) break;
-		xLenDone += sFI.xLen ;
-		IF_CPRINT(debugFOTA, "%d%% (%d)\r", (xLenDone * 100)/xLenFull, xLenDone) ;
-		if (xLenDone == xLenFull) break;
+		sFI.xDone += sFI.xLen ;
+		if (sFI.xDone == sFI.xFull) break;
 		IF_SYSTIMER_START(debugTIMING, stFOTA) ;
 		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
 		IF_SYSTIMER_STOP(debugTIMING, stFOTA) ;
