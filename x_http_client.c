@@ -295,8 +295,6 @@ int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLe
 	}
 
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA) ;
-	IF_TRACK(debugFOTA, "\nWrote %u/%u from '%s/%s'\n", xLenDone, xLenFull, psReq->sCtx.pHost, psReq->pvArg) ;
-
 	iRV = halFOTA_End(&sFI) ;
 	if (iRV == erSUCCESS && sFI.iRV == ESP_OK) xRtosSetStatus(flagAPP_RESTART) ;
 	return sFI.iRV ;
