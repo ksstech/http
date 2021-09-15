@@ -26,10 +26,8 @@
 #include 	"x_http_server.h"
 #include 	"x_http_client.h"								// for xHttpFirmware????()
 #include	"task_control.h"
+#include	"commands.h"
 #include	"rules_parse_text.h"
-
-//#include	"actuators.h"
-//#include	"commands.h"
 
 #include	"x_string_general.h"
 #include	"x_string_to_values.h"
@@ -374,13 +372,13 @@ int	xHttpServerResponseHandler(http_parser * psParser) {
  * 	Respond to /restart (as emergency)
  */
 void vTaskHttp(void * pvParameters) {
-	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_UP) ;
-	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP) ;
+	IF_PRINT(debugTRACK && ioB1GET(ioStart), debugAPPL_MESS_UP) ;
+	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP_MASK) ;
 	sRR.sUB.pBuf	= pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
 	HttpState 		= stateHTTP_INIT ;
-	xRtosSetStateRUN(taskHTTP) ;
+	xRtosSetStateRUN(taskHTTP_MASK) ;
 
-	while (bRtosVerifyState(taskHTTP)) {
+	while (bRtosVerifyState(taskHTTP_MASK)) {
 		xRtosWaitStatusANY(flagL3_ANY, portMAX_DELAY) ;	// ensure IP is up and running...
 		switch(HttpState) {
 		int	iRV ;
@@ -482,7 +480,7 @@ void vTaskHttp(void * pvParameters) {
 	vRtosFree(sRR.sUB.pBuf) ;
 	xNetClose(&sServHttpCtx) ;
 	xNetClose(&sRR.sCtx) ;
-	IF_TRACK(debugAPPL_THREADS, debugAPPL_MESS_DN) ;
+	IF_PRINT(debugTRACK && ioB1GET(ioRstrt), debugAPPL_MESS_DN) ;
 	vTaskDelete(NULL) ;
 }
 
