@@ -491,10 +491,12 @@ int	xHttpGetElevation(void) {
 // ############################## Combined GeoLoc dependent info ###################################
 
 int	xHttpClientCheckGeoLoc(void) {
-	int iRV = xHttpGetLocation() ;
+	int iRV = xHttpGetLocation();
 	if (iRV > erFAILURE) {								// Elevation & TimeZone require Location
-		iRV = xHttpGetElevation() ;
-		iRV = xHttpGetTimeZone() ;
+		iRV = xHttpGetElevation();
+		if (iRV > erFAILURE) {
+			iRV = xHttpGetTimeZone();
+		}
 	}
 	return iRV ;
 }
