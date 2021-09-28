@@ -75,7 +75,7 @@ static	const char * const UrlTable[] = {
 	[urlAPI]		= "api",
 } ;
 
-static	const char	HtmlAPdetails[] =
+static const char HtmlAPdetails[] =
 	"<html><head><title>'IRMACOS: AP details'</title></head>"
 	"<body><h3>'IRMACOS: AP details'</h3>"
 	"<form action='save_ap' method='get'>"
@@ -92,7 +92,7 @@ static	const char	HtmlAPdetails[] =
 	"<br><input type='submit' value='Submit'>"
 	"</form></body></html>" ;
 
-static	const char	HtmlSTAdetails[] =
+static const char HtmlSTAdetails[] =
 	"<html><head><title>'IRMACOS: STA details'</title></head><body>"
 	"<h3>'IRMACOS: STA details'</h3>"
 	"<p>Manufacturer    : " halDEV_VENDOR "</p>"
@@ -102,23 +102,23 @@ static	const char	HtmlSTAdetails[] =
 	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form>"
 	"</body></html>" ;
 
-static	const char HtmlAPconfigOK[] =
+static const char HtmlAPconfigOK[] =
 	"<html><body><h3>IRMACOS: AP details set, rebooting now..</h3>"
 	"<p>Please wait a minute and then confirm success</p></body></html>" ;
 
-static	const char HtmlAPconfigFAIL[] =
+static const char HtmlAPconfigFAIL[] =
 	"<html><body><h3>IRMACOS: AP details NOT set, try again..</h3>"
 	"<p>Please make sure only using the allowed characters</p></body></html>" ;
 
-static	const char HtmlErrorNoHost[] =
+static const char HtmlErrorNoHost[] =
 	"<html><body><h2>No Host: header received</h2>"
 	"<p>HTTP 1.1 requests must include the Host: header.</p></body></html>" ;
 
-static	const char HtmlErrorInvMethod[] =
+static const char HtmlErrorInvMethod[] =
 	"<html><body><h2>Invalid method request</h2>"
 	"<p>IRMACOS only support GET, not HEAD, POST, DELETE etc..</p></body></html>" ;
 
-static	const char HtmlErrorBadQuery[] =
+static const char HtmlErrorBadQuery[] =
 	"<html><body><h2>Query key:value pair(s) mismatched</h2></body></html>" ;
 
 uint8_t		HttpState ;
