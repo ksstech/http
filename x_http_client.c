@@ -257,8 +257,9 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
 	 *						: How much later must FW be to be considered new? */
 	#define	fotaMIN_DIF_SECONDS					120
 	int32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
-	IF_PRINT(debugTRACK && ioB1GET(ioFOTA), "'%s' found  %r vs %r  Diff=%d  FW %snewer\n", psRR->pvArg,
-						psRR->hvLastModified, BuildSeconds, i32Diff, i32Diff < 0 ? "NOT " : "") ;
+	IF_PRINT(debugTRACK && ioB1GET(ioFOTA), "'%s' found  %R vs %R  Diff=%d  FW %snewer\n",
+			psRR->pvArg, xTimeMakeTimestamp(psRR->hvLastModified, 0),
+			xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "NOT " : "") ;
 	if (i32Diff < 0) return erSUCCESS ;
 	xRtosSetStatus(flagAPP_RESTART) ;
 	return 1 ;
