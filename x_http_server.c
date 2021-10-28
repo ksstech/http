@@ -236,11 +236,18 @@ int	xHttpHandle_API(http_parser * psParser) {
 
 // ################################### Common HTTP API functions ###################################
 
-void vHttpServerCloseClient(netx_t * psCtx) {
-	xRtosClearStatus(flagHTTP_CLNT) ;
-	HttpState = stateHTTP_WAITING ;
-	xNetClose(psCtx) ;
-	IF_CTRACK(debugTRACK, "closing\n") ;
+void vTaskHttpCloseServer(void) {
+	xRtosClearStatus(flagHTTP_SERV);
+	if (sServHttpCtx.sd > 0)
+		xNetClose(&sServHttpCtx);
+	IF_CTRACK(debugTRACK, "server closed\n") ;
+}
+
+void vTaskHttpCloseClient(void) {
+	xRtosClearStatus(flagHTTP_CLNT);
+	if (sRR.sCtx.sd > 0)
+		xNetClose(&sRR.sCtx);
+	IF_CTRACK(debugTRACK, "client closed\n");
 }
 
 /**
@@ -385,10 +392,8 @@ void vTaskHttp(void * pvParameters) {
 		switch(HttpState) {
 		int	iRV ;
 		case stateHTTP_DEINIT:
-			IF_CTRACK(debugTRACK, "de-init\n") ;
-			xRtosClearStatus(flagHTTP_SERV | flagHTTP_CLNT) ;
-			xNetClose(&sRR.sCtx) ;
-			xNetClose(&sServHttpCtx) ;
+			vTaskHttpCloseClient();
+			vTaskHttpCloseServer();
 			HttpState = stateHTTP_INIT ;
 			break ;					// must NOT fall through since the Lx status might have changed
 
@@ -464,14 +469,12 @@ void vTaskHttp(void * pvParameters) {
 				if (iRV == 0 || 						// nothing parsed or socket closed?
 					sRR.sCtx.error != 0 || 				// any error (even EAGAIN) on write ?
 					sRR.hvConnect == coClose) {			// or connection must be closed ?
-					vHttpServerCloseClient(&sRR.sCtx) ;	// then close the damn thing
-					IF_CTRACK(debugTRACK, "client closed\n") ;
+					vTaskHttpCloseClient();
 				} else {
 					// both parse & response handler & write was successful
 				}
 			} else if (sRR.sCtx.error != EAGAIN) {		// not EAGAIN/EWOULDBLOCK, socket closed OR real error
-				vHttpServerCloseClient(&sRR.sCtx) ;
-				IF_CTRACK(debugTRACK, "client closed\n") ;
+				vTaskHttpCloseClient();
 			}
 			IF_CTRACK(debugTRACK, "Tx done\n") ;
 			break ;
@@ -480,10 +483,9 @@ void vTaskHttp(void * pvParameters) {
 		}
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
-	xRtosClearStatus(flagHTTP_SERV) ;
+	vTaskHttpCloseServer();
+	vTaskHttpCloseClient();
 	vRtosFree(sRR.sUB.pBuf) ;
-	xNetClose(&sServHttpCtx) ;
-	xNetClose(&sRR.sCtx) ;
 	IF_PRINT(debugTRACK && ioB1GET(ioRstrt), debugAPPL_MESS_DN) ;
 	vTaskDelete(NULL) ;
 }
