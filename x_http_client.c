@@ -387,9 +387,9 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
 		sNVSvars.fGeoLoc = 1 ;
 		SystemFlag |= varFLAG_LOCATION ;
-		SL_INFO("lat=%.7f  lng=%.7f  acc=%.7f",
-				sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
+		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLocation[geoLAT],
+				sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
 	} else
 		SL_ERR("Error parsing '%s' key", pKey) ;
 	if (psTokenList)
@@ -438,8 +438,8 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 	if (iRV >= erSUCCESS && sNVSvars.TimeZoneId[0] && sNVSvars.TimeZoneName[0]) {
 		sNVSvars.fGeoTZ = 1 ;
 		SystemFlag |= varFLAG_TIMEZONE ;
-		SL_INFO("%Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
+		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
 	} else
 		SL_ERR("Error parsing '%s' key", pKey) ;
 	if (psTokenList)
@@ -483,8 +483,8 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoALT]) {
 		sNVSvars.fGeoAlt = 1 ;
 		SystemFlag |= varFLAG_ELEVATION ;
-		SL_INFO("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
+		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]);
 	} else
 		SL_ERR("Error parsing '%s' key", pKey) ;
 	if (psTokenList)
@@ -631,7 +631,7 @@ int	xHttpClientCoredumpUpload(void * pvPara) {
 	IF_PRINT(debugCOREDUMP, "L=%d  T=%u  TCB=%u  V=%-I\n", sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
 
 	if (iRV != ESP_OK || (sCDhdr.data_len == sCDhdr.tasks_num && sCDhdr.tcb_sz == sCDhdr.version)) {
-		SL_ALRT("Error =%d (%s) L=%d  T=%u  TCB=%u  V=%-I", iRV, esp_err_to_name(iRV), sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
+		SL_ERR("Error =%d (%s) L=%d  T=%u  TCB=%u  V=%-I", iRV, esp_err_to_name(iRV), sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
 		iRV = erFAILURE ;
 	}
 
