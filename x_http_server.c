@@ -283,7 +283,8 @@ int	xHttpServerResponseHandler(http_parser * psParser) {
 			iURL = urlROOT ;							// do NOT try to match, lost single '/'
 		} else {
 			iURL = xHttpCommonFindMatch(UrlTable, NO_MEM(UrlTable), psRR->url.path, xstrlen(psRR->url.path)) ;
-			if (iURL == 0) iURL = urlNOTFOUND ;
+			if (iURL == 0)
+				iURL = urlNOTFOUND ;
 		}
 	}
 
@@ -367,8 +368,8 @@ int	xHttpServerResponseHandler(http_parser * psParser) {
 		iRV = xHttpSendResponse(psParser, psRR->pcBody) ;
 		IF_PRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
 	}
-	if (sServHttpCtx.maxTx < iRV) sServHttpCtx.maxTx = iRV ;
-
+	if (sServHttpCtx.maxTx < iRV)
+		sServHttpCtx.maxTx = iRV ;
 	return iRV ;
 }
 
@@ -383,8 +384,8 @@ int	xHttpServerResponseHandler(http_parser * psParser) {
 void vTaskHttp(void * pvParameters) {
 	IF_PRINT(debugTRACK && ioB1GET(ioStart), debugAPPL_MESS_UP) ;
 	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP_MASK) ;
-	sRR.sUB.pBuf	= pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
-	HttpState 		= stateHTTP_INIT ;
+	sRR.sUB.pBuf = pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
+	HttpState = stateHTTP_INIT ;
 	xRtosSetStateRUN(taskHTTP_MASK) ;
 
 	while (bRtosVerifyState(taskHTTP_MASK)) {
@@ -417,7 +418,8 @@ void vTaskHttp(void * pvParameters) {
 		case stateHTTP_WAITING:
 			iRV = xNetAccept(&sServHttpCtx, &sRR.sCtx, httpINTERVAL_MS) ;
 			if (iRV < 0) {
-				if (sServHttpCtx.error != EAGAIN) HttpState = stateHTTP_DEINIT;
+				if (sServHttpCtx.error != EAGAIN)
+					HttpState = stateHTTP_DEINIT;
 				break ;
 			}
 
@@ -435,7 +437,8 @@ void vTaskHttp(void * pvParameters) {
 			iRV = xNetRead(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size) ;
 			if (iRV > 0) {							// read something ?
 				IF_CTRACK(debugTRACK, "start parsing\n") ;
-				if (sServHttpCtx.maxRx < iRV) sServHttpCtx.maxRx = iRV;
+				if (sServHttpCtx.maxRx < iRV)
+					sServHttpCtx.maxRx = iRV;
 				http_parser 	sParser ;				// then process the packet
 				http_parser_init(&sParser, HTTP_REQUEST) ;
 				sParser.data		= &sRR ;
