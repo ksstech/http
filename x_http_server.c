@@ -389,7 +389,11 @@ void vTaskHttp(void * pvParameters) {
 	xRtosSetStateRUN(taskHTTP_MASK) ;
 
 	while (bRtosVerifyState(taskHTTP_MASK)) {
-		if (HttpState != stateHTTP_DEINIT) xRtosWaitStatusANY(flagL3_ANY, portMAX_DELAY) ;	// ensure IP is up and running...
+		if (HttpState != stateHTTP_DEINIT) {
+			EventBits_t CurStat = xRtosWaitStatusANY(flagL3_ANY, pdMS_TO_TICKS(httpINTERVAL_MS));
+			if ((CurStat & (flagL3_ANY)) == 0)
+				continue;
+		}
 		switch(HttpState) {
 		int	iRV ;
 		case stateHTTP_DEINIT:
