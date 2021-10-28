@@ -215,6 +215,7 @@ int	xHttpHandle_API(http_parser * psParser) {
 		IF_PRINT(debugTRACK, "#%d = '%s'\n", i, pcCommand) ;
 		while (*pcCommand != 0) {
 			vCommandInterpret((int) *pcCommand, 0) ;
+			halVARS_CheckChanges();
 			++pcCommand ;
 		}
 		if (pcCommand - psRR->parts[i] > 1) vCommandInterpret((int) '\r', 0) ;
