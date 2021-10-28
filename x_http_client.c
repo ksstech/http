@@ -264,6 +264,13 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
 	return 1 ;
 }
 
+/**
+ * Check if a valid download exists, if so, download and write to flash.
+ * @param	psParser
+ * @param	pBuf
+ * @param	xLen
+ * @return
+ */
 int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen) ;
 	if (iRV != 1)
@@ -591,7 +598,7 @@ int xHttpClientCoredumpUploadCB(http_rr_t * psReq) {
 		if (iRV > 0)
 			xDone += iRV ;
 		else if (psReq->sCtx.error != EAGAIN) {
-			SL_ERR("net write err=0x%x (%s)", psReq->sCtx.error, strerror(psReq->sCtx.error)) ;
+			SL_ERR("net write err=0x%x (%s)", psReq->sCtx.error, esp_err_to_name(psReq->sCtx.error)) ;
 			break ;
 		}
 	}
