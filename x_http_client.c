@@ -61,9 +61,7 @@
 
 int	xHttpBuildHeader(http_parser * psParser) {
 	http_rr_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser)) ;
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR)) ;
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
 
 	vuprintfx(&psRR->sUB, psRR->pcQuery, psRR->VaList) ;
 	uprintfx(&psRR->sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@kss.co.za\r\nUser-Agent: irmacos\r\n", psRR->sCtx.pHost) ;
@@ -71,7 +69,8 @@ int	xHttpBuildHeader(http_parser * psParser) {
 		uprintfx(&psRR->sUB, "Accept: %s\r\n", ctValues[psRR->hvAccept]) ;
 		psRR->hvAccept	= ctUNDEFINED ;
 	}
-	if (psRR->hvConnect) uprintfx(&psRR->sUB, "Connection: %s\r\n", coValues[psRR->hvConnect]);
+	if (psRR->hvConnect)
+		uprintfx(&psRR->sUB, "Connection: %s\r\n", coValues[psRR->hvConnect]);
 	// from here on items common to requests and responses...
 	if (psRR->pcBody) {
 		if (psRR->hvContentType) {
@@ -89,7 +88,8 @@ int	xHttpBuildHeader(http_parser * psParser) {
 				uprintfx(&psRR->sUB, "Content-Length: %d\r\n\r\n", psRR->hvContentLength) ;
 				vuprintfx(&psRR->sUB, psRR->pcBody, psRR->VaList) ;// add actual content
 			}
-		} else SL_ERR(debugAPPL_PLACE) ;
+		} else
+			SL_ERR(debugAPPL_PLACE) ;
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
 	uprintfx(&psRR->sUB, "\r\n") ;
@@ -116,7 +116,7 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 	psRR->VaList = vArgs ;
 	int xLen = xHttpBuildHeader(&sParser) ;
 
-	psRR->sCtx.type				= SOCK_STREAM ;
+	psRR->sCtx.type = SOCK_STREAM ;
 	psRR->sCtx.sa_in.sin_family	= AF_INET ;
 	if (psRR->sCtx.sa_in.sin_port == 0)
 		psRR->sCtx.sa_in.sin_port = htons(psRR->sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
@@ -124,7 +124,8 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 	if (iRV == erSUCCESS) {								// if socket=open, write request
 		iRV = xNetWrite(&psRR->sCtx, psRR->sUB.pBuf, xLen) ;
 		if (iRV > 0) {									// successfully written some (or all)
-			if (psRR->hvContentType == ctApplicationOctetStream) iRV = psRR->hdlr_req(psRR) ;			// should return same as xNetWrite()
+			if (psRR->hvContentType == ctApplicationOctetStream)
+				iRV = psRR->hdlr_req(psRR) ;			// should return same as xNetWrite()
 			if (iRV > 0) {								// now do the actual read
 				iRV = xNetReadBlocks(&psRR->sCtx, psRR->sUB.pBuf, psRR->sUB.Size, configHTTP_RX_WAIT) ;
 				if (iRV > 0) {							// actually read something
@@ -167,7 +168,7 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
 	sRR.pvArg			= pvArg ;
 	IF_CPRINT(debugREQUEST, "H='%s'  Q='%s'  B=", sRR.sCtx.pHost, sRR.pcQuery) ;
-	IF_CPRINT(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p" : "'%s'", sRR.pVoid) ;
+	IF_CPRINT(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p" : "%s", sRR.pVoid) ;
 	IF_CPRINT(debugREQUEST, "  cb=%p  hv=%-I\n", sRR.sfCB.on_body, sRR.hvValues) ;
 	IF_myASSERT(debugREQUEST, sRR.hvContentType != ctUNDEFINED) ;
 
@@ -191,7 +192,7 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	}
 	va_list vArgs ;
 	va_start(vArgs, pvArg) ;
-	int32_t iRV = xHttpClientExecuteRequest(&sRR, vArgs) ;
+	int iRV = xHttpClientExecuteRequest(&sRR, vArgs) ;
 	va_end(vArgs) ;
 	return iRV ;
 }
@@ -237,12 +238,13 @@ int	xHttpClientFileDownloadCheck(http_parser * psParser) {
 		SL_ERR("'%s' invalid content (%d/%s)", psRR->pvArg, psRR->hvContentType, ctValues[psRR->hvContentType]) ;
 	else if (psRR->hvConnect == coClose)
 		SL_ERR("Connection closed unexpectedly") ;
-	else iRV = erSUCCESS ;
+	else
+		iRV = erSUCCESS ;
 	return iRV ;
 }
 
 /**
- * xHttpClientCheckFOTA() -
+ * Check if a valid firmware upgrade exists
  * @return	1 if valid upgrade file exists
  * 			erSUCCESS if no newer upgrade file exists
  * 			erFAILURE if file not found/empty file/invalid content/connection closed
@@ -256,7 +258,7 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
 	 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
 	 *						: How much later must FW be to be considered new? */
 	#define	fotaMIN_DIF_SECONDS					120
-	int32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
+	int i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
 	IF_PRINT(debugTRACK && ioB1GET(ioFOTA), "'%s' found  %R vs %R  Diff=%d  FW %snewer\n",
 			psRR->pvArg, xTimeMakeTimestamp(psRR->hvLastModified, 0),
 			xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "NOT " : "") ;
@@ -267,38 +269,43 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
 
 int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen) ;
-	if (iRV != 1) return iRV;
-	xRtosClearStatus(flagAPP_RESTART) ;
+	if (iRV != 1)
+		return iRV;
+	xRtosClearStatus(flagAPP_RESTART);
 	fota_info_t	sFI ;
 	iRV = halFOTA_Begin(&sFI) ;
-	if (iRV < erSUCCESS) return erFAILURE;
-
-	sFI.pBuf	= (void *) pBuf ;
-	sFI.xLen	= xLen ;
+	if (iRV < erSUCCESS)
+		return iRV;
+	sFI.pBuf = (void *) pBuf ;
+	sFI.xLen = xLen ;
 	http_rr_t * psReq = psParser->data ;
 	sFI.xDone = 0;
 	sFI.xFull = psReq->hvContentLength;
 	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT) ;
 
 	while (xLen) {										// deal with all received packets
-		iRV = halFOTA_Write(&sFI) ;
-		if (iRV != ESP_OK) break;
-		sFI.xDone += sFI.xLen ;
-		if (sFI.xDone == sFI.xFull) break;
-		IF_SYSTIMER_START(debugTIMING, stFOTA) ;
+		iRV = halFOTA_Write(&sFI);
+		if (iRV != ESP_OK)
+			break;
+		sFI.xDone += sFI.xLen;
+		if (sFI.xDone == sFI.xFull)
+			break;
+		IF_SYSTIMER_START(debugTIMING, stFOTA);
 		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
-		IF_SYSTIMER_STOP(debugTIMING, stFOTA) ;
-		if (iRV > 0) sFI.xLen = iRV ;
+		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
+		if (iRV > 0)
+			sFI.xLen = iRV;
 		else if (psReq->sCtx.error != EAGAIN) {
-			sFI.iRV = iRV ;								// save for halFOTA_End() reuse
-			break ;										// no need for error reporting, already done in xNetRead()
+			sFI.iRV = iRV;								// save for halFOTA_End() reuse
+			break;										// no need for error reporting, already done in xNetRead()
 		}
 	}
 
-	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA) ;
-	iRV = halFOTA_End(&sFI) ;
-	if (iRV == erSUCCESS && sFI.iRV == ESP_OK) xRtosSetStatus(flagAPP_RESTART) ;
-	return sFI.iRV ;
+	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
+	iRV = halFOTA_End(&sFI);
+	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
+		xRtosSetStatus(flagAPP_RESTART);
+	return sFI.iRV;
 }
 
 int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
@@ -323,9 +330,8 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	 */
 	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck) ;
 #if 0
-	if (bRtosCheckStatus(flagAPP_RESTART) == 0) {
-		iRV = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN, bCheck) ;
-	}
+	if (bRtosCheckStatus(flagAPP_RESTART) == 0)
+		iRV = xHttpClientFirmwareUpgrade((void *) mqttSITE_TOKEN, bCheck);
 #endif
 	if (bRtosCheckStatus(flagAPP_RESTART) == 0)
 		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck) ;
@@ -384,13 +390,16 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 		SL_INFO("lat=%.7f  lng=%.7f  acc=%.7f",
 				sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
-	} else SL_ERR("Error parsing '%s' key", pKey) ;
-	if (psTokenList) vRtosFree(psTokenList) ;
+	} else
+		SL_ERR("Error parsing '%s' key", pKey) ;
+	if (psTokenList)
+		vRtosFree(psTokenList) ;
     return iRV ;
 }
 
 int	xHttpGetLocation(void) {
-	if (sNVSvars.fGeoLoc) return erSUCCESS ;
+	if (sNVSvars.fGeoLoc)
+		return erSUCCESS;
 	const char caQuery[] = "POST /geolocation/v1/geolocate?key="keyGOOGLE ;
 	return xHttpRequest("www.googleapis.com", caQuery, "{ }\r\n",
 			&CertGoogle[0], SizeGoogle, xHttpParseGeoLoc, 0,
@@ -431,8 +440,10 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 		SystemFlag |= varFLAG_TIMEZONE ;
 		SL_INFO("%Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
-	} else SL_ERR("Error parsing '%s' key", pKey) ;
-	if (psTokenList) vRtosFree(psTokenList) ;
+	} else
+		SL_ERR("Error parsing '%s' key", pKey) ;
+	if (psTokenList)
+		vRtosFree(psTokenList) ;
     return iRV ;
 }
 
@@ -474,13 +485,16 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 		SystemFlag |= varFLAG_ELEVATION ;
 		SL_INFO("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]) ;
 		IF_EXEC_4(debugJSON, xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
-	} else SL_ERR("Error parsing '%s' key", pKey) ;
-	if (psTokenList) vRtosFree(psTokenList);
+	} else
+		SL_ERR("Error parsing '%s' key", pKey) ;
+	if (psTokenList)
+		vRtosFree(psTokenList);
     return iRV ;
 }
 
 int	xHttpGetElevation(void) {
-	if (sNVSvars.fGeoAlt) return erSUCCESS ;
+	if (sNVSvars.fGeoAlt)
+		return erSUCCESS;
 	const char caQuery[] = "GET /maps/api/elevation/json?locations=%.7f,%.7f&key="keyGOOGLE ;
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 			CertGoogle, sizeof(CertGoogle), xHttpParseElevation, 0,
@@ -495,9 +509,8 @@ int	xHttpClientCheckGeoLoc(void) {
 	int iRV = xHttpGetLocation();
 	if (iRV > erFAILURE) {								// Elevation & TimeZone require Location
 		iRV = xHttpGetElevation();
-		if (iRV > erFAILURE) {
+		if (iRV > erFAILURE)
 			iRV = xHttpGetTimeZone();
-		}
 	}
 	return iRV ;
 }
@@ -577,7 +590,8 @@ int xHttpClientCoredumpUploadCB(http_rr_t * psReq) {
 			return -iRV ;
 		}
 		iRV = xNetWrite(&psReq->sCtx, (char *) psReq->sUB.pBuf, (xLeft > psReq->sUB.Size) ? psReq->sUB.Size : xLeft) ;
-		if (iRV > 0) xDone += iRV ;
+		if (iRV > 0)
+			xDone += iRV ;
 		else if (psReq->sCtx.error != EAGAIN) {
 			SL_ERR("net write err=0x%x (%s)", psReq->sCtx.error, strerror(psReq->sCtx.error)) ;
 			break ;
