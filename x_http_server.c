@@ -220,15 +220,15 @@ int	xHttpHandle_API(http_parser * psParser) {
 		}
 		if (pcCommand - psRR->parts[i] > 1) vCommandInterpret((int) '\r', 0) ;
 	}
-	if (xUBufAvail(&sRTCvars.sRTCbuf) > 0) {
+	if (xStdioBufAvail() > 0) {
 		/* Definitive problem here if the volume of output from vCommandInterpret() exceed the
 		 * size of the buffer. In this case some content would have been overwritten and the
 		 * pointers would have wrapped and could point somewhere other than the start of the
 		 * buffer. In this case, the response as sent will be incomplete or invalid.
 		 * XXX change handling to accommodate sending 2 separate blocks
 		 */
-		iRV = xHttpSendResponse(psParser, format, xUBufAvail(&sRTCvars.sRTCbuf), pcUBufTellRead(&sRTCvars.sRTCbuf)) ;
-		vUBufReset(&sRTCvars.sRTCbuf) ;
+		iRV = xHttpSendResponse(psParser, format, xStdioBufAvail(), pcStdioBufTellRead()) ;
+		vStdioBufReset();
 	} else {
 		iRV = xHttpSendResponse(psParser, "<html><body><h2>Command completed</h2></body></html>") ;
 	}
