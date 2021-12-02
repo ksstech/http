@@ -22,6 +22,7 @@
  */
 
 #include	"hal_variables.h"
+#include	"hal_usart.h"
 
 #include 	"x_http_server.h"
 #include 	"x_http_client.h"								// for xHttpFirmware????()
@@ -34,7 +35,6 @@
 #include	"printfx.h"
 #include	"syslog.h"
 #include	"x_errors_events.h"
-#include	"x_stdio.h"
 #include	"x_time.h"
 
 #include	"hal_network.h"
@@ -192,7 +192,7 @@ int	xHttpServerParseString(char * pVal, char * pDst) {
 	return erSUCCESS ;
 }
 
-int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
+int	xHttpServerParseIPaddress(char * pSrc, u32 * pDst) {
 	if (xStringParseEncoded(pSrc, NULL) == erFAILURE) return erFAILURE ;
 	IF_PRINT(debugTRACK, "%s->%s", pSrc) ;
 	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
