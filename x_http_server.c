@@ -192,8 +192,9 @@ int	xHttpServerParseString(char * pVal, char * pDst) {
 	return erSUCCESS ;
 }
 
-int	xHttpServerParseIPaddress(char * pSrc, u32 * pDst) {
-	if (xStringParseEncoded(pSrc, NULL) == erFAILURE) return erFAILURE ;
+int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
+	if (xStringParseEncoded(pSrc, NULL) == erFAILURE)
+		return erFAILURE;
 	IF_PRINT(debugTRACK, "%s->%s", pSrc) ;
 	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
 		*pDst = 0 ;
