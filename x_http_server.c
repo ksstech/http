@@ -390,6 +390,7 @@ void vTaskHttpDeInit(void) {
  * 	Respond to /restart (as emergency)
  */
 void vTaskHttp(void * pvParameters) {
+	int	iRV, iRV2;
 	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP_MASK) ;
 	sRR.sUB.pBuf = pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
 	HttpState = stateHTTP_INIT ;
@@ -403,7 +404,6 @@ void vTaskHttp(void * pvParameters) {
 			}
 		}
 		switch(HttpState) {
-		int	iRV ;
 		case stateHTTP_DEINIT:
 			vTaskHttpDeInit();
 			break ;					// must NOT fall through since the Lx status might have changed
@@ -475,21 +475,21 @@ void vTaskHttp(void * pvParameters) {
 				if (iRV > 0) {							// build response if something was parsed....
 					IF_CTRACK(debugTRACK && ioB1GET(ioHTTPtrack), "start response handler\n");
 					xStdioBufLock(portMAX_DELAY);
-					iRV = xHttpServerResponseHandler(&sParser);
 					setSYSFLAG(sysFLAG_RTCBUF_USE);
+					iRV2 = xHttpServerResponseHandler(&sParser);
 					clrSYSFLAG(sysFLAG_RTCBUF_USE);
 					xStdioBufUnLock();
 					IF_CTRACK(debugTRACK && ioB1GET(ioHTTPtrack), "Tx done (%d)\n", iRV2) ;
+				} else {
+					iRV2 = erSUCCESS;
 				}
-				// socket closed or error occurred or coClose was set, close the connection
-				if (iRV == 0 || 						// nothing parsed or socket closed?
-					sRR.sCtx.error != 0 || 				// any error (even EAGAIN) on write ?
-					sRR.hvConnect == coClose) {			// or connection must be closed ?
+				// socket closed, any error or coClose set
+				if (iRV == 0 || iRV2 < erSUCCESS || sRR.sCtx.error != 0 || sRR.hvConnect == coClose) {
 					vTaskHttpCloseClient();
 				} else {
 					// both parse & response handler & write was successful
 				}
-			} else if (sRR.sCtx.error != EAGAIN) {		// not EAGAIN/EWOULDBLOCK, socket closed OR real error
+			} else if (iRV < erSUCCESS && sRR.sCtx.error != EAGAIN) {		// not EAGAIN/EWOULDBLOCK, socket closed OR real error
 				vTaskHttpCloseClient();
 			}
 			break;
