@@ -465,9 +465,9 @@ void vTaskHttp(void * pvParameters) {
 				if (iRV > 0) {							// build response if something was parsed....
 					IF_CTRACK(debugTRACK && ioB1GET(ioHTTPtrack), "start response handler\n");
 					xStdioBufLock(portMAX_DELAY);
-					SystemFlag |= sysFLAG_RTCBUF_USE;
 					iRV = xHttpServerResponseHandler(&sParser);
-					SystemFlag &= ~sysFLAG_RTCBUF_USE;
+					setSYSFLAG(sysFLAG_RTCBUF_USE);
+					clrSYSFLAG(sysFLAG_RTCBUF_USE);
 					xStdioBufUnLock();
 					IF_CTRACK(debugTRACK && ioB1GET(ioHTTPtrack), "Tx done (%d)\n", iRV2) ;
 				}
