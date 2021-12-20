@@ -1,24 +1,9 @@
 /*
- * Copyright 2014-21 Andre M Maree / KSS Technologies (Pty) Ltd.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
- * and associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
- * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Copyright 2014-21 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
 /*
- * http_client.c
+ * http_server.c
  */
 
 #include	"hal_variables.h"
@@ -46,7 +31,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xC000
+#define	debugFLAG					0xF000
 
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
@@ -166,9 +151,9 @@ int	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 		if (psRR->hvConnect == coKeepAlive)
 			iRV += socprintfx(&psRR->sCtx, "Keep-Alive: timeout=3\r\n");
 	}
-	if (psRR->hvContentType)
+	if (psRR->hvContentType) {
 		iRV += socprintfx(&psRR->sCtx, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]);
-
+	}
 	va_list vArgs ;
 	va_start(vArgs, format) ;
 	/* The next line does not really print anything. By specifying the NULL as the string
@@ -187,15 +172,18 @@ int	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 }
 
 int	xHttpServerParseString(char * pVal, char * pDst) {
-	if (xStringParseEncoded(pVal, pDst) == erFAILURE) return erFAILURE;
 	IF_PRINT(debugTRACK, "%s->%s\n", pVal, pDst) ;
+	if (xStringParseEncoded(pVal, pDst) == erFAILURE) {
+		return erFAILURE;
+	}
 	return erSUCCESS ;
 }
 
 int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
-	if (xStringParseEncoded(pSrc, NULL) == erFAILURE)
+	if (xStringParseEncoded(pSrc, NULL) == erFAILURE) {
 		return erFAILURE;
 	IF_PRINT(debugTRACK, "%s->%s", pSrc) ;
+	}
 	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
 		*pDst = 0 ;
 		return erFAILURE ;
@@ -219,7 +207,9 @@ int	xHttpHandle_API(http_parser * psParser) {
 			halVARS_CheckChanges();
 			++pcCommand ;
 		}
-		if (pcCommand - psRR->parts[i] > 1) vCommandInterpret((int) '\r', 0) ;
+		if (pcCommand - psRR->parts[i] > 1) {
+			vCommandInterpret((int) '\r', 0) ;
+		}
 	}
 	if (xStdioBufAvail() > 0) {
 		/* Definitive problem here if the volume of output from vCommandInterpret() exceed the
@@ -240,16 +230,18 @@ int	xHttpHandle_API(http_parser * psParser) {
 
 void vTaskHttpCloseServer(void) {
 	xRtosClearStatus(flagHTTP_SERV);
-	if (sServHttpCtx.sd > 0)
 		xNetClose(&sServHttpCtx);
 	IF_CTRACK(debugTRACK, "server closed\n") ;
+	if (sServHttpCtx.sd > 0) {
+	}
 }
 
 void vTaskHttpCloseClient(void) {
 	xRtosClearStatus(flagHTTP_CLNT);
-	if (sRR.sCtx.sd > 0)
 		xNetClose(&sRR.sCtx);
 	IF_CTRACK(debugTRACK, "client closed\n");
+	if (sRR.sCtx.sd > 0) {
+	}
 }
 
 /**
@@ -258,7 +250,7 @@ void vTaskHttpCloseClient(void) {
  * @param psParser
  * @return	size of the response created (bytes)
  */
-int	xHttpServerResponseHandler(http_parser * psParser) {
+ int	xHttpServerResponseHandler(http_parser * psParser) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psParser->data)) ;
 	http_rr_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
@@ -266,18 +258,18 @@ int	xHttpServerResponseHandler(http_parser * psParser) {
 	int	iURL = -1, iRV, i ;
 	if (psParser->http_errno) {
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
-		psRR->pcBody	= (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
+		psRR->pcBody = (char *) http_errno_description(HTTP_PARSER_ERRNO(psParser)) ;
 		SL_ERR("%s (%s)", psRR->pcBody, http_errno_name(HTTP_PARSER_ERRNO(psParser))) ;
 		psRR->hvContentType = ctTextPlain ;
 
 	} else if (psParser->method != HTTP_GET) {			// Invalid METHOD
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_IMPLEMENTED) ;
-		psRR->pcBody	= (char *) HtmlErrorInvMethod ;
+		psRR->pcBody = (char *) HtmlErrorInvMethod ;
 		SL_ERR("Method not supported (%d)", psParser->method) ;
 
 	} else if (psRR->f_host == 0) {						// host not provided
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
-		psRR->pcBody	= (char *) HtmlErrorNoHost ;
+		psRR->pcBody = (char *) HtmlErrorNoHost ;
 		SL_ERR("Host name/IP not provided") ;
 
 	} else {		// at this stage all parsing results are OK, just the URL to be matched and processed.
@@ -367,11 +359,12 @@ int	xHttpServerResponseHandler(http_parser * psParser) {
 	if (psRR->f_bodyCB && psRR->hdlr_rsp) {
 		iRV = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
-		iRV = xHttpSendResponse(psParser, psRR->pcBody) ;
 		IF_PRINT(debugTRACK, "Response sent iRV=%d\n", iRV) ;
+		iRV = xHttpSendResponse(psParser, psRR->pcBody);
 	}
-	if (sServHttpCtx.maxTx < iRV)
-		sServHttpCtx.maxTx = iRV ;
+	if (sServHttpCtx.maxTx < iRV) {
+		sServHttpCtx.maxTx = iRV;
+	}
 	return iRV ;
 }
 
@@ -393,8 +386,9 @@ void vTaskHttp(void * pvParameters) {
 	while (bRtosVerifyState(taskHTTP_MASK)) {
 		if (HttpState != stateHTTP_DEINIT) {
 			EventBits_t CurStat = xRtosWaitStatusANY(flagL3_ANY, pdMS_TO_TICKS(httpINTERVAL_MS));
-			if ((CurStat & (flagL3_ANY)) == 0)
+			if ((CurStat & (flagL3_ANY)) == 0) {
 				continue;
+			}
 		}
 		switch(HttpState) {
 		int	iRV ;
@@ -424,8 +418,9 @@ void vTaskHttp(void * pvParameters) {
 		case stateHTTP_WAITING:
 			iRV = xNetAccept(&sServHttpCtx, &sRR.sCtx, httpINTERVAL_MS) ;
 			if (iRV < 0) {
-				if (sServHttpCtx.error != EAGAIN)
+				if (sServHttpCtx.error != EAGAIN) {
 					HttpState = stateHTTP_DEINIT;
+				}
 				break ;
 			}
 
@@ -443,8 +438,9 @@ void vTaskHttp(void * pvParameters) {
 			iRV = xNetRead(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size) ;
 			if (iRV > 0) {							// read something ?
 				IF_CTRACK(debugTRACK, "start parsing\n") ;
-				if (sServHttpCtx.maxRx < iRV)
+				if (sServHttpCtx.maxRx < iRV) {
 					sServHttpCtx.maxRx = iRV;
+				}
 				http_parser 	sParser ;				// then process the packet
 				http_parser_init(&sParser, HTTP_REQUEST) ;
 				sParser.data		= &sRR ;
@@ -486,9 +482,9 @@ void vTaskHttp(void * pvParameters) {
 				vTaskHttpCloseClient();
 			}
 			IF_CTRACK(debugTRACK, "Tx done\n") ;
-			break ;
-
-		default:	SL_ERR(debugAPPL_PLACE) ;
+			break;
+		default:
+			SL_ERR(debugAPPL_PLACE) ;
 		}
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
@@ -505,8 +501,10 @@ void vTaskHttpInit(void) {
 
 void vHttpReport(void) {
 	if (bRtosCheckStatus(flagHTTP_SERV) == 1) {
-		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0) ;
+		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0);
 		printfx("\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
 	}
-	if (bRtosCheckStatus(flagHTTP_CLNT) == 1) xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0);
+	if (bRtosCheckStatus(flagHTTP_CLNT) == 1) {
+		xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0);
+	}
 }
