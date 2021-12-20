@@ -11,6 +11,7 @@
 #include	"parserX.h"
 #include	"x_buffers.h"
 #include	"printfx.h"
+#include	"syslog.h"
 #include	"x_string_to_values.h"
 #include	"x_string_general.h"
 #include	"x_errors_events.h"
@@ -221,14 +222,6 @@ int	xHttpCommonChunkCompleteHandler(http_parser * psP) {
 	return erSUCCESS ;
 }
 
-/**
- * xHttpCommonMessageBodyHandler() default handler for body content
- * @brief	If content is JSON format, will parse and display, else just debug dump
- * @param	psParser
- * @param	pBuf
- * @param	xLen
- * @return
- */
 int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t xLen) {
 	http_rr_t * psReq = psP->data ;
 	switch (psReq->hvContentType) {
@@ -261,20 +254,15 @@ int xHttpCommonMessageCompleteHandler(http_parser * psP) {
 	return erSUCCESS ;
 }
 
-/**
- * xHttpCommonDoParsing()
- * @param	psParser
- * @return	erFAILURE or result of http_parser_execute() being 0, 1 or some number ?
- */
 size_t	xHttpCommonDoParsing(http_parser * psP) {
 	http_rr_t * psRR = psP->data ;
 	psRR->sfCB.on_url			= xHttpCommonUrlHandler ;	// set some default handlers...
 	psRR->sfCB.on_status		= xHttpCommonStatusHandler ;
 	psRR->sfCB.on_header_field	= xHttpCommonHeaderFieldHandler ;
 	psRR->sfCB.on_header_value	= xHttpCommonHeaderValueHandler ;
-	if (debugTRACK && psRR->sfCB.on_body == NULL)
+	if (debugTRACK && psRR->sfCB.on_body == NULL) {
 		psRR->sfCB.on_body		= xHttpCommonMessageBodyHandler ;
-
+	}
 	if (debugTRACK && psRR->f_debug) {
 		psRR->sfCB.on_message_begin		= xHttpCommonMessageBeginHandler ;
 		psRR->sfCB.on_chunk_header		= xHttpCommonChunkHeaderHandler ;
