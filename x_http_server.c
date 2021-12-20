@@ -495,8 +495,14 @@ void vTaskHttp(void * pvParameters) {
 	vTaskDelete(NULL) ;
 }
 
-void vTaskHttpInit(void) {
-	xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, tskNO_AFFINITY) ;
+void vTaskHttpStatus(void) {
+	if (ioB1GET(ioHTTPstart)) {
+		xRtosClearStateRUN(taskHTTP_MASK);
+		xRtosClearStateDELETE(taskHTTP_MASK);
+		xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, tskNO_AFFINITY);
+	} else {
+		vRtosTaskTerminate(taskHTTP_MASK);
+	}
 }
 
 void vHttpReport(void) {
