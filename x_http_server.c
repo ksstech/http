@@ -229,19 +229,32 @@ int	xHttpHandle_API(http_parser * psParser) {
 // ################################### Common HTTP API functions ###################################
 
 void vTaskHttpCloseServer(void) {
+	int iRV;
 	xRtosClearStatus(flagHTTP_SERV);
-		xNetClose(&sServHttpCtx);
 	if (sServHttpCtx.sd > 0) {
+		iRV = xNetClose(&sServHttpCtx);
+	} else {
+		iRV = 0;
 	}
+	HttpState = stateHTTP_INIT ;
 	IF_CTRACK(debugTRACK && ioB1GET(ioHTTPtrack), "server closed (%d)\n", iRV) ;
 }
 
 void vTaskHttpCloseClient(void) {
+	int iRV;
 	xRtosClearStatus(flagHTTP_CLNT);
-		xNetClose(&sRR.sCtx);
 	if (sRR.sCtx.sd > 0) {
+		iRV = xNetClose(&sRR.sCtx);
+	} else {
+		iRV = 0;
 	}
+	HttpState = stateHTTP_WAITING;
 	IF_CTRACK(debugTRACK && ioB1GET(ioHTTPtrack), "client closed (%d)\n", iRV);
+}
+
+void vTaskHttpDeInit(void) {
+	vTaskHttpCloseClient();
+	vTaskHttpCloseServer();
 }
 
 /**
@@ -392,9 +405,7 @@ void vTaskHttp(void * pvParameters) {
 		switch(HttpState) {
 		int	iRV ;
 		case stateHTTP_DEINIT:
-			vTaskHttpCloseClient();
-			vTaskHttpCloseServer();
-			HttpState = stateHTTP_INIT ;
+			vTaskHttpDeInit();
 			break ;					// must NOT fall through since the Lx status might have changed
 
 		case stateHTTP_INIT:
@@ -487,8 +498,7 @@ void vTaskHttp(void * pvParameters) {
 		}
 		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
-	vTaskHttpCloseServer();
-	vTaskHttpCloseClient();
+	vTaskHttpDeInit();
 	vRtosFree(sRR.sUB.pBuf) ;
 	vRtosTaskDelete(NULL) ;
 }
