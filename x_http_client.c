@@ -388,7 +388,6 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "accuracy", &sNVSvars.GeoLocation[geoACC], vfFXX) ;
 		}
 	}
-	IF_TRACK(debugTRACK && ioB1GET(ioHTTPclnt), "\n");
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
 		sNVSvars.fGeoLoc = 1 ;
 		SystemFlag |= varFLAG_LOCATION ;
