@@ -36,7 +36,7 @@ enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNEC
 
 int xHttpServerSetResponseStatus(http_parser * psParser, int Status) ;
 void vTaskHttp(void * pvParameters) ;
-void vTaskHttpInit(void) ;
+void vTaskHttpStatus(void) ;
 void vHttpReport(void) ;
 
 #ifdef __cplusplus
