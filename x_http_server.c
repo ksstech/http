@@ -377,7 +377,6 @@ void vTaskHttpCloseClient(void) {
  * 	Respond to /restart (as emergency)
  */
 void vTaskHttp(void * pvParameters) {
-	IF_PRINT(debugTRACK && ioB1GET(ioStart), debugAPPL_MESS_UP) ;
 	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP_MASK) ;
 	sRR.sUB.pBuf = pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
 	HttpState = stateHTTP_INIT ;
@@ -491,8 +490,7 @@ void vTaskHttp(void * pvParameters) {
 	vTaskHttpCloseServer();
 	vTaskHttpCloseClient();
 	vRtosFree(sRR.sUB.pBuf) ;
-	IF_PRINT(debugTRACK && ioB1GET(ioRstrt), debugAPPL_MESS_DN) ;
-	vTaskDelete(NULL) ;
+	vRtosTaskDelete(NULL) ;
 }
 
 void vTaskHttpStatus(void) {
