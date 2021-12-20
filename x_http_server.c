@@ -6,6 +6,8 @@
  * http_server.c
  */
 
+#include	<string.h>
+
 #include	"hal_variables.h"
 #include	"hal_usart.h"
 
@@ -13,6 +15,7 @@
 #include 	"x_http_client.h"								// for xHttpFirmware????()
 #include	"task_control.h"
 #include	"commands.h"
+#include	"options.h"
 #include	"rules_parse_text.h"
 
 #include	"x_string_general.h"
@@ -26,8 +29,6 @@
 #include	"hal_fota.h"
 #include	"hal_storage.h"
 #include	"hal_mcu.h"									// for halMCU_Restart()
-
-#include	<string.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
