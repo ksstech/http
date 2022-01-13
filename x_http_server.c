@@ -264,7 +264,7 @@ void vTaskHttpDeInit(void) {
  * @param psParser
  * @return	size of the response created (bytes)
  */
- int	xHttpServerResponseHandler(http_parser * psParser) {
+int xHttpServerResponseHandler(http_parser * psParser) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psParser->data)) ;
 	http_rr_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
