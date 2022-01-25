@@ -1,9 +1,5 @@
 /*
- * Copyright 2014-21 Andre M. Maree / KSS Technologies (Pty) Ltd.
- */
-
-/*
- * http_server.c
+ * Copyright 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
 #include	<string.h>
@@ -33,6 +29,7 @@
 // ############################### BUILD: debug configuration options ##############################
 
 #define	debugFLAG					0xF000
+#define	debugREQUEST				(debugFLAG & 0x0001)
 
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
@@ -42,7 +39,7 @@
 // ########################################### macros ##############################################
 
 #define halNET_EXTEND_IP			0
-#define	httpINTERVAL_MS				(500)
+#define	httpINTERVAL_MS				(100)
 #define httpSERVER_BUFSIZE			(1 * KILO)
 
 // ###################################### enumerations #############################################
@@ -342,7 +339,7 @@ int xHttpServerResponseHandler(http_parser * psParser) {
 			if (iRV == erSUCCESS) {						// inform client of success or not....
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 				psRR->pcBody	= (char *) HtmlAPconfigOK ;
-				xRtosSetStatus(flagAPP_RESTART) ;
+				setSYSFLAGS(sfRESTART);
 			} else {
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
 				psRR->pcBody	= (char *) HtmlAPconfigFAIL ;
@@ -382,6 +379,50 @@ int xHttpServerResponseHandler(http_parser * psParser) {
 	return iRV ;
 }
 
+void vHttpNotifyHandler(void) {
+	static uint32_t fRqst = 0;
+	uint32_t fDone = 0;
+	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
+		IF_TTL(debugREQUEST, "  SF=0x%08X  RN=0x%08X\n", SystemFlag, fRqst);
+		if (fRqst & reqCOREDUMP) {
+			xHttpClientCoredumpUpload(NULL) ;
+			fDone |= reqCOREDUMP;
+		}
+		if (fRqst & reqFW_UPGRADE) {
+			xHttpClientCheckUpgrades(PERFORM);
+			fDone |= reqFW_UPGRADE;
+		}
+		if (fRqst & reqFW_CHECK) {
+			xHttpClientCheckUpgrades(CHECK);
+			fDone |= reqFW_CHECK;
+		}
+		if (allSYSFLAGS(sfRESTART) == 0) {
+			if (fRqst & reqGEOLOC) {
+				xHttpGetLocation();
+				if (sNVSvars.fGeoLoc)
+					fDone |= reqGEOLOC;
+			}
+			if (fRqst & reqGEOTZ) {
+				xHttpGetTimeZone();
+				if (sNVSvars.fGeoTZ)
+					fDone |= reqGEOTZ;
+			}
+			if (fRqst & reqGEOALT) {
+				xHttpGetElevation();
+				if (sNVSvars.fGeoAlt)
+					fDone |= reqGEOALT;
+			}
+		} else if (fRqst & (reqGEOLOC | reqGEOTZ | reqGEOALT)) {
+			fDone |= (reqGEOLOC | reqGEOTZ | reqGEOALT);
+			SL_NOT("GeoXXX discarded, need to restart");
+		}
+		if (fDone) {
+			IF_TTL(debugREQUEST, "  fRqst=0x%X  fDone=0x%X\n", fRqst, fDone);
+			ulTaskNotifyValueClear(NULL, fDone);
+		}
+	}
+}
+
 /**
  *vTaskHttp()
  * @param pvParameters
@@ -404,6 +445,10 @@ void vTaskHttp(void * pvParameters) {
 				continue;
 			}
 		}
+		// Handle HTTP client type requests from other tasks
+		if (bRtosCheckStatus(flagL3_STA))
+			vHttpNotifyHandler();
+
 		switch(HttpState) {
 		case stateHTTP_DEINIT:
 			vTaskHttpDeInit();
@@ -476,9 +521,9 @@ void vTaskHttp(void * pvParameters) {
 				if (iRV > 0) {							// build response if something was parsed....
 					IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "start response handler\n");
 					xStdioBufLock(portMAX_DELAY);
-					setSYSFLAG(sysFLAG_RTCBUF_USE);
+					setSYSFLAGS(sysFLAG_RTCBUF_USE);
 					iRV2 = xHttpServerResponseHandler(&sParser);
-					clrSYSFLAG(sysFLAG_RTCBUF_USE);
+					clrSYSFLAGS(sysFLAG_RTCBUF_USE);
 					xStdioBufUnLock();
 					IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "Tx done (%d)\n", iRV2) ;
 				} else {
@@ -497,7 +542,6 @@ void vTaskHttp(void * pvParameters) {
 		default:
 			SL_ERR(debugAPPL_PLACE) ;
 		}
-		vTaskDelay(pdMS_TO_TICKS(httpINTERVAL_MS)) ;
 	}
 	vTaskHttpDeInit();
 	vRtosFree(sRR.sUB.pBuf) ;
@@ -508,7 +552,7 @@ void vTaskHttpStatus(void) {
 	if (ioB1GET(ioHTTPstart)) {
 		xRtosClearStateRUN(taskHTTP_MASK);
 		xRtosClearStateDELETE(taskHTTP_MASK);
-		xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, NULL, tskNO_AFFINITY);
+		xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, &HttpHandle, tskNO_AFFINITY);
 	} else {
 		vRtosTaskTerminate(taskHTTP_MASK);
 	}
