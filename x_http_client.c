@@ -389,7 +389,7 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
 		sNVSvars.fGeoLoc = 1 ;
-		SystemFlag |= varFLAG_LOCATION ;
+		setSYSFLAGS(vfLOCATION);
 		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLocation[geoLAT],
 				sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
 		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
@@ -440,7 +440,7 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 	}
 	if (iRV >= erSUCCESS && sNVSvars.TimeZoneId[0] && sNVSvars.TimeZoneName[0]) {
 		sNVSvars.fGeoTZ = 1 ;
-		SystemFlag |= varFLAG_TIMEZONE ;
+		setSYSFLAGS(vfTIMEZONE);
 		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
 		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else {
@@ -482,7 +482,7 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoALT]) {
 		sNVSvars.fGeoAlt = 1 ;
-		SystemFlag |= varFLAG_ELEVATION ;
+		setSYSFLAGS(vfELEVATION);
 		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]);
 		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0);
 	} else {

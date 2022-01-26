@@ -383,7 +383,6 @@ void vHttpNotifyHandler(void) {
 	static uint32_t fRqst = 0;
 	uint32_t fDone = 0;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
-		IF_TTL(debugREQUEST, "  SF=0x%08X  RN=0x%08X\n", SystemFlag, fRqst);
 		if (fRqst & reqCOREDUMP) {
 			xHttpClientCoredumpUpload(NULL) ;
 			fDone |= reqCOREDUMP;
@@ -521,9 +520,9 @@ void vTaskHttp(void * pvParameters) {
 				if (iRV > 0) {							// build response if something was parsed....
 					IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "start response handler\n");
 					xStdioBufLock(portMAX_DELAY);
-					setSYSFLAGS(sysFLAG_RTCBUF_USE);
+					setSYSFLAGS(sfRTCBUF_USE);
 					iRV2 = xHttpServerResponseHandler(&sParser);
-					clrSYSFLAGS(sysFLAG_RTCBUF_USE);
+					clrSYSFLAGS(sfRTCBUF_USE);
 					xStdioBufUnLock();
 					IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "Tx done (%d)\n", iRV2) ;
 				} else {
