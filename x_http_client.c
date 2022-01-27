@@ -268,6 +268,7 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
 		setSYSFLAGS(sfFW_LATEST);
 		return erSUCCESS;
 	}
+	clrSYSFLAGS(sfFW_LATEST);
 	return 1;
 }
 
