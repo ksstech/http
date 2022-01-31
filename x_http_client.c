@@ -145,7 +145,7 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	sRR.sCtx.pHost		= pHost ;
 	sRR.pcQuery			= pQuery ;
 	sRR.pVoid			= pvBody ;
-	sRR.sfCB.on_body	= OnBodyCB ? (http_data_cb) OnBodyCB : xHttpCommonMessageBodyHandler ;
+	sRR.sfCB.on_body	= (http_data_cb) OnBodyCB;
 	sRR.hvContentLength	= (uint64_t) DataSize ;
 	sRR.hvValues		= hvValues ;
 	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
