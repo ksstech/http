@@ -180,14 +180,6 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	return iRV ;
 }
 
-int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
-	return xHttpRequest(HostInfo[sNVSvars.HostFOTA].pName, "GET /firmware/%s.bin", NULL,
-			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert,
-			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
-			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,4), pvPara, pvPara) ;
-}
-
 /**
  * @brief	step through multiple FW upgrade options till a valid option found or until all options done.
  * @return
@@ -470,6 +462,14 @@ int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLe
 	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
 		setSYSFLAGS(sfRESTART);
 	return sFI.iRV;
+}
+
+int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
+	return xHttpRequest(HostInfo[sNVSvars.HostFOTA].pName, "GET /firmware/%s.bin", NULL,
+			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert,
+			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
+			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,4), pvPara, pvPara) ;
 }
 
 	return iRV ;
