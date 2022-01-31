@@ -458,6 +458,41 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	return iRV ;
 }
 
+// ################################## PUT core dump to host ########################################
+
+// for binary uploads the address and content length+type must be correct
+int xHttpCoredumpUpload(void) {
+	#ifdef CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN
+		const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.bin" ;
+	#elif defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
+		const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.elf" ;
+	#endif
+	esp_partition_iterator_t sIter;
+	sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
+	IF_myASSERT(debugRESULT, sIter != 0);
+
+	const esp_partition_t *	psPart = esp_partition_get(sIter);
+	IF_myASSERT(debugRESULT, psPart != 0);
+
+	struct cd_hdr_s { uint32_t data_len, version, tasks_num, tcb_sz; } sCDhdr;
+	int iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(struct cd_hdr_s));
+	SL_WARN("L=%u  T=%u  TCB=%u  V=%-I", sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version);
+
+	if ((iRV != ESP_OK) ||
+		(sCDhdr.data_len == sCDhdr.tasks_num && sCDhdr.tcb_sz == sCDhdr.version)) {
+		xSyslogError(__FUNCTION__, iRV == erFAILURE);
+	} else {
+		iRV = xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, caQuery, halPART_Upload_CB,
+			HostInfo[sNVSvars.HostFOTA].pcCert,HostInfo[sNVSvars.HostFOTA].szCert,
+			NULL, sCDhdr.data_len,
+			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), (void *) psPart,
+			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
+	}
+	esp_partition_iterator_release(sIter);
+	return iRV;
+}
+
 // ###################################### Various gateways #########################################
 
 #ifndef	tokenPUSHOVER
@@ -517,38 +552,8 @@ int	xHttpClientIdentUpload(void * psRomID) {
 			psRomID) ;
 }
 
-// ################################## PUT core dump to host ########################################
 // ######################################### Unused API's ##########################################
 
-int xHttpClientCoredumpUploadCB(http_rr_t * psReq) {
-	int	iRV = erFAILURE ;
-	/* see https://github.com/espressif/esp-idf/issues/1650 */
-	size_t		xNow, xLeft, xDone = 0 ;
-	IF_PRINT(debugCOREDUMP, "Coredump START upload %lld\n", psReq->hvContentLength) ;
-
-	while (xDone < psReq->hvContentLength) {			// deal with all data to be sent
-		xLeft	= psReq->hvContentLength - xDone ;
-		xNow	= (xLeft > psReq->sUB.Size) ? psReq->sUB.Size : xLeft ;
-		IF_PRINT(debugCOREDUMP, "Start:%u  Write:%u  Left:%u\n", xDone, xNow, xLeft) ;
-		iRV = esp_partition_read((esp_partition_t *) psReq->pvArg, xDone, psReq->sUB.pBuf, xNow) ;
-		if (iRV != ESP_OK) {
-			SL_ERR("flash read err=0x%x (%s)", iRV, esp_err_to_name(iRV)) ;
-			return -iRV ;
-		}
-		iRV = xNetWrite(&psReq->sCtx, (char *) psReq->sUB.pBuf, (xLeft > psReq->sUB.Size) ? psReq->sUB.Size : xLeft) ;
-		if (iRV > 0)
-			xDone += iRV ;
-		else if (psReq->sCtx.error != EAGAIN) {
-			SL_ERR("net write err=0x%x (%s)", psReq->sCtx.error, esp_err_to_name(psReq->sCtx.error)) ;
-			break ;
-		}
-	}
-	if (iRV > 0) {
-		iRV = xNetWrite(&psReq->sCtx, (char *) "\r\n", 2) ;	// write the terminating CR/LF
-		iRV = xDone + 2 ;
-	}
-	return iRV ;
-}
 // https://www.iplocation.net/
 // EurekAPI.com (basic free 30day, 2017/06/06)
 #define	configHTTP_HOST_EUREKAPI	"api.eurekapi.com"
