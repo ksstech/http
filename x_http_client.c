@@ -562,25 +562,8 @@ int	xHttpClientIdentUpload(void * psRomID) {
 #define	configHTTP_HOST_FREE_GEO_IP	"freegeoip.net"
 #define	configHTTP_FORMAT_FREE_GEO_IP	"GET /json"
 
-typedef struct {
-    uint32_t data_len;  // data length
-    uint32_t version;   // core dump version
-    uint32_t tasks_num; // number of tasks
-    uint32_t tcb_sz;    // size of TCB
-} cd_hdr_t;
-
-#ifdef CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN
-	const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.bin" ;
-#elif	defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
-	const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.elf" ;
-#endif
 // ###################################### WEATHER support ##########################################
 
-int	xHttpClientCoredumpUpload(void * pvPara) {
-	// for binary uploads the address and content length+type must be correct
-	esp_partition_iterator_t sIter ;
-	sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL) ;
-	IF_myASSERT(debugCOREDUMP, sIter != 0) ;
 int xHttpGetWeather(void) {
 	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID=cf177bb6e86c95045841c63e99ad2ff4" ;
 	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
@@ -589,13 +572,8 @@ int xHttpGetWeather(void) {
 			16384, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
 
-	const esp_partition_t *	psPart = esp_partition_get(sIter) ;
-	IF_myASSERT(debugCOREDUMP, psPart != 0) ;
 // ################################### How's my SSL support ########################################
 
-	cd_hdr_t sCDhdr ;
-	int iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(sCDhdr)) ;
-	IF_PRINT(debugCOREDUMP, "L=%u  T=%u  TCB=%u  V=%-I\n", sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
 int	xHttpHowsMySSL(void) {
 	return xHttpRequest("www.howsmyssl.com", "GET /a/check", NULL,
 			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
@@ -603,26 +581,8 @@ int	xHttpHowsMySSL(void) {
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
 
-	if ((iRV != ESP_OK) ||
-		(sCDhdr.data_len == sCDhdr.tasks_num && sCDhdr.tcb_sz == sCDhdr.version)) {
-		SL_ERR("Error=%d (%s) L=%u  T=%u  TCB=%u  V=%-I", iRV, esp_err_to_name(iRV),
-				sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version);
-		iRV = erFAILURE;
-	}
 // ####################################### Bad SSL support #########################################
 
-	if (iRV == ESP_OK) {
-		iRV = xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, caQuery,
-				xHttpClientCoredumpUploadCB,
-				HostInfo[sNVSvars.HostFOTA].pcCert,HostInfo[sNVSvars.HostFOTA].szCert,
-				NULL, sCDhdr.data_len,
-				httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
-				0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), (void *) psPart,
-				macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND) ;
-		SL_WARN("iRV=%d  L=%u  T=%u  TCB=%u  V=%-I", iRV, sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
-	}
-	esp_partition_iterator_release(sIter) ;
-	return iRV ;
 int	xHttpBadSSL(void) {
 	return xHttpRequest("www.badssl.com", "GET /dashboard", NULL,
 			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
