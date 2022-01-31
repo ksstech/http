@@ -180,25 +180,6 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	return iRV ;
 }
 
-// ################################# Firmware Over The Air support #################################
-
-int	xHttpClientFileDownloadCheck(http_parser * psParser) {
-	http_rr_t * psRR = psParser->data ;
-	int iRV = erFAILURE ;
-	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_SL_INFO(debugTRACK, "'%s' not found", psRR->pvArg) ;
-	} else if (psRR->hvContentLength == 0ULL) {
-		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength) ;
-	} else if (psRR->hvContentType != ctApplicationOctetStream) {
-		SL_ERR("'%s' invalid content (%d/%s)", psRR->pvArg, psRR->hvContentType, ctValues[psRR->hvContentType]) ;
-	} else if (psRR->hvConnect == coClose) {
-		SL_ERR("Connection closed unexpectedly") ;
-	} else {
-		iRV = erSUCCESS ;
-	}
-	return iRV ;
-}
-
 /**
  * Check if a valid firmware upgrade exists
  * @return	1 if valid upgrade file exists
@@ -459,6 +440,7 @@ int	xHttpGetElevation(void) {
 }
 
 // ############################## Combined GeoLoc dependent info ###################################
+// ################################# Firmware Over The Air support #################################
 
 int	xHttpClientCheckGeoLoc(void) {
 	int iRV = erSUCCESS;
@@ -473,6 +455,23 @@ int	xHttpClientCheckGeoLoc(void) {
 		}
 		if (sNVSvars.fGeoAlt == 0) {
 			iRV = xHttpGetElevation();
+int	xHttpClientFileDownloadCheck(http_parser * psParser) {
+	http_rr_t * psRR = psParser->data ;
+	int iRV = erFAILURE ;
+	if (psParser->status_code != HTTP_STATUS_OK) {
+		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' not found", psRR->pvArg) ;
+	} else if (psRR->hvContentLength == 0ULL) {
+		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength) ;
+	} else if (psRR->hvContentType != ctApplicationOctetStream) {
+		SL_ERR("'%s' invalid content (%d/%s)", psRR->pvArg, psRR->hvContentType, ctValues[psRR->hvContentType]) ;
+	} else if (psRR->hvConnect == coClose) {
+		SL_ERR("Connection closed unexpectedly") ;
+	} else {
+		iRV = erSUCCESS ;
+	}
+	return iRV ;
+}
+
 		}
 	}
 	return iRV ;
