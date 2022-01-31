@@ -180,53 +180,6 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	return iRV ;
 }
 
-/**
- * Check if a valid download exists, if so, download and write to flash.
- * @param	psParser
- * @param	pBuf
- * @param	xLen
- * @return
- */
-int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
-	fota_info_t	sFI ;
-	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen) ;
-	if (iRV != 1)
-		return iRV;
-	iRV = halFOTA_Begin(&sFI) ;
-	if (iRV < erSUCCESS)
-		return iRV;
-	sFI.pBuf = (void *) pBuf ;
-	sFI.xLen = xLen ;
-	http_rr_t * psReq = psParser->data ;
-	sFI.xDone = 0;
-	sFI.xFull = psReq->hvContentLength;
-	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT) ;
-
-	while (xLen) {										// deal with all received packets
-		iRV = halFOTA_Write(&sFI);
-		if (iRV != ESP_OK)
-			break;
-		sFI.xDone += sFI.xLen;
-		if (sFI.xDone == sFI.xFull)
-			break;
-		IF_SYSTIMER_START(debugTIMING, stFOTA);
-		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
-		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
-		if (iRV > 0) {
-			sFI.xLen = iRV;
-		} else if (psReq->sCtx.error != EAGAIN) {
-			sFI.iRV = iRV;								// save for halFOTA_End() reuse
-			break;										// no need for error reporting, already done in xNetRead()
-		}
-	}
-
-	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
-	iRV = halFOTA_End(&sFI);
-	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
-		setSYSFLAGS(sfRESTART);
-	return sFI.iRV;
-}
-
 int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 	return xHttpRequest(HostInfo[sNVSvars.HostFOTA].pName, "GET /firmware/%s.bin", NULL,
 			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert,
@@ -472,8 +425,53 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
 	return 1;
 }
 
+/**
+ * Check if a valid download exists, if so, download and write to flash.
+ * @param	psParser
+ * @param	pBuf
+ * @param	xLen
+ * @return
+ */
+int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
+	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen);
+	if (iRV != 1)					// 1=NewFW  0=LatestFW  <0=Error
+		return iRV;
+	part_xfer_t	sFI;
+	iRV = halPART_FotaBegin(&sFI) ;
+	if (iRV != erSUCCESS)
+		return iRV;
+	sFI.pBuf = (void *) pBuf ;
+	sFI.xLen = xLen ;
+	http_rr_t * psReq = psParser->data ;
+	sFI.xDone = 0;
+	sFI.xFull = psReq->hvContentLength;
+	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT) ;
+
+	while (xLen) {										// deal with all received packets
+		iRV = halPART_FotaWrite(&sFI);
+		if (iRV != ESP_OK)
+			break;
+		sFI.xDone += sFI.xLen;
+		if (sFI.xDone == sFI.xFull)
+			break;
+		IF_SYSTIMER_START(debugTIMING, stFOTA);
+		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
+		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
+		if (iRV > 0) {
+			sFI.xLen = iRV;
+		} else if (psReq->sCtx.error != EAGAIN) {
+			sFI.iRV = iRV;								// save for halFOTA_End() reuse
+			break;										// no need for error reporting, already done in xNetRead()
 		}
 	}
+
+	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
+	iRV = halPART_FotaEnd(&sFI);
+	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
+		setSYSFLAGS(sfRESTART);
+	return sFI.iRV;
+}
+
 	return iRV ;
 }
 
