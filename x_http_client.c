@@ -35,25 +35,6 @@
 #define configHTTP_BUFSIZE			4096
 #define configHTTP_RX_WAIT			5000	// 500
 
-// ########################################### macros #############################################
-
-// https://www.iplocation.net/
-
-/*
- * EurekAPI.com (basic free 30day, 2017/06/06)
- */
-#define	configHTTP_HOST_EUREKAPI	"api.eurekapi.com"
-#define	configHTTP_QUERY_EUREKAPI	"GET /iplocation/v1.8/locateip?key="keyEUREKA"&ip=%I&format=JSON&compact=Y"
-
-/*
- * free geo-ip service definition
- */
-#define	configHTTP_HOST_FREE_GEO_IP	"freegeoip.net"
-#define	configHTTP_FORMAT_FREE_GEO_IP	"GET /json"
-
-// ################################### global/public variables #####################################
-
-
 // ################################### Common HTTP API functions ###################################
 
 int	xHttpBuildHeader(http_parser * psParser) {
@@ -107,7 +88,7 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 	http_parser_init(&sParser, HTTP_RESPONSE) ;			// clear all parser fields/values
 	sParser.data = psRR ;
 
-	// setup the uubuf_t structure for printing
+	// setup the ubuf_t structure for printing
 	xUBufCreate(&psRR->sUB, NULL, psRR->sUB.Size, 0) ;
 
 	psRR->VaList = vArgs ;
@@ -155,7 +136,8 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
  * @return	result from xHttpClientExecuteRequest()
  */
 int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
-		pci8_t pcCert, size_t szCert, void * OnBodyCB, uint32_t DataSize,
+		pci8_t pcCert, size_t szCert,					// host certificate info
+		void * OnBodyCB, uint32_t DataSize,				// read/write handler & size
 		uint32_t hvValues, uint16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
 	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(OnBodyCB)) ;
 	http_rr_t sRR		= { 0 } ;
@@ -168,10 +150,10 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	sRR.hvValues		= hvValues ;
 	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
 	sRR.pvArg			= pvArg ;
-	IF_CPRINT(debugREQUEST, "H='%s'  Q='%s'  B=", sRR.sCtx.pHost, sRR.pcQuery) ;
-	IF_CPRINT(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p" : "%s", sRR.pVoid) ;
-	IF_CPRINT(debugREQUEST, "  cb=%p  hv=%-I\n", sRR.sfCB.on_body, sRR.hvValues) ;
-	IF_myASSERT(debugREQUEST, sRR.hvContentType != ctUNDEFINED) ;
+	IF_CPRINT(debugREQUEST, "H='%s'  Q='%s'  cb=%p  hv=%-I  B=",
+			sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
+	IF_CPRINT(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p\n" : "%s\n", sRR.pVoid);
+	IF_myASSERT(debugREQUEST, sRR.hvContentType != ctUNDEFINED);
 
 	if (pcCert) {
 		sRR.sCtx.psSec	= &sSecure ;
@@ -196,34 +178,6 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	int iRV = xHttpClientExecuteRequest(&sRR, vArgs) ;
 	va_end(vArgs) ;
 	return iRV ;
-}
-
-// ###################################### WEATHER support ##########################################
-
-int xHttpGetWeather(void) {
-	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID=cf177bb6e86c95045841c63e99ad2ff4" ;
-	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
-			NULL, 0, NULL, 0,
-			httpHDR_VALUES(ctTextPlain,0,0,0),
-			16384, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
-}
-
-// ################################### How's my SSL support ########################################
-
-int	xHttpHowsMySSL(void) {
-	return xHttpRequest("www.howsmyssl.com", "GET /a/check", NULL,
-			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
-			httpHDR_VALUES(ctTextPlain,0,0,0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
-}
-
-// ####################################### Bad SSL support #########################################
-
-int	xHttpBadSSL(void) {
-	return xHttpRequest("www.badssl.com", "GET /dashboard", NULL,
-			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
-			httpHDR_VALUES(ctTextPlain,0,0,0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
 
 // ################################# Firmware Over The Air support #################################
@@ -576,12 +530,15 @@ int	xHttpClientRulesDownload(void) {
 int	xHttpClientIdentUpload(void * psRomID) {
 	return xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, "PATCH /ibuttons.dat",
 			"'%m' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\n",
-			NULL, 0, NULL, 0, httpHDR_VALUES(ctTextPlain, 0, 0, 0),
+			NULL, 0, 						// certificate info
+			NULL, 0, 						// read/write handler & size
+			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
 			psRomID) ;
 }
 
 // ################################## PUT core dump to host ########################################
+// ######################################### Unused API's ##########################################
 
 int xHttpClientCoredumpUploadCB(http_rr_t * psReq) {
 	int	iRV = erFAILURE ;
@@ -612,6 +569,13 @@ int xHttpClientCoredumpUploadCB(http_rr_t * psReq) {
 	}
 	return iRV ;
 }
+// https://www.iplocation.net/
+// EurekAPI.com (basic free 30day, 2017/06/06)
+#define	configHTTP_HOST_EUREKAPI	"api.eurekapi.com"
+#define	configHTTP_QUERY_EUREKAPI	"GET /iplocation/v1.8/locateip?key="keyEUREKA"&ip=%I&format=JSON&compact=Y"
+// free geo-ip service definition
+#define	configHTTP_HOST_FREE_GEO_IP	"freegeoip.net"
+#define	configHTTP_FORMAT_FREE_GEO_IP	"GET /json"
 
 typedef struct {
     uint32_t data_len;  // data length
@@ -625,19 +589,34 @@ typedef struct {
 #elif	defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
 	const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.elf" ;
 #endif
+// ###################################### WEATHER support ##########################################
 
 int	xHttpClientCoredumpUpload(void * pvPara) {
 	// for binary uploads the address and content length+type must be correct
 	esp_partition_iterator_t sIter ;
 	sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL) ;
 	IF_myASSERT(debugCOREDUMP, sIter != 0) ;
+int xHttpGetWeather(void) {
+	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID=cf177bb6e86c95045841c63e99ad2ff4" ;
+	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
+			NULL, 0, NULL, 0,
+			httpHDR_VALUES(ctTextPlain,0,0,0),
+			16384, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
+}
 
 	const esp_partition_t *	psPart = esp_partition_get(sIter) ;
 	IF_myASSERT(debugCOREDUMP, psPart != 0) ;
+// ################################### How's my SSL support ########################################
 
 	cd_hdr_t sCDhdr ;
 	int iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(sCDhdr)) ;
 	IF_PRINT(debugCOREDUMP, "L=%u  T=%u  TCB=%u  V=%-I\n", sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version) ;
+int	xHttpHowsMySSL(void) {
+	return xHttpRequest("www.howsmyssl.com", "GET /a/check", NULL,
+			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
+			httpHDR_VALUES(ctTextPlain,0,0,0),
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
+}
 
 	if ((iRV != ESP_OK) ||
 		(sCDhdr.data_len == sCDhdr.tasks_num && sCDhdr.tcb_sz == sCDhdr.version)) {
@@ -645,6 +624,7 @@ int	xHttpClientCoredumpUpload(void * pvPara) {
 				sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version);
 		iRV = erFAILURE;
 	}
+// ####################################### Bad SSL support #########################################
 
 	if (iRV == ESP_OK) {
 		iRV = xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, caQuery,
@@ -658,4 +638,9 @@ int	xHttpClientCoredumpUpload(void * pvPara) {
 	}
 	esp_partition_iterator_release(sIter) ;
 	return iRV ;
+int	xHttpBadSSL(void) {
+	return xHttpRequest("www.badssl.com", "GET /dashboard", NULL,
+			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
+			httpHDR_VALUES(ctTextPlain,0,0,0),
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
