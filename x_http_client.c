@@ -180,24 +180,6 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	return iRV ;
 }
 
-/**
- * @brief	step through multiple FW upgrade options till a valid option found or until all options done.
- * @return
- */
-int xHttpClientCheckUpgrades(bool bCheck) {
-	/* To create a hierarchy of firmware upgrades, we need to define a descending order:
-	 * #1 MAC address: "1234567890ab.bin"
-	 * #2 hardware platform: "device-specification-token.bin"
-	 * #3 to be defined
-	 */
-	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck) ;
-	if (allSYSFLAGS(sfRESTART) == 0)
-		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck) ;
-	if (bCheck == PERFORM)
-		SL_LOG(iRV == erFAILURE ? SL_SEV_ERROR : SL_SEV_INFO,"FWupg %s", iRV == erFAILURE ? "FAIL" : "Done") ;
-	return iRV ;
-}
-
 // ########################################## Location #############################################
 
 #define GooglePEM		"-----BEGIN CERTIFICATE-----\n"						\
@@ -472,6 +454,21 @@ int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,4), pvPara, pvPara) ;
 }
 
+/**
+ * @brief	step through multiple FW upgrade options till a valid option found or until all options done.
+ * @return
+ */
+int xHttpClientCheckUpgrades(bool bCheck) {
+	/* To create a hierarchy of firmware upgrades, we need to define a descending order:
+	 * #1 MAC address: "1234567890ab.bin"
+	 * #2 hardware platform: "device-specification-token.bin"
+	 * #3 to be defined
+	 */
+	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck) ;
+	if (allSYSFLAGS(sfRESTART) == 0)
+		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck) ;
+	if (bCheck == PERFORM)
+		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_INFO, "FWupg %s", iRV < erSUCCESS ? "FAIL" : "Done") ;
 	return iRV ;
 }
 
