@@ -64,14 +64,13 @@ int xHttpClientCheckUpgrades(bool bCheck) ;
 int xHttpGetLocation(void) ;
 int	xHttpGetElevation(void) ;
 int xHttpGetTimeZone(void) ;
-int	xHttpClientCheckGeoLoc(void) ;
 
 int	xHttpClientPushOver(const char * pcMess, uint32_t) ;
 
 int	xHttpClientRulesDownload(void) ;
 
 int	xHttpClientIdentUpload(void * pvPara) ;
-int	xHttpClientCoredumpUpload(void * pvPara) ;
+int	xHttpCoredumpUpload(void);
 
 #ifdef __cplusplus
 }
