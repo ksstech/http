@@ -181,33 +181,6 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 }
 
 /**
- * Check if a valid firmware upgrade exists
- * @return	1 if valid upgrade file exists
- * 			erSUCCESS if no newer upgrade file exists
- * 			erFAILURE if file not found/empty file/invalid content/connection closed
- */
-int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
-	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE)
-		return erFAILURE ;
-	http_rr_t * psRR = psParser->data ;
-	/* BuildSeconds			: halfway(?) time of running FW
-	 * hvLastModified		: creation time of available FW
-	 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
-	 *						: How much later must FW be to be considered new? */
-	#define	fotaMIN_DIF_SECONDS	120
-	int i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
-	IF_SL_INFO(debugTRACK, "'%s' found  %R vs %R  Diff=%d  FW %snewer",
-			psRR->pvArg, xTimeMakeTimestamp(psRR->hvLastModified, 0),
-			xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "NOT " : "") ;
-	if (i32Diff < 0) {
-		setSYSFLAGS(sfFW_LATEST);
-		return erSUCCESS;
-	}
-	clrSYSFLAGS(sfFW_LATEST);
-	return 1;
-}
-
-/**
  * Check if a valid download exists, if so, download and write to flash.
  * @param	psParser
  * @param	pBuf
@@ -470,6 +443,33 @@ int	xHttpClientFileDownloadCheck(http_parser * psParser) {
 		iRV = erSUCCESS ;
 	}
 	return iRV ;
+}
+
+/**
+ * Check if a valid firmware upgrade exists
+ * @return	1 if valid upgrade file exists
+ * 			erSUCCESS if no newer upgrade file exists
+ * 			erFAILURE if file not found/empty file/invalid content/connection closed
+ */
+int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
+	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE)
+		return erFAILURE ;
+	http_rr_t * psRR = psParser->data ;
+	/* BuildSeconds			: halfway(?) time of running FW
+	 * hvLastModified		: creation time of available FW
+	 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
+	 *						: How much later must FW be to be considered new? */
+	#define	fotaMIN_DIF_SECONDS	120
+	int i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
+	IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' found  %R vs %R  Diff=%d  FW %snewer",
+			psRR->pvArg, xTimeMakeTimestamp(psRR->hvLastModified, 0),
+			xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "NOT " : "") ;
+	if (i32Diff < 0) {
+		setSYSFLAGS(sfFW_LATEST);
+		return erSUCCESS;
+	}
+	clrSYSFLAGS(sfFW_LATEST);
+	return 1;
 }
 
 		}
