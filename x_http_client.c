@@ -339,22 +339,8 @@ int	xHttpGetElevation(void) {
 			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]) ;
 }
 
-// ############################## Combined GeoLoc dependent info ###################################
 // ################################# Firmware Over The Air support #################################
 
-int	xHttpClientCheckGeoLoc(void) {
-	int iRV = erSUCCESS;
-	if (sNVSvars.fGeoLoc == 0)
-		iRV = xHttpGetLocation();
-	if (iRV > erFAILURE) { 			// Elevation & TimeZone require Location
-		if (sNVSvars.fGeoTZ == 0) {
-			iRV = xHttpGetTimeZone();
-		} else {
-			sTZ.daylight = sNVSvars.daylight ;
-			sTZ.timezone = sNVSvars.timezone ;
-		}
-		if (sNVSvars.fGeoAlt == 0) {
-			iRV = xHttpGetElevation();
 int	xHttpClientFileDownloadCheck(http_parser * psParser) {
 	http_rr_t * psRR = psParser->data ;
 	int iRV = erFAILURE ;
@@ -638,3 +624,4 @@ int	xHttpBadSSL(void) {
 			httpHDR_VALUES(ctTextPlain,0,0,0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
+
