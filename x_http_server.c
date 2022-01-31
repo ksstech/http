@@ -384,7 +384,7 @@ void vHttpNotifyHandler(void) {
 	uint32_t fDone = 0;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
 		if (fRqst & reqCOREDUMP) {
-			xHttpClientCoredumpUpload(NULL) ;
+			xHttpCoredumpUpload();
 			fDone |= reqCOREDUMP;
 		}
 		if (fRqst & reqFW_UPGRADE) {
