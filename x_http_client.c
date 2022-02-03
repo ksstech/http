@@ -433,8 +433,8 @@ int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLe
 }
 
 int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
-	return xHttpRequest(HostInfo[sNVSvars.HostFOTA].pName, "GET /firmware/%s.bin", NULL,
-			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert,
+	return xHttpRequest(HostInfo[ioB2GET(ioHostFOTA)].pName, "GET /firmware/%s.bin", NULL,
+			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert,
 			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,4), pvPara, pvPara) ;
@@ -482,8 +482,8 @@ int xHttpCoredumpUpload(void) {
 		(sCDhdr.data_len == sCDhdr.tasks_num && sCDhdr.tcb_sz == sCDhdr.version)) {
 		xSyslogError(__FUNCTION__, iRV == erFAILURE);
 	} else {
-		iRV = xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, caQuery, halPART_Upload_CB,
-			HostInfo[sNVSvars.HostFOTA].pcCert,HostInfo[sNVSvars.HostFOTA].szCert,
+		iRV = xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, caQuery, halPART_Upload_CB,
+			HostInfo[ioB2GET(ioHostFOTA)].pcCert,HostInfo[ioB2GET(ioHostFOTA)].szCert,
 			NULL, sCDhdr.data_len,
 			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), (void *) psPart,
@@ -528,7 +528,7 @@ int xHttpClientRulesDownloadHandler(http_parser * psParser, const char * pBuf, s
 }
 
 int	xHttpClientRulesDownload(void) {
-	return xHttpRequest(HostInfo[sNVSvars.HostCONF].pName,
+	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName,
 			"GET /configs/%s.cfg", NULL, NULL,  xHttpClientRulesDownloadHandler, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
@@ -543,7 +543,7 @@ int	xHttpClientRulesDownload(void) {
  * @param[in]	pointer to tag ROM ID string
  */
 int	xHttpClientIdentUpload(void * psRomID) {
-	return xHttpRequest(HostInfo[sNVSvars.HostCONF].pName, "PATCH /ibuttons.dat",
+	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, "PATCH /ibuttons.dat",
 			"'%m' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\n",
 			NULL, 0, 						// certificate info
 			NULL, 0, 						// read/write handler & size
@@ -576,7 +576,7 @@ int xHttpGetWeather(void) {
 
 int	xHttpHowsMySSL(void) {
 	return xHttpRequest("www.howsmyssl.com", "GET /a/check", NULL,
-			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
+			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
@@ -585,7 +585,7 @@ int	xHttpHowsMySSL(void) {
 
 int	xHttpBadSSL(void) {
 	return xHttpRequest("www.badssl.com", "GET /dashboard", NULL,
-			HostInfo[sNVSvars.HostFOTA].pcCert, HostInfo[sNVSvars.HostFOTA].szCert, NULL, 0,
+			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
 }
