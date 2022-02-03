@@ -388,7 +388,13 @@ void vHttpNotifyHandler(void) {
 			fDone |= reqCOREDUMP;
 		}
 		if (fRqst & reqFW_UPGRADE) {
+			#if (SW_GUI == 2)
+			xRtosClearStateRUN(taskGUI_MASK);
+			#endif
 			xHttpClientCheckUpgrades(PERFORM);
+			#if (SW_GUI == 2)
+			xRtosSetStateRUN(taskGUI_MASK);
+			#endif
 			fDone |= reqFW_UPGRADE;
 		}
 		if (fRqst & reqFW_CHECK) {
