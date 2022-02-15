@@ -319,23 +319,25 @@ int xHttpServerResponseHandler(http_parser * psParser) {
 			nvs_wifi_t tmpWifi = { 0 } ;
 			i = 0 ;
 			// all IP parameter keys matched, parse them
-			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ssid) ;
-			if (iRV == erSUCCESS) iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.pswd);
+			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ap_info[0].ssid) ;
+			if (iRV == erSUCCESS)
+				iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ap_info[0].pswd);
 #if		(halNET_EXTEND_IP == 1)
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipNM) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipNM);
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipGW) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipGW);
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipSTA) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipSTA);
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS1) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS1);
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS2) ;
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS2);
 #endif
-			if (iRV == erSUCCESS) iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipMQTT);
+			if (iRV == erSUCCESS)
+				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipMQTT);
 			// Check if values allow successful Wifi connection (& persist if successful)
-			iRV = halWL_TestCredentials((char *) tmpWifi.ssid, (char *) tmpWifi.pswd) ;
+			iRV = halWL_TestCredentials(-1, (char *) tmpWifi.ap_info[0].ssid, (char *) tmpWifi.ap_info[0].pswd) ;
 			if (iRV == erSUCCESS) {						// inform client of success or not....
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 				psRR->pcBody	= (char *) HtmlAPconfigOK ;
