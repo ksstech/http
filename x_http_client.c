@@ -363,8 +363,10 @@ int	xHttpClientFileDownloadCheck(http_parser * psParser) {
  * 			erFAILURE if file not found/empty file/invalid content/connection closed
  */
 int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
-	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE)
-		return erFAILURE ;
+	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE) {
+		setSYSFLAGS(sfFW_LATEST);
+		return erFAILURE;
+	}
 	http_rr_t * psRR = psParser->data ;
 	/* BuildSeconds			: halfway(?) time of running FW
 	 * hvLastModified		: creation time of available FW
