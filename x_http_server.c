@@ -60,6 +60,16 @@ static	const char * const UrlTable[] = {
 	[urlAPI]		= "api",
 } ;
 
+static const char HtmlSTAdetails[] =
+	"<html><head><title>'IRMACOS: STA details'</title></head><body>"
+	"<h3>'IRMACOS: STA details'</h3>"
+	"<p>Manufacturer    : " halDEV_VENDOR "</p>"
+	"<p>Platform        : " halDEV_MODEL "</p>"
+	"<p>Wifi FW version : " mySTRINGIFY(DEV_WIFI_VER) "</p>"
+	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
+	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form>"
+	"</body></html>" ;
+
 static const char HtmlAPdetails[] =
 	"<html><head><title>'IRMACOS: AP details'</title></head>"
 	"<body><h3>'IRMACOS: AP details'</h3>"
@@ -76,16 +86,6 @@ static const char HtmlAPdetails[] =
 	"IP MQTT (w.x.y.z):<br><input type='text' name='mqtt' size='16' value='0.0.0.0'><br>"
 	"<br><input type='submit' value='Submit'>"
 	"</form></body></html>" ;
-
-static const char HtmlSTAdetails[] =
-	"<html><head><title>'IRMACOS: STA details'</title></head><body>"
-	"<h3>'IRMACOS: STA details'</h3>"
-	"<p>Manufacturer    : " halDEV_VENDOR "</p>"
-	"<p>Platform        : " halDEV_MODEL "</p>"
-	"<p>Wifi FW version : " mySTRINGIFY(DEV_WIFI_VER) "</p>"
-	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
-	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form>"
-	"</body></html>" ;
 
 static const char HtmlAPconfigOK[] =
 	"<html><body><h3>IRMACOS: AP details set, rebooting now..</h3>"
@@ -137,7 +137,7 @@ int xHttpServerSetResponseStatus(http_parser * psParser, int Status) {
 	return erSUCCESS ;
 }
 
-int	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
+int	xvHttpSendResponse(http_parser * psParser, const char * format, va_list vaList) {
 	http_rr_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
 	int iRV ;
@@ -152,76 +152,73 @@ int	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	if (psRR->hvContentType) {
 		iRV += socprintfx(&psRR->sCtx, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]);
 	}
-	va_list vArgs ;
-	va_start(vArgs, format) ;
 	/* The next line does not really print anything. By specifying the NULL as the string
 	 * pointer it performs a test print and simply return the number of characters that
 	 * would have been printed if a destination was specified.*/
-	psRR->hvContentLength = vsprintfx(NULL, format, vArgs) ;
+	psRR->hvContentLength = vsprintfx(NULL, format, vaList) ;
 	/* Now do the actual formatted print of the content length with an additional 2 chars
 	 * added for the extra CR + LF pair to form the blank line after the header values */
 	iRV += socprintfx(&psRR->sCtx, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2) ;
-	iRV += vsocprintfx(&psRR->sCtx, format, vArgs) ;				// add the actual content
-	va_end(vArgs) ;
+	iRV += vsocprintfx(&psRR->sCtx, format, vaList) ;				// add the actual content
 	iRV += socprintfx(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
+	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->f_debug, "Content:\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf);
+	return iRV ;
+}
 
-	IF_CPRINT(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->f_debug, "Content:\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf) ;
+int	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
+	va_list vaList;
+	va_start(vaList, format) ;
+	int iRV = xvHttpSendResponse(psParser, format, vaList);
+	va_end(vaList);
 	return iRV ;
 }
 
 int	xHttpServerParseString(char * pVal, char * pDst) {
-	if (xStringParseEncoded(pVal, pDst) == erFAILURE) {
+	if (xStringParseEncoded(pDst, pVal) == erFAILURE) {
 		return erFAILURE;
 	}
-	IF_CPRINT(debugTRACK && ioB1GET(ioHTTPtrack), "%s->%s\n", pVal, pDst) ;
+	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "%s->%s\n", pVal, pDst) ;
 	return erSUCCESS ;
 }
 
 int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
-	if (xStringParseEncoded(pSrc, NULL) == erFAILURE) {
+	if (xStringParseEncoded(NULL, pSrc) == erFAILURE) {
 		return erFAILURE;
 	}
-	IF_CPRINT(debugTRACK && ioB1GET(ioHTTPtrack), "%s->%s", pSrc) ;
+	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "%s->%s", pSrc) ;
 	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
 		*pDst = 0 ;
 		return erFAILURE ;
 	}
-	IF_CPRINT(debugTRACK && ioB1GET(ioHTTPtrack), " : %-I\n", *pDst) ;
+	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), " : 0x%08X\n", *pDst) ;
 	return erSUCCESS ;
 }
 
 // ######################################## URL handlers ###########################################
 
 int	xHttpHandle_API(http_parser * psParser) {
-	static const char format[] = "<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>" ;
-	http_rr_t * psRR = psParser->data ;
-	int iRV ;
+	http_rr_t * psRR = psParser->data;
+	xStdioBufLock(portMAX_DELAY);
+	setSYSFLAGS(sfRTCBUF_USE);
 	for (int i = 1; i < httpYUAREL_MAX_PARTS && psRR->parts[i] != NULL; ++i) {
-		char * pcCommand = psRR->parts[i] ;
-		xStringParseEncoded(pcCommand, pcCommand) ;
-		IF_CPRINT(debugTRACK && ioB1GET(ioHTTPtrack), "#%d = '%s'\n", i, pcCommand) ;
+		char * pcCommand = psRR->parts[i];
+		xStringParseEncoded(NULL, pcCommand);
+		IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "#%d = '%s'\n", i, pcCommand);
 		while (*pcCommand != 0) {
-			vCommandInterpret((int) *pcCommand, 0) ;
-			halVARS_CheckChanges();
-			++pcCommand ;
+			xCommandProcess((int) *pcCommand, 0, 0, NULL, NULL, NULL);
+			++pcCommand;
 		}
+		// At the end of each multi-character command, simulate a CR
 		if (pcCommand - psRR->parts[i] > 1) {
-			vCommandInterpret((int) '\r', 0) ;
+			xCommandProcess((int) '\r', 0, 0, NULL, NULL, NULL);
 		}
 	}
-	if (xStdioBufAvail() > 0) {
-		/* Definitive problem here if the volume of output from vCommandInterpret() exceed the
-		 * size of the buffer. In this case some content would have been overwritten and the
-		 * pointers would have wrapped and could point somewhere other than the start of the
-		 * buffer. In this case, the response as sent will be incomplete or invalid.
-		 * XXX change handling to accommodate sending 2 separate blocks
-		 */
-		iRV = xHttpSendResponse(psParser, format, xStdioBufAvail(), pcStdioBufTellRead()) ;
-		vStdioBufReset();
-	} else {
-		iRV = xHttpSendResponse(psParser, "<html><body><h2>Command completed</h2></body></html>") ;
-	}
-	return iRV ;
+	int iRV = xHttpSendResponse((void *) psParser,
+			"<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>",
+			xStdioBufAvail(), pcStdioBufTellRead());
+	clrSYSFLAGS(sfRTCBUF_USE);
+	xStdioBufUnLock();
+	return iRV;
 }
 
 // ################################### Common HTTP API functions ###################################
@@ -235,7 +232,7 @@ void vTaskHttpCloseServer(void) {
 		iRV = 0;
 	}
 	HttpState = stateHTTP_INIT ;
-	IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "server closed (%d)\n", iRV) ;
+	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "server closed (%d)\n", iRV) ;
 }
 
 void vTaskHttpCloseClient(void) {
@@ -247,7 +244,7 @@ void vTaskHttpCloseClient(void) {
 		iRV = 0;
 	}
 	HttpState = stateHTTP_WAITING;
-	IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "client closed (%d)\n", iRV);
+	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "client closed (%d)\n", iRV);
 }
 
 void vTaskHttpDeInit(void) {
@@ -303,13 +300,13 @@ int xHttpServerResponseHandler(http_parser * psParser) {
 		i = 0 ;
 		if ((strcmp(psRR->params[i++].key, halSTORAGE_KEY_SSID) != 0)	||
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_PSWD) != 0)	||
-#if		(halNET_EXTEND_IP == 1)
+			#if	(halNET_EXTEND_IP == 1)
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_NM)	!= 0)	||
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_GW)	!= 0)	||
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_IP)	!= 0)	||
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_DNS1) != 0)	||
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_DNS2) != 0)	||
-#endif
+			#endif
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_MQTT) != 0)) {
 			// missing/corrupted/wrong key for an IP parameter, stop parsing & complain...
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST) ;
@@ -322,7 +319,7 @@ int xHttpServerResponseHandler(http_parser * psParser) {
 			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ap_info[0].ssid) ;
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ap_info[0].pswd);
-#if		(halNET_EXTEND_IP == 1)
+			#if	(halNET_EXTEND_IP == 1)
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipNM);
 			if (iRV == erSUCCESS)
@@ -333,7 +330,7 @@ int xHttpServerResponseHandler(http_parser * psParser) {
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS1);
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS2);
-#endif
+			#endif
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipMQTT);
 			// Check if values allow successful Wifi connection (& persist if successful)
@@ -373,7 +370,7 @@ int xHttpServerResponseHandler(http_parser * psParser) {
 		iRV = psRR->hdlr_rsp(psParser) ;			// Add dynamic content to buffer via callback
 	} else {
 		iRV = xHttpSendResponse(psParser, psRR->pcBody);
-		IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "Response sent iRV=%d\n", iRV);
+		IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "Response sent iRV=%d\n", iRV);
 	}
 	if (sServHttpCtx.maxTx < iRV) {
 		sServHttpCtx.maxTx = iRV;
@@ -406,17 +403,17 @@ void vHttpNotifyHandler(void) {
 		if (allSYSFLAGS(sfRESTART) == 0) {
 			if (fRqst & reqGEOLOC) {
 				xHttpGetLocation();
-				if (sNVSvars.fGeoLoc)
+				if (sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON])
 					fDone |= reqGEOLOC;
 			}
 			if (fRqst & reqGEOTZ) {
 				xHttpGetTimeZone();
-				if (sNVSvars.fGeoTZ)
+				if (sNVSvars.sTZ.TZid[0])
 					fDone |= reqGEOTZ;
 			}
 			if (fRqst & reqGEOALT) {
 				xHttpGetElevation();
-				if (sNVSvars.fGeoAlt)
+				if (sNVSvars.GeoLocation[geoALT])
 					fDone |= reqGEOALT;
 			}
 		} else if (fRqst & (reqGEOLOC | reqGEOTZ | reqGEOALT)) {
@@ -424,7 +421,7 @@ void vHttpNotifyHandler(void) {
 			SL_NOT("GeoXXX discarded, need to restart");
 		}
 		if (fDone) {
-			IF_TTL(debugREQUEST, "  fRqst=0x%X  fDone=0x%X\n", fRqst, fDone);
+			IF_PTL(debugREQUEST, "  fRqst=0x%X  fDone=0x%X\n", fRqst, fDone);
 			ulTaskNotifyValueClear(NULL, fDone);
 		}
 	}
@@ -438,7 +435,7 @@ void vHttpNotifyHandler(void) {
  * 	Serve HTML to capture SSID & PSWD from client
  * 	Respond to /restart (as emergency)
  */
-void vTaskHttp(void * pvParameters) {
+void vHttpTask(void * pvParameters) {
 	int	iRV, iRV2;
 	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP_MASK) ;
 	sRR.sUB.pBuf = pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;
@@ -447,8 +444,8 @@ void vTaskHttp(void * pvParameters) {
 
 	while (bRtosVerifyState(taskHTTP_MASK)) {
 		if (HttpState != stateHTTP_DEINIT) {
-			EventBits_t CurStat = xRtosWaitStatusANY(flagL3_ANY, pdMS_TO_TICKS(httpINTERVAL_MS));
-			if ((CurStat & (flagL3_ANY)) == 0) {
+			EventBits_t CurStat = xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(httpINTERVAL_MS));
+			if (((CurStat & flagL3_STA) != flagL3_STA) && ((CurStat & flagLX_SAP) != flagLX_SAP)) {
 				continue;
 			}
 		}
@@ -462,7 +459,7 @@ void vTaskHttp(void * pvParameters) {
 			break ;					// must NOT fall through since the Lx status might have changed
 
 		case stateHTTP_INIT:
-			IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "init\n") ;
+			IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "init\n") ;
 			memset(&sServHttpCtx, 0 , sizeof(sServHttpCtx)) ;
 			sServHttpCtx.sa_in.sin_family	= AF_INET ;
 			sServHttpCtx.type				= SOCK_STREAM ;
@@ -475,7 +472,7 @@ void vTaskHttp(void * pvParameters) {
 			}
 			xRtosSetStatus(flagHTTP_SERV) ;
 			HttpState = stateHTTP_WAITING ;
-			IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "waiting\n") ;
+			IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "waiting\n") ;
 			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_WAITING:
@@ -494,13 +491,13 @@ void vTaskHttp(void * pvParameters) {
 			}
 			xRtosSetStatus(flagHTTP_CLNT) ;			// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED ;
-			IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "connected\n") ;
+			IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "connected\n") ;
 			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_CONNECTED:
 			iRV = xNetRead(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size) ;
 			if (iRV > 0) {							// read something ?
-				IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "start parsing\n") ;
+				IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "start parsing\n") ;
 				if (sServHttpCtx.maxRx < iRV) {
 					sServHttpCtx.maxRx = iRV;
 				}
@@ -524,15 +521,11 @@ void vTaskHttp(void * pvParameters) {
 //				sRR.f_debug			= 1 ;				// enable debug output
 				sRR.sUB.Used		= iRV ;
 				iRV = xHttpCommonDoParsing(&sParser) ;
-				IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "Parsing done\n") ;
+				IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "Parsing done\n") ;
 				if (iRV > 0) {							// build response if something was parsed....
-					IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "start response handler\n");
-					xStdioBufLock(portMAX_DELAY);
-					setSYSFLAGS(sfRTCBUF_USE);
+					IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "start response handler\n");
 					iRV2 = xHttpServerResponseHandler(&sParser);
-					clrSYSFLAGS(sfRTCBUF_USE);
-					xStdioBufUnLock();
-					IF_CTL(debugTRACK && ioB1GET(ioHTTPtrack), "Tx done (%d)\n", iRV2) ;
+					IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "Tx done (%d)\n", iRV2) ;
 				} else {
 					iRV2 = erSUCCESS;
 				}
@@ -555,11 +548,11 @@ void vTaskHttp(void * pvParameters) {
 	vRtosTaskDelete(NULL) ;
 }
 
-void vTaskHttpStatus(void) {
+void vHttpStartStop(void) {
 	if (ioB1GET(ioHTTPstart)) {
 		xRtosClearStateRUN(taskHTTP_MASK);
 		xRtosClearStateDELETE(taskHTTP_MASK);
-		xRtosTaskCreate(vTaskHttp, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, &HttpHandle, tskNO_AFFINITY);
+		xRtosTaskCreate(vHttpTask, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, &HttpHandle, tskNO_AFFINITY);
 	} else {
 		vRtosTaskTerminate(taskHTTP_MASK);
 	}
