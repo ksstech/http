@@ -150,9 +150,9 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	sRR.hvValues		= hvValues ;
 	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
 	sRR.pvArg			= pvArg ;
-	IF_CPRINT(debugREQUEST, "H='%s'  Q='%s'  cb=%p  hv=%-I  B=",
+	IF_RP(debugREQUEST, "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=",
 			sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
-	IF_CPRINT(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p\n" : "%s\n", sRR.pVoid);
+	IF_RP(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p\n" : "%s\n", sRR.pVoid);
 	IF_myASSERT(debugREQUEST, sRR.hvContentType != ctUNDEFINED);
 
 	if (pcCert) {
@@ -222,13 +222,11 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 		}
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
-		sNVSvars.fGeoLoc = 1 ;
 		setSYSFLAGS(vfLOCATION);
 		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLocation[geoLAT],
 				sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
 		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else {
-		sNVSvars.fGeoLoc = 0;
 		SL_ERR("Error parsing '%s' key", pKey);
 	}
 	if (psTokenList)
@@ -262,23 +260,21 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 		x32_t	xVal ;
 		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "dstOffset", &xVal.i32, vfIXX) ;
 		if (iRV >= erSUCCESS) {
-			sTZ.daylight = sNVSvars.daylight = xVal.i32;	// convert i32 -> i16 & store
+			sNVSvars.sTZ.daylight = xVal.i32;			// convert i32 -> i16 & store
 			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "rawOffset", &xVal.i32, vfIXX) ;
 			if (iRV >= erSUCCESS) {
-				sTZ.timezone = sNVSvars.timezone = xVal.i32;	// store value
-				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneId", sNVSvars.TimeZoneId, vfSXX) ;
+				sNVSvars.sTZ.timezone = xVal.i32;		// store value
+				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneId", sNVSvars.sTZ.TZid, vfSXX);
 				if (iRV >= erSUCCESS)
-					iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneName", sNVSvars.TimeZoneName, vfSXX) ;
+					iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneName", sNVSvars.sTZ.TZname, vfSXX) ;
 			}
 		}
 	}
-	if (iRV >= erSUCCESS && sNVSvars.TimeZoneId[0] && sNVSvars.TimeZoneName[0]) {
-		sNVSvars.fGeoTZ = 1 ;
+	if (iRV >= erSUCCESS && sNVSvars.sTZ.TZid[0] && sNVSvars.sTZ.TZname[0]) {
 		setSYSFLAGS(vfTIMEZONE);
-		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->pcTZName) ;
-		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
+		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->TZname) ;
+		IF_EXEC_4(debugTRACK && ioB1GET(ioP_JSON), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else {
-		sNVSvars.fGeoTZ = 0;
 		SL_ERR("Error parsing '%s' key", pKey);
 	}
 	if (psTokenList)
@@ -315,12 +311,10 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "resolution", &sNVSvars.GeoLocation[geoRES], vfFXX) ;
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoALT]) {
-		sNVSvars.fGeoAlt = 1 ;
 		setSYSFLAGS(vfELEVATION);
 		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]);
 		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0);
 	} else {
-		sNVSvars.fGeoAlt = 0;
 		SL_ERR("Error parsing '%s' key", pKey);
 	}
 	if (psTokenList)
