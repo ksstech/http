@@ -71,7 +71,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
 	uprintfx(&psRR->sUB, "\r\n") ;
-	IF_PRINT(debugREQUEST && psRR->f_debug, "Content:\n%.*s\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
+	IF_P(debugREQUEST && psRR->f_debug, "Content:\n%.*s\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
 	return psRR->sUB.Used ;
 }
 
@@ -110,19 +110,19 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 					psRR->sUB.Used = iRV ;
 					iRV = xHttpCommonDoParsing(&sParser) ;	// return erFAILURE or some 0+ number
 				} else {
-					IF_PRINT(debugREQUEST, " nothing read ie to parse\n") ;
+					IF_P(debugREQUEST, " nothing read ie to parse\n") ;
 					iRV = erFAILURE ;
 				}
 			} else {
-				IF_PRINT(debugREQUEST, " nothing written (by handler) so can't expect to read\n") ;
+				IF_P(debugREQUEST, " nothing written (by handler) so can't expect to read\n") ;
 				iRV = erFAILURE ;
 			}
 		} else {
-			IF_PRINT(debugREQUEST, " no header written, so can't expect to read\n") ;
+			IF_P(debugREQUEST, " no header written, so can't expect to read\n") ;
 			iRV = erFAILURE ;
 		}
 	} else {
-		IF_PRINT(debugREQUEST, " open/connect error (%d)\n", iRV) ;
+		IF_P(debugREQUEST, " open/connect error (%d)\n", iRV) ;
 		iRV = erFAILURE ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
@@ -273,7 +273,7 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 	if (iRV >= erSUCCESS && sNVSvars.sTZ.TZid[0] && sNVSvars.sTZ.TZname[0]) {
 		setSYSFLAGS(vfTIMEZONE);
 		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->TZname) ;
-		IF_EXEC_4(debugTRACK && ioB1GET(ioP_JSON), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
+		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else {
 		SL_ERR("Error parsing '%s' key", pKey);
 	}
