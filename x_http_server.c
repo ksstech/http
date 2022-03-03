@@ -199,7 +199,6 @@ int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
 int	xHttpHandle_API(http_parser * psParser) {
 	http_rr_t * psRR = psParser->data;
 	xStdioBufLock(portMAX_DELAY);
-	setSYSFLAGS(sfRTCBUF_USE);
 	for (int i = 1; i < httpYUAREL_MAX_PARTS && psRR->parts[i] != NULL; ++i) {
 		char * pcCommand = psRR->parts[i];
 		xStringParseEncoded(NULL, pcCommand);
@@ -216,7 +215,6 @@ int	xHttpHandle_API(http_parser * psParser) {
 	int iRV = xHttpSendResponse((void *) psParser,
 			"<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>",
 			xStdioBufAvail(), pcStdioBufTellRead());
-	clrSYSFLAGS(sfRTCBUF_USE);
 	xStdioBufUnLock();
 	return iRV;
 }
