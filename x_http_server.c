@@ -462,7 +462,7 @@ void vHttpTask(void * pvParameters) {
 			sServHttpCtx.sa_in.sin_family	= AF_INET ;
 			sServHttpCtx.type				= SOCK_STREAM ;
 			sServHttpCtx.sa_in.sin_port		= htons(IP_PORT_HTTP) ;
-			sServHttpCtx.flags				|= SO_REUSEADDR ;
+			sServHttpCtx.flags				= SO_REUSEADDR;
 			iRV = xNetOpen(&sServHttpCtx) ;
 			if (iRV < erSUCCESS) {
 				HttpState = stateHTTP_DEINIT ;

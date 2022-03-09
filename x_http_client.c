@@ -98,6 +98,7 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 	psRR->sCtx.sa_in.sin_family	= AF_INET ;
 	if (psRR->sCtx.sa_in.sin_port == 0)
 		psRR->sCtx.sa_in.sin_port = htons(psRR->sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
+	psRR->sCtx.flags = SO_REUSEADDR ;
 	int iRV = xNetOpen(&psRR->sCtx) ;
 	if (iRV == erSUCCESS) {								// if socket=open, write request
 		iRV = xNetWrite(&psRR->sCtx, psRR->sUB.pBuf, xLen) ;
