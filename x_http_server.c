@@ -185,7 +185,7 @@ int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
 	if (xStringParseEncoded(NULL, pSrc) == erFAILURE) {
 		return erFAILURE;
 	}
-	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "%s->%s", pSrc) ;
+	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "%s", pSrc) ;
 	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
 		*pDst = 0 ;
 		return erFAILURE ;
