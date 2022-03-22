@@ -1,6 +1,6 @@
 /*
  * http_client.c
- * Copyright 2014-20 Andre M Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-22 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
 #include	"hal_variables.h"
