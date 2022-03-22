@@ -198,25 +198,16 @@ int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
 
 int	xHttpHandle_API(http_parser * psParser) {
 	http_rr_t * psRR = psParser->data;
-	xStdioBufLock(portMAX_DELAY);
-	for (int i = 1; i < httpYUAREL_MAX_PARTS && psRR->parts[i] != NULL; ++i) {
-		char * pcCommand = psRR->parts[i];
-		xStringParseEncoded(NULL, pcCommand);
-		IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "#%d = '%s'\n", i, pcCommand);
-		while (*pcCommand != 0) {
-			xCommandProcess((int) *pcCommand, 0, 0, NULL, NULL, NULL);
-			++pcCommand;
-		}
-		// At the end of each multi-character command, simulate a CR
-		if (pcCommand - psRR->parts[i] > 1) {
-			xCommandProcess((int) '\r', 0, 0, NULL, NULL, NULL);
-		}
-	}
-	int iRV = xHttpSendResponse((void *) psParser,
-			"<html><body><h2>Function result</h2><pre>%.*s</pre></body></html>",
-			xStdioBufAvail(), pcStdioBufTellRead());
-	xStdioBufUnLock();
-	return iRV;
+	// XXX This version will ONLY handle the 1st part of the command(s) received.....
+	xStringParseEncoded(NULL, psRR->parts[1]);
+	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "'%s'\n", psRR->parts[1]);
+	#if (buildNEW_CODE == 1)
+	xCommandProcessString(psRR->parts[1], 0, NULL, NULL, NULL);
+	#else
+	xCommandProcessString(psRR->parts[1], 0, 0, NULL, NULL, NULL);
+	#endif
+	return xHttpSendResponse((void *) psParser, "<html><body><h2>Result</h2><pre>%.*s</pre></body></html>",
+		xStdioBufAvail(), pcStdioBufTellRead());
 }
 
 // ################################### Common HTTP API functions ###################################
