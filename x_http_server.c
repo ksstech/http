@@ -213,25 +213,15 @@ int	xHttpHandle_API(http_parser * psParser) {
 // ################################### Common HTTP API functions ###################################
 
 void vTaskHttpCloseServer(void) {
-	int iRV;
 	xRtosClearStatus(flagHTTP_SERV);
-	if (sServHttpCtx.sd > 0) {
-		iRV = xNetClose(&sServHttpCtx);
-	} else {
-		iRV = 0;
-	}
+	int iRV = (sServHttpCtx.sd > 0) ? xNetClose(&sServHttpCtx) : 0;
 	HttpState = stateHTTP_INIT ;
 	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "server closed (%d)\n", iRV) ;
 }
 
 void vTaskHttpCloseClient(void) {
-	int iRV;
 	xRtosClearStatus(flagHTTP_CLNT);
-	if (sRR.sCtx.sd > 0) {
-		iRV = xNetClose(&sRR.sCtx);
-	} else {
-		iRV = 0;
-	}
+	int iRV = (sRR.sCtx.sd > 0) ? xNetClose(&sRR.sCtx) : 0;
 	HttpState = stateHTTP_WAITING;
 	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "client closed (%d)\n", iRV);
 }
