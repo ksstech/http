@@ -115,7 +115,7 @@ http_rr_t	sRR = { 0 } ;
 
 // ################################## local/static support functions ###############################
 
-int xHttpServerSetResponseStatus(http_parser * psParser, int Status) {
+static int xHttpServerSetResponseStatus(http_parser * psParser, int Status) {
 	http_rr_t * psRR	= psParser->data ;
 	psParser->status_code	= Status ;
 
@@ -137,7 +137,7 @@ int xHttpServerSetResponseStatus(http_parser * psParser, int Status) {
 	return erSUCCESS ;
 }
 
-int	xvHttpSendResponse(http_parser * psParser, const char * format, va_list vaList) {
+static int xvHttpSendResponse(void * pV, const char * format, va_list vaList) {
 	http_rr_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
 	int iRV ;
@@ -162,10 +162,10 @@ int	xvHttpSendResponse(http_parser * psParser, const char * format, va_list vaLi
 	iRV += vsocprintfx(&psRR->sCtx, format, vaList) ;				// add the actual content
 	iRV += socprintfx(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
 	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->f_debug, "Content:\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf);
-	return iRV ;
+	return iRV;
 }
 
-int	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
+static int xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	va_list vaList;
 	va_start(vaList, format) ;
 	int iRV = xvHttpSendResponse(psParser, format, vaList);
@@ -173,7 +173,7 @@ int	xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 	return iRV ;
 }
 
-int	xHttpServerParseString(char * pVal, char * pDst) {
+static int xHttpServerParseString(char * pVal, char * pDst) {
 	if (xStringParseEncoded(pDst, pVal) == erFAILURE) {
 		return erFAILURE;
 	}
@@ -181,7 +181,7 @@ int	xHttpServerParseString(char * pVal, char * pDst) {
 	return erSUCCESS ;
 }
 
-int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
+static int xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
 	if (xStringParseEncoded(NULL, pSrc) == erFAILURE) {
 		return erFAILURE;
 	}
@@ -196,7 +196,7 @@ int	xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
 
 // ######################################## URL handlers ###########################################
 
-int	xHttpHandle_API(http_parser * psParser) {
+static int xHttpHandle_API(http_parser * psParser) {
 	http_rr_t * psRR = psParser->data;
 	// XXX This version will ONLY handle the 1st part of the command(s) received.....
 	xStringParseEncoded(NULL, psRR->parts[1]);
@@ -212,21 +212,21 @@ int	xHttpHandle_API(http_parser * psParser) {
 
 // ################################### Common HTTP API functions ###################################
 
-void vTaskHttpCloseServer(void) {
+static void vTaskHttpCloseServer(void) {
 	xRtosClearStatus(flagHTTP_SERV);
 	int iRV = (sServHttpCtx.sd > 0) ? xNetClose(&sServHttpCtx) : 0;
 	HttpState = stateHTTP_INIT ;
 	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "server closed (%d)\n", iRV) ;
 }
 
-void vTaskHttpCloseClient(void) {
+static void vTaskHttpCloseClient(void) {
 	xRtosClearStatus(flagHTTP_CLNT);
 	int iRV = (sRR.sCtx.sd > 0) ? xNetClose(&sRR.sCtx) : 0;
 	HttpState = stateHTTP_WAITING;
 	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "client closed (%d)\n", iRV);
 }
 
-void vTaskHttpDeInit(void) {
+static void vTaskHttpDeInit(void) {
 	vTaskHttpCloseClient();
 	vTaskHttpCloseServer();
 }
@@ -237,7 +237,7 @@ void vTaskHttpDeInit(void) {
  * @param psParser
  * @return	size of the response created (bytes)
  */
-int xHttpServerResponseHandler(http_parser * psParser) {
+static int xHttpServerResponseHandler(http_parser * psParser) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psParser->data)) ;
 	http_rr_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
@@ -357,7 +357,7 @@ int xHttpServerResponseHandler(http_parser * psParser) {
 	return iRV ;
 }
 
-void vHttpNotifyHandler(void) {
+static void vHttpNotifyHandler(void) {
 	static uint32_t fRqst = 0;
 	uint32_t fDone = 0;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
@@ -414,7 +414,7 @@ void vHttpNotifyHandler(void) {
  * 	Serve HTML to capture SSID & PSWD from client
  * 	Respond to /restart (as emergency)
  */
-void vHttpTask(void * pvParameters) {
+static void vHttpTask(void * pvParameters) {
 	int	iRV, iRV2;
 	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP_MASK) ;
 	sRR.sUB.pBuf = pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE) ;

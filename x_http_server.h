@@ -34,7 +34,6 @@ enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNEC
 
 // ###################################### public functions #########################################
 
-int xHttpServerSetResponseStatus(http_parser * psParser, int Status) ;
 void vHttpTask(void * pvParameters) ;
 void vHttpStartStop(void) ;
 void vHttpReport(void) ;
