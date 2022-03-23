@@ -138,6 +138,7 @@ static int xHttpServerSetResponseStatus(http_parser * psParser, int Status) {
 }
 
 static int xvHttpSendResponse(void * pV, const char * format, va_list vaList) {
+	http_parser * psParser = pV;
 	http_rr_t * psRR = psParser->data ;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
 	int iRV ;
@@ -201,13 +202,10 @@ static int xHttpHandle_API(http_parser * psParser) {
 	// XXX This version will ONLY handle the 1st part of the command(s) received.....
 	xStringParseEncoded(NULL, psRR->parts[1]);
 	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "'%s'\n", psRR->parts[1]);
-	#if (buildNEW_CODE == 1)
-	xCommandProcessString(psRR->parts[1], 0, NULL, NULL, NULL);
-	#else
-	xCommandProcessString(psRR->parts[1], 0, 0, NULL, NULL, NULL);
-	#endif
-	return xHttpSendResponse((void *) psParser, "<html><body><h2>Result</h2><pre>%.*s</pre></body></html>",
-		xStdioBufAvail(), pcStdioBufTellRead());
+	int iRV = xCommandProcessString(psRR->parts[1], 0, xvHttpSendResponse, (void *) psParser,
+		"<html><body><h2>Result</h2><pre>%.*s</pre></body></html>", xStdioBufAvail(), pcStdioBufTellRead());
+	vStdioBufReset();
+	return iRV;
 }
 
 // ################################### Common HTTP API functions ###################################
