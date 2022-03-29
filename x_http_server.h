@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-21 Andre M. Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  * x_http_server.h
  */
 
@@ -34,7 +34,6 @@ enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNEC
 
 // ###################################### public functions #########################################
 
-void vHttpTask(void * pvParameters) ;
 void vHttpStartStop(void) ;
 void vHttpReport(void) ;
 
