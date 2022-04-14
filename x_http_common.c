@@ -126,7 +126,7 @@ int xHttpCommonUrlHandler(http_parser * psP, const char* pBuf, size_t xLen) {
 	}
 
 	if (psRes->f_query == 1) {
-		psRes->NumQuery	= yuarel_parse_query(psRes->url.query, '&', psRes->params, httpYUAREL_MAX_QUERY) ;
+		psRes->NumQuery	= yuarel_parse_query(psRes->url.query, CHR_AMPERSAND, psRes->params, httpYUAREL_MAX_QUERY) ;
 		psRes->NumQuery = (psRes->NumQuery == erFAILURE) ? 0 : psRes->NumQuery ;
 	} else {
 		psRes->NumQuery = 0 ;
