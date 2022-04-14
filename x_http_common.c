@@ -238,13 +238,13 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 		if (iRV > erSUCCESS) {							// print parsed tokens
 			iRV = xJsonPrintTokens(pcBuf, psTokenList, iRV, 0) ;
 		} else {
-			IF_P(debugTRACK && psReq->f_debug, "BODY (json)\n%!'+B", xLen, pcBuf) ;	// not parsed, just dump...
+			IF_P(debugTRACK && psReq->f_debug, "BODY (json)\n%!`+B", xLen, pcBuf) ;	// not parsed, just dump...
 		}
 		if (psTokenList) vRtosFree(psTokenList) ;
 		break ;
 	}
 	default:
-		IF_P(debugTRACK && psReq->f_debug, "BODY (other)\n%!'+B", xLen, pcBuf) ;
+		IF_P(debugTRACK && psReq->f_debug, "BODY (other)\n%!`+B", xLen, pcBuf) ;
 	}
     return erSUCCESS ;
 }
