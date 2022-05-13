@@ -110,6 +110,7 @@ static const char HtmlErrorBadQuery[] =
 uint8_t		HttpState ;
 netx_t		sServHttpCtx ;
 http_rr_t	sRR = { 0 } ;
+static uint32_t fRqst = 0;
 
 // ###################################### global variables #########################################
 
@@ -357,8 +358,8 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 }
 
 static void vHttpNotifyHandler(void) {
-	static uint32_t fRqst = 0;
 	uint32_t fDone = 0;
+	int iRV;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
 		if (fRqst & reqCOREDUMP) {
 			xHttpCoredumpUpload();
@@ -380,26 +381,29 @@ static void vHttpNotifyHandler(void) {
 		}
 		if (allSYSFLAGS(sfRESTART) == 0) {
 			if (fRqst & reqGEOLOC) {
-				xHttpGetLocation();
-				if (sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON])
+				iRV = xHttpGetLocation();
+				if (iRV > erFAILURE && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
 					fDone |= reqGEOLOC;
+				}
 			}
 			if (fRqst & reqGEOTZ) {
-				xHttpGetTimeZone();
-				if (sNVSvars.sTZ.TZid[0])
+				iRV = xHttpGetTimeZone();
+				if (iRV > erFAILURE && sNVSvars.sTZ.TZid[0]) {
 					fDone |= reqGEOTZ;
+				}
 			}
 			if (fRqst & reqGEOALT) {
-				xHttpGetElevation();
-				if (sNVSvars.GeoLocation[geoALT])
+				iRV = xHttpGetElevation();
+				if (iRV > erFAILURE && sNVSvars.GeoLocation[geoALT]) {
 					fDone |= reqGEOALT;
+				}
 			}
 		} else if (fRqst & (reqGEOLOC | reqGEOTZ | reqGEOALT)) {
 			fDone |= (reqGEOLOC | reqGEOTZ | reqGEOALT);
 			SL_NOT("GeoXXX discarded, need to restart");
 		}
 		if (fDone) {
-			IF_PTL(debugREQUEST, "  fRqst=0x%X  fDone=0x%X\n", fRqst, fDone);
+			IF_PTL(debugREQUEST, "fRqst=0x%X  fDone=0x%X\n", fRqst, fDone);
 			ulTaskNotifyValueClear(NULL, fDone);
 		}
 	}
@@ -423,7 +427,7 @@ static void vHttpTask(void * pvParameters) {
 	while (bRtosVerifyState(taskHTTP_MASK)) {
 		if (HttpState != stateHTTP_DEINIT) {
 			EventBits_t CurStat = xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(httpINTERVAL_MS));
-			if (((CurStat & flagL3_STA) != flagL3_STA) && ((CurStat & flagLX_SAP) != flagLX_SAP)) {
+			if ((CurStat & flagL3_STA) != flagL3_STA && (CurStat & flagLX_SAP) != flagLX_SAP) {
 				continue;
 			}
 		}
@@ -539,7 +543,7 @@ void vHttpStartStop(void) {
 void vHttpReport(void) {
 	if (bRtosCheckStatus(flagHTTP_SERV) == 1) {
 		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0);
-		printfx("\tFSM=%d  maxTX=%u  maxRX=%u\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx) ;
+		printfx("\tFSM=%d  maxTX=%u  maxRX=%u  Rqst=0x%X\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx, fRqst) ;
 	}
 	if (bRtosCheckStatus(flagHTTP_CLNT) == 1) {
 		xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0);
