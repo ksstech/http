@@ -361,7 +361,7 @@ int	xHttpClientFileDownloadCheck(http_parser * psParser) {
  */
 int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE) {
-		setSYSFLAGS(sfFW_LATEST);
+		setSYSFLAGS(sfFW_OK);
 		return erFAILURE;
 	}
 	http_rr_t * psRR = psParser->data ;
@@ -375,10 +375,10 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
 			psRR->pvArg, xTimeMakeTimestamp(psRR->hvLastModified, 0),
 			xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "NOT " : "") ;
 	if (i32Diff < 0) {
-		setSYSFLAGS(sfFW_LATEST);
+		setSYSFLAGS(sfFW_OK);
 		return erSUCCESS;
 	}
-	clrSYSFLAGS(sfFW_LATEST);
+	clrSYSFLAGS(sfFW_OK);
 	return 1;
 }
 
