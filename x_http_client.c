@@ -473,12 +473,9 @@ int xHttpCoredumpUpload(void) {
 
 	struct cd_hdr_s { uint32_t data_len, version, tasks_num, tcb_sz; } sCDhdr;
 	int iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(struct cd_hdr_s));
-	SL_WARN("L=%u  T=%u  TCB=%u  V=%-I", sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version);
+	SL_WARN("iRV=%d  L=%u  T=%u  TCB=%u  V=%-I", iRV, sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version);
 
-	if ((iRV != ESP_OK) ||
-		(sCDhdr.data_len == sCDhdr.tasks_num && sCDhdr.tcb_sz == sCDhdr.version)) {
-		xSyslogError(__FUNCTION__, iRV == erFAILURE);
-	} else {
+	if (iRV == ESP_OK && (sCDhdr.data_len != sCDhdr.tasks_num && sCDhdr.tcb_sz != sCDhdr.version)) {
 		iRV = xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, caQuery, halPART_Upload_CB,
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert,HostInfo[ioB2GET(ioHostFOTA)].szCert,
 			NULL, sCDhdr.data_len,
