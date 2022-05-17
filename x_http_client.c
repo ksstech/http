@@ -116,7 +116,7 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 	sParser.data = psRR ;
 
 	// setup the ubuf_t structure for printing
-	xUBufCreate(&psRR->sUB, NULL, psRR->sUB.Size, 0) ;
+	psUBufCreate(&psRR->sUB, NULL, psRR->sUB.Size, 0) ;
 
 	psRR->VaList = vArgs ;
 	int xLen = xHttpBuildHeader(&sParser) ;
