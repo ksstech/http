@@ -412,7 +412,7 @@ int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLe
 		if (sFI.xDone == sFI.xFull)
 			break;
 		IF_SYSTIMER_START(debugTIMING, stFOTA);
-		iRV = xNetReadBlocks(&psReq->sCtx, (char *) (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
+		iRV = xNetReadBlocks(&psReq->sCtx, (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
 		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
 		if (iRV > 0) {
 			sFI.xLen = iRV;

@@ -1,11 +1,10 @@
 /*
- * Copyright 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
+ * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
 #include <string.h>
 
 #include "hal_variables.h"
-//#include "hal_usart.h"
 #include "hal_stdio.h"
 
 #include "x_http_server.h"
@@ -110,7 +109,7 @@ static const char HtmlErrorBadQuery[] =
 uint8_t		HttpState ;
 netx_t		sServHttpCtx ;
 http_rr_t	sRR = { 0 } ;
-static uint32_t fRqst = 0;
+static u32_t fRqst = 0;
 
 // ###################################### global variables #########################################
 
@@ -184,7 +183,7 @@ static int xHttpServerParseString(char * pVal, char * pDst) {
 	return erSUCCESS ;
 }
 
-static int xHttpServerParseIPaddress(char * pSrc, uint32_t * pDst) {
+static int xHttpServerParseIPaddress(char * pSrc, u32_t * pDst) {
 	if (xStringParseEncoded(NULL, pSrc) == erFAILURE) {
 		return erFAILURE;
 	}
@@ -358,7 +357,7 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 }
 
 static void vHttpNotifyHandler(void) {
-	uint32_t fDone = 0;
+	u32_t fDone = 0;
 	int iRV;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
 		if (fRqst & reqCOREDUMP) {

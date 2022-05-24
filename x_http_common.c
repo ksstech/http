@@ -119,7 +119,7 @@ int xHttpCommonUrlHandler(http_parser * psP, const char* pBuf, size_t xLen) {
 	 * The yuarel parser then (incorrectly) returns " HTTP" and "1.1" as
 	 * the first and second parts of the path */
 	if ((*psRes->url.path != CHR_NUL) && (psRes->f_parts == 1)) {
-		psRes->NumParts	= yuarel_split_path(psRes->url.path, psRes->parts, httpYUAREL_MAX_PARTS) ;
+		psRes->NumParts	= yuarel_split_path(psRes->url.path, (char**)psRes->parts, httpYUAREL_MAX_PARTS) ;
 		psRes->NumParts = (psRes->NumParts == erFAILURE) ? 0 : psRes->NumParts ;
 	} else {
 		psRes->NumParts	= 0 ;
@@ -271,7 +271,7 @@ size_t	xHttpCommonDoParsing(http_parser * psP) {
 		psRR->sfCB.on_message_complete	= xHttpCommonMessageCompleteHandler ;
 	}
 
-	int iRV = http_parser_execute(psP, &psRR->sfCB, psRR->sUB.pBuf, psRR->sUB.Used) ;
+	int iRV = http_parser_execute(psP, &psRR->sfCB, (char *)psRR->sUB.pBuf, psRR->sUB.Used) ;
 	if (psRR->f_debug) {
 		if (iRV <= 0) {
 			SL_NOT("parse %s (%s) url=%s/%s/%s", http_errno_name(HTTP_PARSER_ERRNO(psP)),
