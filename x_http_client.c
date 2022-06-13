@@ -98,7 +98,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
 	uprintfx(&psRR->sUB, "\r\n") ;
-	IF_P(debugREQUEST && psRR->f_debug, "Content:\n%.*s\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
+	IF_P(debugREQUEST && psRR->f_debug, "Content:\r\n%.*s\r\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
 	return psRR->sUB.Used ;
 }
 
@@ -138,19 +138,19 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 					psRR->sUB.Used = iRV ;
 					iRV = xHttpCommonDoParsing(&sParser) ;	// return erFAILURE or some 0+ number
 				} else {
-					IF_P(debugREQUEST, " nothing read ie to parse\n") ;
+					IF_P(debugREQUEST, " nothing read ie to parse\r\n") ;
 					iRV = erFAILURE ;
 				}
 			} else {
-				IF_P(debugREQUEST, " nothing written (by handler) so can't expect to read\n") ;
+				IF_P(debugREQUEST, " nothing written (by handler) so can't expect to read\r\n") ;
 				iRV = erFAILURE ;
 			}
 		} else {
-			IF_P(debugREQUEST, " no header written, so can't expect to read\n") ;
+			IF_P(debugREQUEST, " no header written, so can't expect to read\r\n") ;
 			iRV = erFAILURE ;
 		}
 	} else {
-		IF_P(debugREQUEST, " open/connect error (%d)\n", iRV) ;
+		IF_P(debugREQUEST, " open/connect error (%d)\r\n", iRV) ;
 		iRV = erFAILURE ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
@@ -180,7 +180,7 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 	sRR.pvArg			= pvArg ;
 	IF_RP(debugREQUEST, "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=",
 			sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
-	IF_RP(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p\n" : "%s\n", sRR.pVoid);
+	IF_RP(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.pVoid);
 	IF_myASSERT(debugREQUEST, sRR.hvContentType != ctUNDEFINED);
 
 	if (pcCert) {
@@ -538,7 +538,7 @@ int	xHttpClientRulesDownload(void) {
  */
 int	xHttpClientIdentUpload(void * psRomID) {
 	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, "PATCH /ibuttons.dat",
-			"'%m' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\n",
+			"'%m' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\r\n",
 			NULL, 0, 						// certificate info
 			NULL, 0, 						// read/write handler & size
 			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
