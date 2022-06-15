@@ -242,7 +242,7 @@ int	xHttpGetLocation(void) {
 	return xHttpRequest("www.googleapis.com", caQuery, "{ }\r\n",
 			CertGGLE, sizeof(CertGGLE), xHttpParseGeoLoc, 0,
 			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,4), NULL) ;
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL);
 }
 
 // ##################################### TIMEZONE support ##########################################
@@ -290,7 +290,7 @@ int	xHttpGetTimeZone(void) {
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 			CertGGLE, sizeof(CertGGLE), xHttpParseTimeZone, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
 			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]) ;
 }
 
@@ -330,8 +330,8 @@ int	xHttpGetElevation(void) {
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 			CertGGLE, sizeof(CertGGLE), xHttpParseElevation, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
-			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]) ;
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
+			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]);
 }
 
 // ################################# Firmware Over The Air support #################################
@@ -434,7 +434,7 @@ int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert,
 			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,4), pvPara, pvPara) ;
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), pvPara, pvPara) ;
 }
 
 /**
@@ -480,7 +480,7 @@ int xHttpCoredumpUpload(void) {
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert,HostInfo[ioB2GET(ioHostFOTA)].szCert,
 			NULL, sCDhdr.data_len,
 			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), (void *) psPart,
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), (void *) psPart,
 			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
 	}
 	esp_partition_iterator_release(sIter);
@@ -502,7 +502,7 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
 	return xHttpRequest("api.pushover.net", "POST /1/messages.json", caBody,
 			CertGGLE, sizeof(CertGGLE), NULL, 0,
 			httpHDR_VALUES(ctApplicationXwwwFormUrlencoded, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
 			nameSTA, pcMess, u32Val) ;
 }
 
@@ -525,8 +525,8 @@ int	xHttpClientRulesDownload(void) {
 	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName,
 			"GET /configs/%s.cfg", NULL, NULL,  xHttpClientRulesDownloadHandler, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
-			idSTA ) ;
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
+			idSTA);
 }
 #endif
 
@@ -542,8 +542,8 @@ int	xHttpClientIdentUpload(void * psRomID) {
 			NULL, 0, 						// certificate info
 			NULL, 0, 						// read/write handler & size
 			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL,
-			psRomID) ;
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
+			psRomID);
 }
 
 // ######################################### Unused API's ##########################################
@@ -563,7 +563,7 @@ int xHttpGetWeather(void) {
 	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
 			NULL, 0, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
-			16384, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
+			16384, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL) ;
 }
 
 // ################################### How's my SSL support ########################################
@@ -572,7 +572,7 @@ int	xHttpHowsMySSL(void) {
 	return xHttpRequest("www.howsmyssl.com", "GET /a/check", NULL,
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL) ;
 }
 
 // ####################################### Bad SSL support #########################################
@@ -581,6 +581,6 @@ int	xHttpBadSSL(void) {
 	return xHttpRequest("www.badssl.com", "GET /dashboard", NULL,
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,0), NULL) ;
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL) ;
 }
 
