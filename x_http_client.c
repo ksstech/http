@@ -165,8 +165,8 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
  */
 int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 		pci8_t pcCert, size_t szCert,					// host certificate info
-		void * OnBodyCB, uint32_t DataSize,				// read/write handler & size
-		uint32_t hvValues, uint16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
+		void * OnBodyCB, u32_t DataSize,				// read/write handler & size
+		u32_t hvValues, u16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
 	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(OnBodyCB)) ;
 	http_rr_t sRR		= { 0 } ;
 	sock_sec_t sSecure	= { 0 } ;				// LEAVE here else pcCert/szCert gets screwed
@@ -471,7 +471,7 @@ int xHttpCoredumpUpload(void) {
 	const esp_partition_t *	psPart = esp_partition_get(sIter);
 	IF_myASSERT(debugRESULT, psPart != 0);
 
-	struct cd_hdr_s { uint32_t data_len, version, tasks_num, tcb_sz; } sCDhdr;
+	struct cd_hdr_s { u32_t data_len, version, tasks_num, tcb_sz; } sCDhdr;
 	int iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(struct cd_hdr_s));
 	SL_WARN("iRV=%d  L=%u  T=%u  TCB=%u  V=%-I", iRV, sCDhdr.data_len, sCDhdr.tasks_num, sCDhdr.tcb_sz, sCDhdr.version);
 
@@ -497,7 +497,7 @@ int xHttpCoredumpUpload(void) {
 	#define	userPUSHOVER "fakeuser"
 #endif
 
-int	xHttpClientPushOver(const char * pcMess, uint32_t u32Val) {
+int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
 	const char caBody[] = "token="tokenPUSHOVER "&user="userPUSHOVER "&title=%U&message=%U%%40%u" ;
 	return xHttpRequest("api.pushover.net", "POST /1/messages.json", caBody,
 			CertGGLE, sizeof(CertGGLE), NULL, 0,

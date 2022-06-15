@@ -28,19 +28,19 @@ enum { PERFORM = 0, CHECK = 1 } ;
 
 typedef	struct xnet_debug_t {
 	union {
-		uint32_t u32 ;
+		u32_t u32 ;
 		struct {
-			bool	http ;
-			bool	open ;
-			bool	write ;
-			bool	read ;
-			bool	data ;
-			bool	eagain ;
-			bool	secure ;
-			bool	verify ;
-			uint8_t	level	: 3 ;
-		} ;
-	} ;
+			bool	http;
+			bool	open;
+			bool	write;
+			bool	read;
+			bool	data;
+			bool	eagain;
+			bool	secure;
+			bool	verify;
+			u8_t	level:2;
+		};
+	};
 } xnet_debug_t ;
 
 // ################################### Global variables ############################################
@@ -52,8 +52,8 @@ int	xHttpCompleteRequest(http_rr_t * psReq) ;
 int	xHttpParseResponse(char * pBuf, size_t xLen) ;
 int	xHttpClientExecuteRequest(http_rr_t * psReq, va_list vArgs) ;
 int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
-		pci8_t pcCert, size_t szCert, void * OnBodyCB, uint32_t DataSize,
-		uint32_t hvValues, uint16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) ;
+		pci8_t pcCert, size_t szCert, void * OnBodyCB, u32_t DataSize,
+		u32_t hvValues, u16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) ;
 
 int xHttpGetWeather(void) ;
 int	xHttpHowsMySSL(void) ;
@@ -65,7 +65,7 @@ int xHttpGetLocation(void) ;
 int	xHttpGetElevation(void) ;
 int xHttpGetTimeZone(void) ;
 
-int	xHttpClientPushOver(const char * pcMess, uint32_t) ;
+int	xHttpClientPushOver(const char * pcMess, u32_t) ;
 
 int	xHttpClientRulesDownload(void) ;
 

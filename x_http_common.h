@@ -89,8 +89,8 @@ enum {													// HTTP flags
 // ######################################### structures ############################################
 
 typedef struct http_rr_t {
-	ubuf_t				sUB ;						// both
-	netx_t				sCtx ;						// both
+	ubuf_t				sUB ;							// both
+	netx_t				sCtx ;							// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
  * a) the pcQuery format string; and
  * b) the pcBody format string
@@ -102,29 +102,29 @@ typedef struct http_rr_t {
 	union {
 		const void * pVoid ;
 		pci8_t	pcBody ;								// both (client 'format' string)
-		s32_t (* hdlr_req) (struct http_rr_t *) ;		// client
-		s32_t	(* hdlr_rsp) (http_parser *) ;			// server
+		int (* hdlr_req) (struct http_rr_t *) ;			// client
+		int	(* hdlr_rsp) (http_parser *) ;				// server
 	} ;
-	va_list				VaList ;					// Client
-	void *				pvArg ;						// Client
+	va_list				VaList ;						// Client
+	void *				pvArg ;							// Client
 	http_parser_settings 	sfCB ;						// Both
-	struct yuarel		url ;						// Both
+	struct yuarel		url ;							// Both
 	struct yuarel_param	params[httpYUAREL_MAX_QUERY] ;	// Both
 	char *				parts[httpYUAREL_MAX_PARTS] ;	// Both
-	u64_t				hvContentLength ;			// Both
-	u32_t				hvDate ;					// Both
-	u32_t				hvLastModified ;			// Both
-	char * 				hvStatusMess ;				// Both
+	u64_t				hvContentLength ;				// Both
+	u32_t				hvDate ;						// Both
+	u32_t				hvLastModified ;				// Both
+	char * 				hvStatusMess ;					// Both
 	union {
 		struct __attribute__((packed)) {
 			u8_t		Spare, hvConnect, hvAccept, hvContentType ;
 		} ;
 		u32_t			hvValues ;
 	};
-	u16_t				hvStatus ;					// Client (response to request)
-	u8_t				HdrField ;					// Both
-	s8_t				NumParts ;					// recognize -1 as error/none
-	s8_t				NumQuery ;					// recognize -1 as error/none
+	u16_t				hvStatus ;						// Client (response to request)
+	u8_t				HdrField ;						// Both
+	s8_t				NumParts ;						// recognize -1 as error/none
+	s8_t				NumQuery ;						// recognize -1 as error/none
 	union {
 		struct __attribute__((packed)) {
 			u8_t	f_debug : 1 ;
