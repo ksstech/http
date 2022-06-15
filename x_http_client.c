@@ -461,7 +461,8 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 int xHttpCoredumpUpload(void) {
 	#ifdef CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN
 		const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.bin" ;
-	#elif defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
+//	#elif defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
+	#else
 		const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.elf" ;
 	#endif
 	esp_partition_iterator_t sIter;
