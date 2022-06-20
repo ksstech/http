@@ -80,11 +80,8 @@ int	xHttpCommonFindMatch(const char * const pcTable[], uint32_t xSize, const cha
 	while (Idx < xSize) {
 		int ySize = xstrlen(*pcTable) ;				// get length of string in table to compare against
 		if (ySize == xLen) {
-			IF_P(debugPARSE, "#%d '%s' vs '%.*s'\r\n", Idx, *pcTable, ySize, pcMatch) ;
-			if (strncasecmp(*pcTable, pcMatch, ySize) == 0) {
-				IF_P(debugPARSE, "#%d '%s' vs '%.*s'\r\n", Idx, *pcTable, ySize, pcMatch) ;
-				return Idx ;
-			}
+			if (strncasecmp(*pcTable, pcMatch, ySize) == 0)
+				return Idx;
 		}
 		pcTable++ ;
 		Idx++ ;
@@ -100,10 +97,10 @@ int xHttpCommonMessageBeginHandler(http_parser * psP) {
 }
 
 int xHttpCommonUrlHandler(http_parser * psP, const char* pBuf, size_t xLen) {
-	IF_P(debugURL, "BEFORE: pBuf=%p  xLen=%d  cChr='%c'  url=[%.*s]\r\n", pBuf, xLen, *(pBuf+xLen), xLen, pBuf) ;
+//	P("BEFORE: pBuf=%p  xLen=%d  cChr='%c'  url=[%.*s]\r\n", pBuf, xLen, *(pBuf+xLen), xLen, pBuf) ;
 	char * pTerm = (char *) pBuf + xLen ;				// overcome 'const'
 	*pTerm = 0 ;										// terminate the string
-	IF_P(debugURL, "AFTER : pBuf=%p  xLen=%d  cChr='%c'  url=[%s]\r\n", pBuf, xLen, *(pBuf+xLen), pBuf) ;
+//	P("AFTER : pBuf=%p  xLen=%d  cChr='%c'  url=[%s]\r\n", pBuf, xLen, *(pBuf+xLen), pBuf) ;
 
 	http_rr_t * psRes = psP->data ;
 	int Idx = yuarel_parse(&psRes->url, (char *)pBuf) ;		// do the parse
