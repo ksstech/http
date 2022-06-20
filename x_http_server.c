@@ -1,8 +1,7 @@
 /*
+ * x_http_server.c s
  * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
-
-#include <string.h>
 
 #include "hal_variables.h"
 #include "hal_stdio.h"
@@ -29,7 +28,6 @@
 // ############################### BUILD: debug configuration options ##############################
 
 #define	debugFLAG					0xF000
-#define	debugREQUEST				(debugFLAG & 0x0001)
 
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
