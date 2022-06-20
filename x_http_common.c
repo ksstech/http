@@ -1,27 +1,21 @@
 /*
- * Copyright 2014-21 Andre M. Maree / KSS Technologies (Pty) Ltd.
- */
-
-/*
  * http_common.c
+ * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include	"hal_config.h"
-#include 	"x_http_common.h"
-#include	"parserX.h"
-#include	"x_buffers.h"
-#include	"printfx.h"
-#include	"syslog.h"
-#include	"x_string_to_values.h"
-#include	"x_string_general.h"
-#include	"x_errors_events.h"
+#include "hal_config.h"
+#include "x_http_common.h"
+#include "parserX.h"
+#include "x_buffers.h"
+#include "printfx.h"
+#include "syslog.h"
+#include "x_string_to_values.h"
+#include "x_string_general.h"
+#include "x_errors_events.h"
 
 // ############################### BUILD: debug configuration options ##############################
 
 #define	debugFLAG					0xF000
-
-#define	debugPARSE					(debugFLAG & 0x0001)
-#define	debugURL					(debugFLAG & 0x0002)
 
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
@@ -76,7 +70,7 @@ const char * const coValues[coNUMBER]	= {
 
 // ################################## local/static support functions ###############################
 
-/* currently this function is used to find matched for both simple header fields,
+/* currently this function is used to find matches for both simple header fields,
  * always single string values without embeddded '/' or similar. The function is
  * also used by the HTTP server to do a simple match for URL's, brining in the limit
  * of only being able to match ie use single part URL's meaning "/api/something"
