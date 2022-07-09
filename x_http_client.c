@@ -147,11 +147,9 @@ int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
 			}
 		} else {
 			IF_P(debugREQUEST, " no header written, so can't expect to read\r\n") ;
-			iRV = erFAILURE ;
 		}
 	} else {
 		IF_P(debugREQUEST, " open/connect error (%d)\r\n", iRV) ;
-		iRV = erFAILURE ;
 	}
 	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
 	vUBufDestroy(&psRR->sUB) ;							// return memory allocated
