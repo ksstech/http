@@ -20,7 +20,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xF002
+#define	debugFLAG					0xF000
 
 #define	debugCOREDUMP				(debugFLAG & 0x0001)
 #define	debugREQUEST				(debugFLAG & 0x0002)
@@ -36,7 +36,7 @@
 #define configHTTP_RX_WAIT			5000	// 500
 
 #ifndef keyGOOGLE
-	#define	keyGOOGLE		"fakegoogle"
+	#define	keyGOOGLE				"fakegoogle"
 #endif
 
 // ################################ Google HTTPS Client Certificate ################################
@@ -81,7 +81,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 		if (psRR->hvContentType) {
 			uprintfx(&psRR->sUB, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
-				IF_myASSERT(debugREQUEST, INRANGE(1, psRR->hvContentLength, 2*MEGA, uint64_t)) ;
+				IF_myASSERT(debugREQUEST, INRANGE(1, psRR->hvContentLength, 2*MEGA, u64_t)) ;
 				/* Since the actual binary payload will only be added in the callback
 				 * we will only add a single "\r\n"
 				 * pair here, the second added at the end of this function.
@@ -111,14 +111,14 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 		pci8_t pcCert, size_t szCert,					// host certificate info
 		void * OnBodyCB, u32_t DataSize,				// read/write handler & size
 		u32_t hvValues, u16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
-	IF_myASSERT(debugREQUEST, halCONFIG_inFLASH(OnBodyCB)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inFLASH(OnBodyCB)) ;
 	http_rr_t sRR		= { 0 } ;
 	sock_sec_t sSecure	= { 0 } ;				// LEAVE here else pcCert/szCert gets screwed
 	sRR.sCtx.pHost		= pHost ;
 	sRR.pcQuery			= pQuery ;
 	sRR.pVoid			= pvBody ;
 	sRR.sfCB.on_body	= (http_data_cb) OnBodyCB;
-	sRR.hvContentLength	= (uint64_t) DataSize ;
+	sRR.hvContentLength	= (u64_t) DataSize ;
 	sRR.hvValues		= hvValues ;
 	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
 	sRR.pvArg			= pvArg ;
