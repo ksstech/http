@@ -94,7 +94,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 				vuprintfx(&psRR->sUB, psRR->pcBody, psRR->VaList) ;// add actual content
 			}
 		} else
-			SL_ERR(debugAPPL_PLACE) ;
+			SL_ERR(debugAPPL_PLACE);
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
 	uprintfx(&psRR->sUB, "\r\n") ;
@@ -504,30 +504,6 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
 			nameSTA, pcMess, u32Val) ;
 }
-
-// ######################################## Rules download #########################################
-
-#if 0
-#include	"sitewhere-text.h"							// for vMqttSubscribeRulesTEXT()
-int xHttpClientRulesDownloadHandler(http_parser * psParser, const char * pBuf, size_t xLen) {
-	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE) return erFAILURE ;
-	MQTTMessage	RulesMessage ;
-	MessageData	RulesData ;
-	RulesData.message				= &RulesMessage ;
-	RulesData.message->payload		= (char *) pBuf ;
-	RulesData.message->payloadlen	= xLen ;
-	vMqttSubscribeRulesTEXT(&RulesData) ;
-	return erSUCCESS ;
-}
-
-int	xHttpClientRulesDownload(void) {
-	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName,
-			"GET /configs/%s.cfg", NULL, NULL,  xHttpClientRulesDownloadHandler, 0,
-			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
-			idSTA);
-}
-#endif
 
 // ################################## POST IDENT info to host ######################################
 
