@@ -445,12 +445,12 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	 * #2 hardware platform: "device-specification-token.bin"
 	 * #3 to be defined
 	 */
-	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck) ;
 	if (allSYSFLAGS(sfRESTART) == 0)
-		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck) ;
+	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck);
+		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck);
 	if (bCheck == PERFORM)
-		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_INFO, "FWupg %s", iRV < erSUCCESS ? "FAIL" : "Done") ;
-	return iRV ;
+		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_INFO, "FWupg %s", iRV < erSUCCESS ? "FAIL" : "Done");
+	return iRV;
 }
 
 // ################################## PUT core dump to host ########################################
