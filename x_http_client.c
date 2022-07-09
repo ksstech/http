@@ -20,7 +20,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xF000
+#define	debugFLAG					0xF002
 
 #define	debugCOREDUMP				(debugFLAG & 0x0001)
 #define	debugREQUEST				(debugFLAG & 0x0002)
