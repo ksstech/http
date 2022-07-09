@@ -83,7 +83,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 				IF_myASSERT(debugREQUEST, INRANGE(1, psRR->hvContentLength, 2*MEGA, uint64_t)) ;
 				/* Since the actual binary payload will only be added in the callback
-				 * from xHttpClientExecuteRequest() we will only add a single "\r\n"
+				 * we will only add a single "\r\n"
 				 * pair here, the second added at the end of this function.
 				 * The callback will be responsible for adding the final terminating "\r\n" */
 				uprintfx(&psRR->sUB, "Content-Length: %d\r\n", psRR->hvContentLength) ;
@@ -103,63 +103,9 @@ int	xHttpBuildHeader(http_parser * psParser) {
 }
 
 /**
- * @brief	Coordinate connecting, parsing, responding and disconnecting activities
- * @param 	psRR
- * @return	erFAILURE or result of xHttpCommonDoParsing() being 0 or more
- */
-int	xHttpClientExecuteRequest(http_rr_t * psRR, va_list vArgs) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psRR)) ;
-	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT) ;
-	IF_SYSTIMER_START(debugTIMING, stHTTP) ;
-	http_parser sParser ;
-	http_parser_init(&sParser, HTTP_RESPONSE) ;			// clear all parser fields/values
-	sParser.data = psRR ;
-
-	// setup the ubuf_t structure for printing
-	psUBufCreate(&psRR->sUB, NULL, psRR->sUB.Size, 0) ;
-
-	psRR->VaList = vArgs ;
-	int xLen = xHttpBuildHeader(&sParser) ;
-
-	psRR->sCtx.type = SOCK_STREAM ;
-	psRR->sCtx.sa_in.sin_family	= AF_INET ;
-	if (psRR->sCtx.sa_in.sin_port == 0)
-		psRR->sCtx.sa_in.sin_port = htons(psRR->sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP) ;
-	psRR->sCtx.flags = SO_REUSEADDR ;
-	int iRV = xNetOpen(&psRR->sCtx) ;
-	if (iRV == erSUCCESS) {								// if socket=open, write request
-		iRV = xNetWrite(&psRR->sCtx, psRR->sUB.pBuf, xLen) ;
-		if (iRV > 0) {									// successfully written some (or all)
-			if (psRR->hvContentType == ctApplicationOctetStream)
-				iRV = psRR->hdlr_req(psRR) ;			// should return same as xNetWrite()
-			if (iRV > 0) {								// now do the actual read
-				iRV = xNetReadBlocks(&psRR->sCtx, psRR->sUB.pBuf, psRR->sUB.Size, configHTTP_RX_WAIT) ;
-				if (iRV > 0) {							// actually read something
-					psRR->sUB.Used = iRV ;
-					iRV = xHttpCommonDoParsing(&sParser) ;	// return erFAILURE or some 0+ number
-				} else {
-					IF_P(debugREQUEST, " nothing read ie to parse\r\n") ;
-					iRV = erFAILURE ;
-				}
-			} else {
-				IF_P(debugREQUEST, " nothing written (by handler) so can't expect to read\r\n") ;
-				iRV = erFAILURE ;
-			}
-		} else {
-			IF_P(debugREQUEST, " no header written, so can't expect to read\r\n") ;
-		}
-	} else {
-		IF_P(debugREQUEST, " open/connect error (%d)\r\n", iRV) ;
-	}
-	xNetClose(&psRR->sCtx) ;							// close the socket connection if still open...
-	vUBufDestroy(&psRR->sUB) ;							// return memory allocated
-	IF_SYSTIMER_STOP(debugTIMING, stHTTP) ;
-	return iRV ;
-}
-
-/**
  * @brief	Build HTTP request packet and initiates the communications
- * @return	result from xHttpClientExecuteRequest()
+ * @brief	Coordinate connecting, parsing, responding and disconnecting activities
+ * @return	erFAILURE or result of xHttpCommonDoParsing() being 0 or more
  */
 int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 		pci8_t pcCert, size_t szCert,					// host certificate info
@@ -199,11 +145,51 @@ int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 			sRR.sCtx.d_level		= Debug.level ;
 		}
 	}
-	va_list vArgs ;
-	va_start(vArgs, pvArg) ;
-	int iRV = xHttpClientExecuteRequest(&sRR, vArgs) ;
-	va_end(vArgs) ;
-	return iRV ;
+	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT);
+	IF_SYSTIMER_START(debugTIMING, stHTTP);
+	http_parser sParser;
+	http_parser_init(&sParser, HTTP_RESPONSE);			// clear all parser fields/values
+	sParser.data = &sRR;
+
+	// setup the ubuf_t structure for printing
+	psUBufCreate(&sRR.sUB, NULL, sRR.sUB.Size, 0);
+
+	va_list vArgs;
+	va_start(vArgs, pvArg);
+	sRR.VaList = vArgs;
+	int xLen = xHttpBuildHeader(&sParser);
+	va_end(vArgs);
+
+	sRR.sCtx.type = SOCK_STREAM;
+	sRR.sCtx.sa_in.sin_family	= AF_INET;
+	if (sRR.sCtx.sa_in.sin_port == 0)
+		sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
+	sRR.sCtx.flags = SO_REUSEADDR;
+	int iRV = xNetOpen(&sRR.sCtx);
+	if (iRV == erSUCCESS) {								// if socket=open, write request
+		iRV = xNetWrite(&sRR.sCtx, sRR.sUB.pBuf, xLen);
+		if (iRV > 0) {									// successfully written some (or all)
+			if (sRR.hvContentType == ctApplicationOctetStream)
+				iRV = sRR.hdlr_req(&sRR) ;			// should return same as xNetWrite()
+			if (iRV > 0) {								// now do the actual read
+				iRV = xNetReadBlocks(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size, configHTTP_RX_WAIT);
+				if (iRV > 0) {							// actually read something
+					sRR.sUB.Used = iRV;
+					iRV = xHttpCommonDoParsing(&sParser);	// return erFAILURE or some 0+ number
+				} else {
+					IF_P(debugREQUEST, " nothing read ie to parse\r\n");
+					iRV = erFAILURE;
+				}
+			} else {
+				IF_P(debugREQUEST, " nothing written (by handler) so can't expect to read\r\n");
+				iRV = erFAILURE;
+			}
+		}
+	}
+	xNetClose(&sRR.sCtx);								// close the socket connection if still open...
+	vUBufDestroy(&sRR.sUB);								// return memory allocated
+	IF_SYSTIMER_STOP(debugTIMING, stHTTP);
+	return iRV;
 }
 
 // ########################################## Location #############################################
@@ -334,50 +320,42 @@ int	xHttpGetElevation(void) {
 
 // ################################# Firmware Over The Air support #################################
 
-int	xHttpClientFileDownloadCheck(http_parser * psParser) {
-	http_rr_t * psRR = psParser->data ;
-	int iRV = erFAILURE ;
-	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' not found", psRR->pvArg) ;
-	} else if (psRR->hvContentLength == 0ULL) {
-		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength) ;
-	} else if (psRR->hvContentType != ctApplicationOctetStream) {
-		SL_ERR("'%s' invalid content (%d/%s)", psRR->pvArg, psRR->hvContentType, ctValues[psRR->hvContentType]) ;
-	} else if (psRR->hvConnect == coClose) {
-		SL_ERR("Connection closed unexpectedly") ;
-	} else {
-		iRV = erSUCCESS ;
-	}
-	return iRV ;
-}
-
 /**
  * Check if a valid firmware upgrade exists
  * @return	1 if valid upgrade file exists
- * 			erSUCCESS if no newer upgrade file exists
+ * 			0 if no newer upgrade file exists
  * 			erFAILURE if file not found/empty file/invalid content/connection closed
  */
 int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
-	if (xHttpClientFileDownloadCheck(psParser) == erFAILURE) {
-		setSYSFLAGS(sfFW_OK);
-		return erFAILURE;
+	http_rr_t * psRR = psParser->data;
+	if (psParser->status_code != HTTP_STATUS_OK) {
+		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' not found", psRR->pvArg);
+	} else if (psRR->hvContentLength == 0ULL) {
+		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength);
+	} else if (psRR->hvContentType != ctApplicationOctetStream) {
+		SL_ERR("'%s' invalid content (%d/%s)", psRR->pvArg, psRR->hvContentType, ctValues[psRR->hvContentType]);
+	} else if (psRR->hvConnect == coClose) {
+		SL_ERR("Connection closed unexpectedly");
+	} else {
+		http_rr_t * psRR = psParser->data;
+		/* BuildSeconds			: halfway(?) time of running FW
+		 * hvLastModified		: creation time of available FW
+		 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
+		 *						: How much later must FW be to be considered new? */
+		#define	fotaMIN_DIF_SECONDS	120
+		int i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS;
+		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' found  %R vs %R  Diff=%d  FW %snewer",
+				psRR->pvArg, xTimeMakeTimestamp(psRR->hvLastModified, 0),
+				xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "NOT " : "");
+		if (i32Diff < 0) {
+			setSYSFLAGS(sfFW_OK);
+			return 0;
+		}
+		clrSYSFLAGS(sfFW_OK);
+		return 1;
 	}
-	http_rr_t * psRR = psParser->data ;
-	/* BuildSeconds			: halfway(?) time of running FW
-	 * hvLastModified		: creation time of available FW
-	 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
-	 *						: How much later must FW be to be considered new? */
-	#define	fotaMIN_DIF_SECONDS	120
-	int i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS ;
-	IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' found  %R vs %R  Diff=%d  FW %snewer",
-			psRR->pvArg, xTimeMakeTimestamp(psRR->hvLastModified, 0),
-			xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "NOT " : "") ;
-	if (i32Diff < 0) {
-		setSYSFLAGS(sfFW_OK);
-		return erSUCCESS;
-	}
-	clrSYSFLAGS(sfFW_OK);
-	return 1;
+	setSYSFLAGS(sfFW_OK);
+	return erFAILURE;
 }
 
 /**
