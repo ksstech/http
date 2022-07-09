@@ -50,7 +50,6 @@ typedef	struct xnet_debug_t {
 
 int	xHttpCompleteRequest(http_rr_t * psReq) ;
 int	xHttpParseResponse(char * pBuf, size_t xLen) ;
-int	xHttpClientExecuteRequest(http_rr_t * psReq, va_list vArgs) ;
 int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
 		pci8_t pcCert, size_t szCert, void * OnBodyCB, u32_t DataSize,
 		u32_t hvValues, u16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) ;
