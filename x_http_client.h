@@ -50,8 +50,8 @@ typedef	struct xnet_debug_t {
 
 int	xHttpCompleteRequest(http_rr_t * psReq) ;
 int	xHttpParseResponse(char * pBuf, size_t xLen) ;
-int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
-		pci8_t pcCert, size_t szCert, void * OnBodyCB, u32_t DataSize,
+int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
+		pcc_t pcCert, size_t szCert, void * OnBodyCB, u32_t DataSize,
 		u32_t hvValues, u16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) ;
 
 int xHttpGetWeather(void) ;

@@ -96,12 +96,12 @@ typedef struct http_rr_t {
  * b) the pcBody format string
  */
 	union {
-		pci8_t	pcQuery ;								// client: 'format' GET/PUT/POST/DELETE/PATCH .....
-		pci8_t	pcStatMes ;								// server: status message
+		pcc_t	pcQuery ;								// client: 'format' GET/PUT/POST/DELETE/PATCH .....
+		pcc_t	pcStatMes ;								// server: status message
 	} ;
 	union {
 		const void * pVoid ;
-		pci8_t	pcBody ;								// both (client 'format' string)
+		pcc_t	pcBody ;								// both (client 'format' string)
 		int (* hdlr_req) (struct http_rr_t *) ;			// client
 		int	(* hdlr_rsp) (http_parser *) ;				// server
 	} ;

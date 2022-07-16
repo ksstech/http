@@ -107,8 +107,8 @@ int	xHttpBuildHeader(http_parser * psParser) {
  * @brief	Coordinate connecting, parsing, responding and disconnecting activities
  * @return	erFAILURE or result of xHttpCommonDoParsing() being 0 or more
  */
-int	xHttpRequest(pci8_t pHost, pci8_t pQuery, const void * pvBody,
-		pci8_t pcCert, size_t szCert,					// host certificate info
+int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
+		pcc_t pcCert, size_t szCert,					// host certificate info
 		void * OnBodyCB, u32_t DataSize,				// read/write handler & size
 		u32_t hvValues, u16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
 	IF_myASSERT(debugPARAM, halCONFIG_inFLASH(OnBodyCB)) ;
