@@ -329,7 +329,7 @@ int	xHttpGetElevation(void) {
 int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	http_rr_t * psRR = psParser->data;
 	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' not found", psRR->pvArg);
+		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
 	} else if (psRR->hvContentLength == 0ULL) {
 		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength);
 	} else if (psRR->hvContentType != ctApplicationOctetStream) {
