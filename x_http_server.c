@@ -463,7 +463,7 @@ static void vHttpTask(void * pvParameters) {
 				break ;
 			}
 
-			iRV = xNetSetRecvTimeOut(&sRR.sCtx, httpINTERVAL_MS) ;
+			iRV = xNetSetRecvTO(&sRR.sCtx, httpINTERVAL_MS) ;
 			if (iRV != erSUCCESS) {
 				HttpState = stateHTTP_DEINIT ;
 				break ;
