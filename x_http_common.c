@@ -78,7 +78,7 @@ const char * const coValues[coNUMBER]	= {
 int	xHttpCommonFindMatch(const char * const pcTable[], uint32_t xSize, const char * pcMatch, size_t xLen) {
 	int	Idx = 0 ;
 	while (Idx < xSize) {
-		int ySize = xstrlen(*pcTable) ;				// get length of string in table to compare against
+		size_t ySize = strlen(*pcTable) ;				// get length of string in table to compare against
 		if (ySize == xLen) {
 			if (strncasecmp(*pcTable, pcMatch, ySize) == 0)
 				return Idx;

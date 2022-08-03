@@ -260,7 +260,7 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 		if (*psRR->url.path == 0) {						// STEP1: start by matching the URL
 			iURL = urlROOT ;							// do NOT try to match, lost single '/'
 		} else {
-			iURL = xHttpCommonFindMatch(UrlTable, NO_MEM(UrlTable), psRR->url.path, xstrlen(psRR->url.path)) ;
+			iURL = xHttpCommonFindMatch(UrlTable, NO_MEM(UrlTable), psRR->url.path, strlen(psRR->url.path)) ;
 			if (iURL == 0)
 				iURL = urlNOTFOUND ;
 		}
