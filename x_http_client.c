@@ -111,7 +111,6 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		pcc_t pcCert, size_t szCert,					// host certificate info
 		void * OnBodyCB, u32_t DataSize,				// read/write handler & size
 		u32_t hvValues, u16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
-	IF_myASSERT(debugPARAM, halCONFIG_inFLASH(OnBodyCB)) ;
 	http_rr_t sRR		= { 0 } ;
 	sock_sec_t sSecure	= { 0 } ;				// LEAVE here else pcCert/szCert gets screwed
 	sRR.sCtx.pHost		= pHost ;
