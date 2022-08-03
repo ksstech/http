@@ -131,7 +131,7 @@ static int xHttpServerSetResponseStatus(http_parser * psParser, int Status) {
 	case HTTP_STATUS_NOT_IMPLEMENTED:	psRR->pcStatMes	= "Not Implemented" ;	break ;	// 501
 	default:							SL_ERR(debugAPPL_PLACE) ;
 	}
-	if (INRANGE(HTTP_STATUS_BAD_REQUEST, Status, HTTP_STATUS_UNAVAILABLE_FOR_LEGAL_REASONS, int))
+	if (INRANGE(HTTP_STATUS_BAD_REQUEST, Status, HTTP_STATUS_UNAVAILABLE_FOR_LEGAL_REASONS))
 		psRR->hvConnect = coClose ;					// force connection to be closed
 	return erSUCCESS ;
 }

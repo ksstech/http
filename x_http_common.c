@@ -270,7 +270,7 @@ size_t	xHttpCommonDoParsing(http_parser * psP) {
 				psRR->url.host, psRR->url.path, psRR->url.query);
 			iRV = erFAILURE ;
 		}
-		if (INRANGE(HTTP_STATUS_BAD_REQUEST, psP->status_code, HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED, int16_t)) {
+		if (INRANGE(HTTP_STATUS_BAD_REQUEST, psP->status_code, HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED)) {
 			SL_NOT("http error=%d (%s)", psP->status_code, psRR->hvStatusMess) ;
 			iRV = erFAILURE ;
 		}

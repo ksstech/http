@@ -81,7 +81,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 		if (psRR->hvContentType) {
 			uprintfx(&psRR->sUB, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
-				IF_myASSERT(debugREQUEST, INRANGE(1, psRR->hvContentLength, 2*MEGA, u64_t)) ;
+				IF_myASSERT(debugREQUEST, INRANGE(1, psRR->hvContentLength, 2*MEGA)) ;
 				/* Since the actual binary payload will only be added in the callback
 				 * we will only add a single "\r\n"
 				 * pair here, the second added at the end of this function.
