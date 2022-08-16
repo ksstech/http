@@ -83,9 +83,9 @@ int	xHttpBuildHeader(http_parser * psParser) {
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 				IF_myASSERT(debugREQUEST, INRANGE(1, psRR->hvContentLength, 2*MEGA)) ;
 				/* Since the actual binary payload will only be added in the callback
-				 * we will only add a single "\r\n"
+				 * we will only add a single CRLF
 				 * pair here, the second added at the end of this function.
-				 * The callback will be responsible for adding the final terminating "\r\n" */
+				 * The callback will be responsible for adding the final terminating strCRLF */
 				uprintfx(&psRR->sUB, "Content-Length: %d\r\n", psRR->hvContentLength) ;
 				// no actual binary content added, done later...
 			} else {									// currently handle json/xml/text/html here
@@ -96,8 +96,8 @@ int	xHttpBuildHeader(http_parser * psParser) {
 		} else
 			SL_ERR(debugAPPL_PLACE);
 	}
-	// add the final CR after the headers and payload, if binary payload this is 2nd "\r\n" pair
-	uprintfx(&psRR->sUB, "\r\n") ;
+	// add the final CR after the headers and payload, if binary payload this is 2nd strCRLF pair
+	uprintfx(&psRR->sUB, strCRLF) ;
 	IF_P(debugREQUEST && psRR->f_debug, "Content:\r\n%.*s\r\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
 	return psRR->sUB.Used ;
 }

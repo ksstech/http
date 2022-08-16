@@ -160,7 +160,7 @@ static int xvHttpSendResponse(void * pV, const char * format, va_list vaList) {
 	 * added for the extra CR + LF pair to form the blank line after the header values */
 	iRV += socprintfx(&psRR->sCtx, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2) ;
 	iRV += vsocprintfx(&psRR->sCtx, format, vaList) ;				// add the actual content
-	iRV += socprintfx(&psRR->sCtx, "\r\n") ;						// add the final CR+LF after the body
+	iRV += socprintfx(&psRR->sCtx, strCRLF) ;						// add the final CR+LF after the body
 	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->f_debug, "Content:\r\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf);
 	return iRV;
 }
