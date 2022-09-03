@@ -104,6 +104,9 @@ static const char HtmlErrorInvMethod[] =
 static const char HtmlErrorBadQuery[] =
 	"<html><body><h2>Query key:value pair(s) mismatched</h2></body></html>" ;
 
+StaticTask_t ttsHTTP = { 0 };
+StackType_t tsbHTTP[httpSTACK_SIZE] = { 0 };
+
 uint8_t		HttpState ;
 netx_t		sServHttpCtx ;
 http_rr_t	sRR = { 0 } ;
@@ -531,7 +534,7 @@ void vHttpStartStop(void) {
 	if (ioB1GET(ioHTTPstart)) {
 		xRtosClearStateRUN(taskHTTP_MASK);
 		xRtosClearStateDELETE(taskHTTP_MASK);
-		xRtosTaskCreate(vHttpTask, "HTTP", httpSTACK_SIZE, NULL, httpPRIORITY, &HttpHandle, tskNO_AFFINITY);
+		HttpHandle = xRtosTaskCreateStatic(vHttpTask, "http", httpSTACK_SIZE, NULL, httpPRIORITY, tsbHTTP, &ttsHTTP, tskNO_AFFINITY);
 	} else {
 		vRtosTaskTerminate(taskHTTP_MASK);
 	}
