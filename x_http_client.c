@@ -211,7 +211,7 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 		setSYSFLAGS(vfLOCATION);
 		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLocation[geoLAT],
 				sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
-		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
+		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else {
 		SL_ERR("Error parsing '%s' key", pKey);
 	}
@@ -259,7 +259,7 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 	if (iRV >= erSUCCESS && sNVSvars.sTZ.TZid[0] && sNVSvars.sTZ.TZname[0]) {
 		setSYSFLAGS(vfTIMEZONE);
 		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->TZname) ;
-		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
+		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
 	} else {
 		SL_ERR("Error parsing '%s' key", pKey);
 	}
@@ -299,7 +299,7 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoALT]) {
 		setSYSFLAGS(vfELEVATION);
 		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]);
-		IF_EXEC_4(debugTRACK && ioB1GET(ioJSONpar), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0);
+		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0);
 	} else {
 		SL_ERR("Error parsing '%s' key", pKey);
 	}
