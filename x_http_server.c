@@ -477,7 +477,7 @@ static void vHttpTask(void * pvParameters) {
 			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_CONNECTED:
-			iRV = xNetRead(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size) ;
+			iRV = xNetRecv(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size) ;
 			if (iRV > 0) {							// read something ?
 				IF_RP(debugTRACK && ioB1GET(ioHTTPtrack), "start parsing\r\n") ;
 				if (sServHttpCtx.maxRx < iRV) {

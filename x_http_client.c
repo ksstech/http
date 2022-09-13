@@ -132,16 +132,16 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		sSecure.szCert	= szCert ;
 	}
 	if (Debug.u32) {
-		sRR.f_debug			= Debug.http ;
-		sRR.sCtx.d_open		= Debug.open ;
-		sRR.sCtx.d_write	= Debug.write ;
-		sRR.sCtx.d_read		= Debug.read ;
-		sRR.sCtx.d_data		= Debug.data ;
-		sRR.sCtx.d_eagain	= Debug.eagain ;
+		sRR.f_debug = Debug.http;
+		sRR.sCtx.d.o = Debug.open;
+		sRR.sCtx.d.w = Debug.write;
+		sRR.sCtx.d.r = Debug.read;
+		sRR.sCtx.d.d = Debug.data;
+		sRR.sCtx.d.ea = Debug.eagain;
 		if (pcCert) {
-			sRR.sCtx.psSec->Verify	= Debug.verify ;
-			sRR.sCtx.d_secure		= Debug.secure ;
-			sRR.sCtx.d_level		= Debug.level ;
+			sRR.sCtx.d.ver	= Debug.verify ;
+			sRR.sCtx.d.sec	= Debug.secure ;
+			sRR.sCtx.d.lvl	= Debug.level ;
 		}
 	}
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT);
@@ -166,12 +166,12 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 	sRR.sCtx.flags = SO_REUSEADDR;
 	int iRV = xNetOpen(&sRR.sCtx);
 	if (iRV == erSUCCESS) {								// if socket=open, write request
-		iRV = xNetWrite(&sRR.sCtx, sRR.sUB.pBuf, xLen);
+		iRV = xNetSend(&sRR.sCtx, sRR.sUB.pBuf, xLen);
 		if (iRV > 0) {									// successfully written some (or all)
 			if (sRR.hvContentType == ctApplicationOctetStream)
-				iRV = sRR.hdlr_req(&sRR) ;			// should return same as xNetWrite()
+				iRV = sRR.hdlr_req(&sRR) ;			// should return same as xNetSendX()
 			if (iRV > 0) {								// now do the actual read
-				iRV = xNetReadBlocks(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size, configHTTP_RX_WAIT);
+				iRV = xNetRecvBlocks(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size, configHTTP_RX_WAIT);
 				if (iRV > 0) {							// actually read something
 					sRR.sUB.Used = iRV;
 					iRV = xHttpCommonDoParsing(&sParser);	// return erFAILURE or some 0+ number
@@ -387,13 +387,13 @@ int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLe
 		if (sFI.xDone == sFI.xFull)
 			break;
 		IF_SYSTIMER_START(debugTIMING, stFOTA);
-		iRV = xNetReadBlocks(&psReq->sCtx, (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
+		iRV = xNetRecvBlocks(&psReq->sCtx, (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
 		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
 		if (iRV > 0) {
 			sFI.xLen = iRV;
 		} else if (psReq->sCtx.error != EAGAIN) {
 			sFI.iRV = iRV;								// save for halFOTA_End() reuse
-			break;										// no need for error reporting, already done in xNetRead()
+			break;										// no need for error reporting, already done in xNetRecv()
 		}
 	}
 
