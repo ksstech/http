@@ -400,7 +400,7 @@ int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLe
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
 	iRV = halPART_FotaEnd(&sFI);
 	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
-		setSYSFLAGS(sfRESTART);
+		setSYSFLAGS(sfREBOOT);
 	return sFI.iRV;
 }
 
@@ -423,7 +423,7 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	 * #3 to be defined
 	 */
 	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck);
-	if (iRV > erFAILURE && allSYSFLAGS(sfRESTART) == 0)
+	if (iRV > erFAILURE && allSYSFLAGS(sfREBOOT) == 0)
 		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck);
 	if (iRV <= erFAILURE)
 		setSYSFLAGS(sfFW_OK);

@@ -317,7 +317,7 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 			if (iRV == erSUCCESS) {						// inform client of success or not....
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK) ;
 				psRR->pcBody	= (char *) HtmlAPconfigOK ;
-				setSYSFLAGS(sfRESTART);
+				setSYSFLAGS(sfREBOOT);
 			} else {
 				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE) ;
 				psRR->pcBody	= (char *) HtmlAPconfigFAIL ;
@@ -379,7 +379,7 @@ static void vHttpNotifyHandler(void) {
 			xHttpClientCheckUpgrades(CHECK);
 			fDone |= reqFW_CHECK;
 		}
-		if (allSYSFLAGS(sfRESTART) == 0) {
+		if (allSYSFLAGS(sfREBOOT) == 0) {
 			if (fRqst & reqGEOLOC) {
 				iRV = xHttpGetLocation();
 				if (iRV > erFAILURE && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
