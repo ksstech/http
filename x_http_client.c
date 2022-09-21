@@ -200,11 +200,11 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 	jsmntok_t *	psTokenList ;
 	NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {									// parse Latitude
-		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lat", &sNVSvars.GeoLocation[geoLAT], vfFXX) ;
+		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lat", (px_t) &sNVSvars.GeoLocation[geoLAT], cvF32);
 		if (iRV >= erSUCCESS) {							// parse Longitude
-			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lng", &sNVSvars.GeoLocation[geoLON], vfFXX) ;
+			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lng", (px_t) &sNVSvars.GeoLocation[geoLON], cvF32);
 			if (iRV >= erSUCCESS)						// parse accuracy
-				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "accuracy", &sNVSvars.GeoLocation[geoACC], vfFXX) ;
+				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "accuracy", (px_t) &sNVSvars.GeoLocation[geoACC], cvF32);
 		}
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
@@ -244,15 +244,15 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 	NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {
 		x32_t	xVal ;
-		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "dstOffset", &xVal.i32, vfIXX) ;
+		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "dstOffset", (px_t) &xVal.i32, cvI32);
 		if (iRV >= erSUCCESS) {
 			sNVSvars.sTZ.daylight = xVal.i32;			// convert i32 -> i16 & store
-			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "rawOffset", &xVal.i32, vfIXX) ;
+			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "rawOffset", (px_t) &xVal.i32, cvI32);
 			if (iRV >= erSUCCESS) {
 				sNVSvars.sTZ.timezone = xVal.i32;		// store value
-				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneId", sNVSvars.sTZ.TZid, vfSXX);
+				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneId", (px_t) sNVSvars.sTZ.TZid, cvSXX);
 				if (iRV >= erSUCCESS)
-					iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneName", sNVSvars.sTZ.TZname, vfSXX) ;
+					iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "timeZoneName", (px_t) sNVSvars.sTZ.TZname, cvSXX);
 			}
 		}
 	}
@@ -292,9 +292,9 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 	jsmntok_t *	psTokenList ;
 	int NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList);
 	if (NumTok > 0) {									// parse Elevation
-		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "elevation", &sNVSvars.GeoLocation[geoALT], vfFXX) ;
+		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "elevation", (px_t) &sNVSvars.GeoLocation[geoALT], cvF32);
 		if (iRV >= erSUCCESS)							// parse Resolution
-			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "resolution", &sNVSvars.GeoLocation[geoRES], vfFXX) ;
+			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "resolution", (px_t) &sNVSvars.GeoLocation[geoRES], cvF32);
 	}
 	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoALT]) {
 		setSYSFLAGS(vfELEVATION);
