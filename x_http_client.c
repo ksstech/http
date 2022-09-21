@@ -437,10 +437,10 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 // for binary uploads the address and content length+type must be correct
 int xHttpCoredumpUpload(void) {
 	#ifdef CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN
-		const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.bin" ;
+		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.bin" ;
 //	#elif defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
 	#else
-		const char caQuery[] = "PUT /coredump/%m_%X_%X_%llu.elf" ;
+		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.elf" ;
 	#endif
 	esp_partition_iterator_t sIter;
 	sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
@@ -492,7 +492,7 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
  */
 int	xHttpClientIdentUpload(void * psRomID) {
 	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, "PATCH /ibuttons.dat",
-			"'%m' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\r\n",
+			"'%M' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\r\n",
 			NULL, 0, 						// certificate info
 			NULL, 0, 						// read/write handler & size
 			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
