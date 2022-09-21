@@ -290,7 +290,7 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 	const char * pKey = " Insufficient" ;
 	jsmn_parser	sParser ;
 	jsmntok_t *	psTokenList ;
-	int NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
+	int NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList);
 	if (NumTok > 0) {									// parse Elevation
 		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "elevation", &sNVSvars.GeoLocation[geoALT], vfFXX) ;
 		if (iRV >= erSUCCESS)							// parse Resolution
