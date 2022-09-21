@@ -196,7 +196,7 @@ int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xL
 
 int xHttpCommonHeadersCompleteHandler(http_parser * psP) {
 	http_rr_t * psReq = psP->data ;
-	IF_P(debugTRACK && psReq->f_debug, "HEADERS COMPLETE: ar=%d  co=%d  ct=%d  host=%d  len=%llu  date=%R  last=%R\r\n",
+	IF_PX(debugTRACK && psReq->f_debug, "HEADERS COMPLETE: ar=%d  co=%d  ct=%d  host=%d  len=%llu  date=%R  last=%R\r\n",
 			psReq->f_ac_rng, psReq->hvConnect, psReq->hvContentType, psReq->f_host, psP->content_length,
 			xTimeMakeTimestamp(psReq->hvDate, 0), xTimeMakeTimestamp(psReq->hvLastModified, 0)) ;
 	// if we return 1 here the parser will believe there is no body in the message
@@ -229,13 +229,13 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 		if (iRV > erSUCCESS) {							// print parsed tokens
 			iRV = xJsonPrintTokens(pcBuf, psTokenList, iRV, 0) ;
 		} else {
-			IF_P(debugTRACK && psReq->f_debug, "BODY (json)\r\n%!`+B", xLen, pcBuf) ;	// not parsed, just dump...
+			IF_PX(debugTRACK && psReq->f_debug, "BODY (json)\r\n%!'+hhY", xLen, pcBuf) ;	// not parsed, just dump...
 		}
 		if (psTokenList) vRtosFree(psTokenList) ;
 		break ;
 	}
 	default:
-		IF_P(debugTRACK && psReq->f_debug, "BODY (other)\r\n%!`+B", xLen, pcBuf) ;
+		IF_PX(debugTRACK && psReq->f_debug, "BODY (other)\r\n%!'+hhY", xLen, pcBuf) ;
 	}
     return erSUCCESS ;
 }
