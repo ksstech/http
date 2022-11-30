@@ -10,7 +10,6 @@
 #include "x_http_client.h"								// for xHttpFirmware????()
 #include "task_control.h"
 #include "commands.h"
-#include "options.h"
 #include "rules_parse_text.h"
 
 #include "x_string_general.h"
@@ -366,13 +365,9 @@ static void vHttpNotifyHandler(void) {
 			fDone |= reqCOREDUMP;
 		}
 		if (fRqst & reqFW_UPGRADE) {
-			#if (halUSE_GUI == 2)
 			xRtosClearStateRUN(taskGUI_MASK);
-			#endif
 			xHttpClientCheckUpgrades(PERFORM);
-			#if (halUSE_GUI == 2)
 			xRtosSetStateRUN(taskGUI_MASK);
-			#endif
 			fDone |= reqFW_UPGRADE;
 		}
 		if (fRqst & reqFW_CHECK) {
