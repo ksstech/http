@@ -364,7 +364,7 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
  * @param	xLen
  * @return
  */
-int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
+static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen);
 	if (iRV != 1)					// 1=NewFW  0=LatestFW  <0=Error
 		return iRV;
@@ -404,7 +404,7 @@ int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLe
 	return sFI.iRV;
 }
 
-int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
+static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 	return xHttpRequest(HostInfo[ioB2GET(ioHostFOTA)].pName, "GET /firmware/%s.bin", NULL,
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert,
 			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
