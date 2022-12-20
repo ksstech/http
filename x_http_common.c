@@ -262,18 +262,18 @@ size_t	xHttpCommonDoParsing(http_parser * psP) {
 		psRR->sfCB.on_message_complete	= xHttpCommonMessageCompleteHandler ;
 	}
 
-	int iRV = http_parser_execute(psP, &psRR->sfCB, (char *)psRR->sUB.pBuf, psRR->sUB.Used) ;
+	int iRV = http_parser_execute(psP, &psRR->sfCB, (char *)psRR->sUB.pBuf, psRR->sUB.Used);
 	if (psRR->f_debug) {
 		if (iRV <= 0) {
 			SL_NOT("parse %s (%s) url=%s/%s/%s", http_errno_name(HTTP_PARSER_ERRNO(psP)),
 				http_errno_description(HTTP_PARSER_ERRNO(psP)),
 				psRR->url.host, psRR->url.path, psRR->url.query);
-			iRV = erFAILURE ;
+			iRV = erFAILURE;
 		}
 		if (INRANGE(HTTP_STATUS_BAD_REQUEST, psP->status_code, HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED)) {
-			SL_NOT("http error=%d (%s)", psP->status_code, psRR->hvStatusMess) ;
-			iRV = erFAILURE ;
+			SL_NOT("http error=%d (%s)", psP->status_code, psRR->hvStatusMess);
+			iRV = erFAILURE;
 		}
 	}
-	return iRV ;
+	return iRV;
 }
