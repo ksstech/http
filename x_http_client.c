@@ -207,13 +207,11 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 				iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "accuracy", (px_t) &sNVSvars.GeoLocation[geoACC], cvF32);
 		}
 	}
-	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
-		setSYSFLAGS(vfLOCATION);
+	if (iRV >= erSUCCESS) {
+		setSYSFLAGS(vfGEOLOC);
 		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLocation[geoLAT],
-				sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]) ;
-		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
-	} else {
-		SL_ERR("Error parsing '%s' key", pKey);
+				sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]);
+		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0);
 	}
 	if (psTokenList)
 		vRtosFree(psTokenList);
@@ -256,12 +254,10 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 			}
 		}
 	}
-	if (iRV >= erSUCCESS && sNVSvars.sTZ.TZid[0] && sNVSvars.sTZ.TZname[0]) {
-		setSYSFLAGS(vfTIMEZONE);
-		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->TZname) ;
-		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0) ;
-	} else {
-		SL_ERR("Error parsing '%s' key", pKey);
+	if (iRV >= erSUCCESS) {
+		setSYSFLAGS(vfGEOTZ);
+		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->TZname);
+		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0);
 	}
 	if (psTokenList)
 		vRtosFree(psTokenList);
@@ -296,12 +292,10 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 		if (iRV >= erSUCCESS)							// parse Resolution
 			iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "resolution", (px_t) &sNVSvars.GeoLocation[geoRES], cvF32);
 	}
-	if (iRV >= erSUCCESS && sNVSvars.GeoLocation[geoALT]) {
-		setSYSFLAGS(vfELEVATION);
+	if (iRV >= erSUCCESS) {
+		setSYSFLAGS(vfGEOALT);
 		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]);
 		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, pcBuf, psTokenList, NumTok, 0);
-	} else {
-		SL_ERR("Error parsing '%s' key", pKey);
 	}
 	if (psTokenList)
 		vRtosFree(psTokenList);
@@ -325,8 +319,9 @@ int	xHttpGetElevation(void) {
  * 			0 if no newer upgrade file exists
  * 			1 if valid upgrade file exists
  */
-int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
+static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	http_rr_t * psRR = psParser->data;
+	int iRV = erFAILURE;
 	if (psParser->status_code != HTTP_STATUS_OK) {
 		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
 	} else if (psRR->hvContentLength == 0ULL) {
@@ -336,25 +331,18 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
 	} else if (psRR->hvConnect == coClose) {
 		SL_ERR("Connection closed unexpectedly");
 	} else {
-		http_rr_t * psRR = psParser->data;
 		/* BuildSeconds			: halfway(?) time of running FW
 		 * hvLastModified		: creation time of available FW
 		 * fotaMIN_DIF_SECONDS	: Required MIN difference (hvLastModified - BuildSeconds)
 		 *						: How much later must FW be to be considered new? */
 		#define	fotaMIN_DIF_SECONDS	120
 		int i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS;
-		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' found  %R vs %R  Diff=%d  FW %snewer",
+		iRV = (i32Diff < 0) ? erSUCCESS : 1;
+		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' found  %R vs %R  Diff=%d  FW %s",
 				psRR->pvArg, xTimeMakeTimestamp(psRR->hvLastModified, 0),
-				xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "NOT " : "");
-		if (i32Diff < 0) {
-			setSYSFLAGS(sfFW_OK);
-			return 0;
-		}
-		clrSYSFLAGS(sfFW_OK);
-		return 1;
+				xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "old" : "new");
 	}
-	setSYSFLAGS(sfFW_OK);
-	return erFAILURE;
+	return iRV;
 }
 
 /**
