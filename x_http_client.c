@@ -169,7 +169,7 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		iRV = xNetSend(&sRR.sCtx, sRR.sUB.pBuf, xLen);
 		if (iRV > 0) {									// successfully written some (or all)
 			if (sRR.hvContentType == ctApplicationOctetStream)
-				iRV = sRR.hdlr_req(&sRR) ;			// should return same as xNetSendX()
+				iRV = sRR.hdlr_req(&sRR) ;				// should return same as xNetSendX()
 			if (iRV > 0) {								// now do the actual read
 				iRV = xNetRecvBlocks(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size, configHTTP_RX_WAIT);
 				if (iRV > 0) {							// actually read something
@@ -194,11 +194,11 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 // ########################################## Location #############################################
 
 int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
-	int	iRV = erFAILURE, NumTok ;
-	const char * pKey = " Insufficient" ;
-	jsmn_parser	sParser ;
-	jsmntok_t *	psTokenList ;
-	NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
+	jsmn_parser	sParser;
+	jsmntok_t *	psTokenList;
+	int	NumTok, iRV = erFAILURE;
+	const char * pKey = " Insufficient";
+	NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList);
 	if (NumTok > 0) {									// parse Latitude
 		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "lat", (px_t) &sNVSvars.GeoLocation[geoLAT], cvF32);
 		if (iRV >= erSUCCESS) {							// parse Longitude
@@ -237,10 +237,10 @@ int	xHttpGetLocation(void) {
  * 		https://maps.googleapis.com/maps/api/timezone/json?location=38.908133,-77.047119&timestamp=1458000000&key=YOUR_API_KEY
  */
 int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) {
-	jsmn_parser	sParser ;
-	jsmntok_t *	psTokenList ;
-	int	NumTok, iRV = erFAILURE ;
-	const char * pKey = " Insufficient" ;
+	jsmn_parser	sParser;
+	jsmntok_t *	psTokenList;
+	int	NumTok, iRV = erFAILURE;
+	const char * pKey = " Insufficient";
 	NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
 	if (NumTok > 0) {
 		x32_t	xVal ;
@@ -264,8 +264,8 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 		SL_ERR("Error parsing '%s' key", pKey);
 	}
 	if (psTokenList)
-		vRtosFree(psTokenList) ;
-    return iRV ;
+		vRtosFree(psTokenList);
+    return iRV;
 }
 
 int	xHttpGetTimeZone(void) {
@@ -274,7 +274,7 @@ int	xHttpGetTimeZone(void) {
 			CertGGLE, sizeof(CertGGLE), xHttpParseTimeZone, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
 			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
-			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]) ;
+			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]);
 }
 
 // ########################################## Elevation #############################################
@@ -305,7 +305,7 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 	}
 	if (psTokenList)
 		vRtosFree(psTokenList);
-    return iRV ;
+    return iRV;
 }
 
 int	xHttpGetElevation(void) {
@@ -321,9 +321,9 @@ int	xHttpGetElevation(void) {
 
 /**
  * Check if a valid firmware upgrade exists
- * @return	1 if valid upgrade file exists
+ * @return	erFAILURE if file not found/empty file/invalid content/connection closed
  * 			0 if no newer upgrade file exists
- * 			erFAILURE if file not found/empty file/invalid content/connection closed
+ * 			1 if valid upgrade file exists
  */
 int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	http_rr_t * psRR = psParser->data;
@@ -372,10 +372,10 @@ int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLe
 	iRV = halPART_FotaBegin(&sFI) ;
 	if (iRV != erSUCCESS)
 		return iRV;
-	sFI.pBuf = (void *) pBuf ;
-	sFI.xLen = xLen ;
-	http_rr_t * psReq = psParser->data ;
+	sFI.pBuf = (void *) pBuf;
+	sFI.xLen = xLen;
 	sFI.xDone = 0;
+	http_rr_t * psReq = psParser->data;
 	sFI.xFull = psReq->hvContentLength;
 	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT) ;
 
@@ -409,7 +409,7 @@ int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert,
 			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), pvPara, pvPara) ;
+			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), pvPara, pvPara);
 }
 
 /**
