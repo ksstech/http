@@ -366,7 +366,7 @@ int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen)
  */
 static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen);
-	if (iRV != 1)					// 1=NewFW  0=LatestFW  <0=Error
+	if (iRV < 1)					// 1=NewFW  0=LatestFW  -1=Error
 		return iRV;
 	part_xfer_t	sFI;
 	iRV = halPART_FotaBegin(&sFI) ;
@@ -417,6 +417,7 @@ static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
  * @return
  */
 int xHttpClientCheckUpgrades(bool bCheck) {
+	clrSYSFLAGS(sfFW_OK);
 	/* To create a hierarchy of firmware upgrades, we need to define a descending order:
 	 * #1 MAC address: "1234567890ab.bin"
 	 * #2 hardware platform: "device-specification-token.bin"
@@ -424,11 +425,11 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	 */
 	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck);
 	if (iRV > erFAILURE && allSYSFLAGS(sfREBOOT) == 0)
-		iRV = xHttpClientFirmwareUpgrade((void *) halDEV_UUID, bCheck);
-	if (iRV <= erFAILURE)
-		setSYSFLAGS(sfFW_OK);
+		iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(cmakeUUID), bCheck);
 	if (bCheck == PERFORM)
 		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_INFO, "FWupg %s", iRV < erSUCCESS ? "FAIL" : "Done");
+	if (allSYSFLAGS(sfREBOOT) == 0)
+		setSYSFLAGS(sfFW_OK);
 	return iRV;
 }
 
