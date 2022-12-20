@@ -10,7 +10,7 @@
 #include "x_http_client.h"								// for xHttpFirmware????()
 #include "task_control.h"
 #include "commands.h"
-#include "rules_parse_text.h"
+#include "rules.h"
 
 #include "x_string_general.h"
 #include "x_string_to_values.h"
@@ -377,28 +377,25 @@ static void vHttpNotifyHandler(void) {
 		if (allSYSFLAGS(sfREBOOT) == 0) {
 			if (fRqst & reqGEOLOC) {
 				iRV = xHttpGetLocation();
-				if (iRV > erFAILURE && sNVSvars.GeoLocation[geoLAT] && sNVSvars.GeoLocation[geoLON]) {
+				if (iRV > erFAILURE)
 					fDone |= reqGEOLOC;
-				}
 			}
 			if (fRqst & reqGEOTZ) {
 				iRV = xHttpGetTimeZone();
-				if (iRV > erFAILURE && sNVSvars.sTZ.TZid[0]) {
+				if (iRV > erFAILURE)
 					fDone |= reqGEOTZ;
-				}
 			}
 			if (fRqst & reqGEOALT) {
 				iRV = xHttpGetElevation();
-				if (iRV > erFAILURE && sNVSvars.GeoLocation[geoALT]) {
+				if (iRV > erFAILURE)
 					fDone |= reqGEOALT;
-				}
 			}
 		} else if (fRqst & (reqGEOLOC | reqGEOTZ | reqGEOALT)) {
 			fDone |= (reqGEOLOC | reqGEOTZ | reqGEOALT);
 			SL_NOT("GeoXXX discarded, need to restart");
 		}
 		if (fDone) {
-			SL_DBG("fRqst=0x%X  fDone=0x%X\r\n", fRqst, fDone);
+			SL_NOT("fRqst=0x%X  fDone=0x%X\r\n", fRqst, fDone);
 			ulTaskNotifyValueClear(NULL, fDone);
 		}
 	}
@@ -420,15 +417,12 @@ static void vHttpTask(void * pvParameters) {
 	xRtosSetStateRUN(taskHTTP_MASK) ;
 
 	while (bRtosVerifyState(taskHTTP_MASK)) {
-		if (HttpState != stateHTTP_DEINIT) {
-			EventBits_t CurStat = xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(httpINTERVAL_MS));
-			if ((CurStat & flagL3_STA) != flagL3_STA && (CurStat & flagLX_SAP) != flagLX_SAP) {
-				continue;
-			}
+		if (bRtosCheckStatus(flagLX_STA) == 0) {
+			vTaskDelay(10);
+			continue;
 		}
 		// Handle HTTP client type requests from other tasks
-		if (bRtosCheckStatus(flagL3_STA))
-			vHttpNotifyHandler();
+		vHttpNotifyHandler();
 
 		switch(HttpState) {
 		case stateHTTP_DEINIT:
