@@ -216,8 +216,8 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 		SL_ERR("Error parsing '%s' key", pKey);
 	}
 	if (psTokenList)
-		vRtosFree(psTokenList) ;
-    return iRV ;
+		vRtosFree(psTokenList);
+    return iRV;
 }
 
 int	xHttpGetLocation(void) {
