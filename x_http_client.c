@@ -3,7 +3,7 @@
  * Copyright 2014-22 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include	"hal_variables.h"
+#include	"main.h"
 #include	"x_http_client.h"
 
 #include	"FreeRTOS_Support.h"

@@ -3,7 +3,7 @@
  * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include "hal_variables.h"
+#include "main.h"
 #include "hal_stdio.h"
 
 #include "x_http_server.h"
