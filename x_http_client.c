@@ -357,7 +357,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 	if (iRV < 1)					// 1=NewFW  0=LatestFW  -1=Error
 		return iRV;
 	part_xfer_t	sFI;
-	iRV = halPART_FotaBegin(&sFI) ;
+	iRV = halFOTA_Begin(&sFI) ;
 	if (iRV != erSUCCESS)
 		return iRV;
 	sFI.pBuf = (void *) pBuf;
@@ -368,7 +368,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT) ;
 
 	while (xLen) {										// deal with all received packets
-		iRV = halPART_FotaWrite(&sFI);
+		iRV = halFOTA_Write(&sFI);
 		if (iRV != ESP_OK)
 			break;
 		sFI.xDone += sFI.xLen;
@@ -386,7 +386,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 	}
 
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
-	iRV = halPART_FotaEnd(&sFI);
+	iRV = halFOTA_End(&sFI);
 	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
 		setSYSFLAGS(sfREBOOT);
 	return sFI.iRV;
