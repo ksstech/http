@@ -10,8 +10,12 @@ set( include_dirs "."
 	"${PRepo}/http-parser/." 
 )
 set( priv_include_dirs )
-set( requires buffers common rtos-support socketsX stringsX ) 
-set( priv_requires hal_esp32 irmacos jsonX printfx rules syslog systiming )
+set( requires 
+	buffers common rtos-support socketsX stringsX
+) 
+set( priv_requires 
+	hal_esp32 irmacos jsonX main printfx rules syslog systiming
+)
 
 idf_component_register(
 	SRCS ${srcs} 		
