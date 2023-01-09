@@ -323,7 +323,7 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 	http_rr_t * psRR = psParser->data;
 	int iRV = erFAILURE;
 	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
+		IF_SL_WARN(debugTRACK && ioB1GET(ioFOTA), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
 	} else if (psRR->hvContentLength == 0ULL) {
 		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength);
 	} else if (psRR->hvContentType != ctApplicationOctetStream) {
