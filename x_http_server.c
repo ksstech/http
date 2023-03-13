@@ -163,7 +163,7 @@ static int xvHttpSendResponse(void * pV, const char * format, va_list vaList) {
 	iRV += socprintfx(&psRR->sCtx, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2) ;
 	iRV += vsocprintfx(&psRR->sCtx, format, vaList) ;				// add the actual content
 	iRV += socprintfx(&psRR->sCtx, strCRLF) ;						// add the final CR+LF after the body
-	IF_RP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->f_debug, "Content:\r\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf);
+	IF_P(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf);
 	return iRV;
 }
 

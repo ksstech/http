@@ -22,9 +22,6 @@
 
 #define	debugFLAG					0xF000
 
-#define	debugCOREDUMP				(debugFLAG & 0x0001)
-#define	debugREQUEST				(debugFLAG & 0x0002)
-
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
 #define	debugPARAM					(debugFLAG_GLOBAL & debugFLAG & 0x4000)
@@ -81,7 +78,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 		if (psRR->hvContentType) {
 			uprintfx(&psRR->sUB, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
 			if (psRR->hvContentType == ctApplicationOctetStream) {
-				IF_myASSERT(debugREQUEST, INRANGE(1, psRR->hvContentLength, 2*MEGA)) ;
+				IF_myASSERT(debugTRACK, INRANGE(1, psRR->hvContentLength, 2*MEGA));
 				/* Since the actual binary payload will only be added in the callback
 				 * we will only add a single CRLF
 				 * pair here, the second added at the end of this function.
@@ -98,7 +95,8 @@ int	xHttpBuildHeader(http_parser * psParser) {
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd strCRLF pair
 	uprintfx(&psRR->sUB, strCRLF) ;
-	IF_P(debugREQUEST && psRR->f_debug, "Content:\r\n%.*s\r\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
+//	IF_P(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s\r\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
+	IF_P(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s\r\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
 	return psRR->sUB.Used ;
 }
 
@@ -110,7 +108,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		pcc_t pcCert, size_t szCert,					// host certificate info
 		void * OnBodyCB, u32_t DataSize,				// read/write handler & size
-		u32_t hvValues, u16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) {
+		u32_t hvValues, u16_t BufSize, netx_dbg_t Debug, void * pvArg, ...) {
 	http_rr_t sRR		= { 0 } ;
 	sock_sec_t sSecure	= { 0 } ;				// LEAVE here else pcCert/szCert gets screwed
 	sRR.sCtx.pHost		= pHost ;
@@ -121,29 +119,17 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 	sRR.hvValues		= hvValues ;
 	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
 	sRR.pvArg			= pvArg ;
-	IF_RP(debugREQUEST, "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=",
+	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=",
 			sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
-	IF_RP(debugREQUEST, sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.pVoid);
-	IF_myASSERT(debugREQUEST, sRR.hvContentType != ctUNDEFINED);
+	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.pVoid);
+	IF_myASSERT(debugTRACK, sRR.hvContentType != ctUNDEFINED);
 
 	if (pcCert) {
 		sRR.sCtx.psSec	= &sSecure ;
 		sSecure.pcCert	= pcCert ;
 		sSecure.szCert	= szCert ;
 	}
-	if (Debug.u32) {
-		sRR.f_debug = Debug.http;
-		sRR.sCtx.d.o = Debug.open;
-		sRR.sCtx.d.w = Debug.write;
-		sRR.sCtx.d.r = Debug.read;
-		sRR.sCtx.d.d = Debug.data;
-		sRR.sCtx.d.ea = Debug.eagain;
-		if (pcCert) {
-			sRR.sCtx.d.ver	= Debug.verify ;
-			sRR.sCtx.d.sec	= Debug.secure ;
-			sRR.sCtx.d.lvl	= Debug.level ;
-		}
-	}
+	sRR.sCtx.d.val = Debug.val;
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT);
 	IF_SYSTIMER_START(debugTIMING, stHTTP);
 	http_parser sParser;
@@ -176,11 +162,11 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 					sRR.sUB.Used = iRV;
 					iRV = xHttpCommonDoParsing(&sParser);	// return erFAILURE or some 0+ number
 				} else {
-					IF_P(debugREQUEST, " nothing read ie to parse\r\n");
+					IF_P(debugTRACK && ioB1GET(ioHTTPtrack), " nothing read ie to parse\r\n");
 					iRV = erFAILURE;
 				}
 			} else {
-				IF_P(debugREQUEST, " nothing written (by handler) so can't expect to read\r\n");
+				IF_P(debugTRACK && ioB1GET(ioHTTPtrack), " nothing written (by handler) so can't expect to read\r\n");
 				iRV = erFAILURE;
 			}
 		}
@@ -223,7 +209,7 @@ int	xHttpGetLocation(void) {
 	return xHttpRequest("www.googleapis.com", caQuery, "{ }\r\n",
 			CertGGLE, sizeof(CertGGLE), xHttpParseGeoLoc, 0,
 			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL);
+			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0), NULL);
 }
 
 // ##################################### TIMEZONE support ##########################################
@@ -269,7 +255,7 @@ int	xHttpGetTimeZone(void) {
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 			CertGGLE, sizeof(CertGGLE), xHttpParseTimeZone, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
+			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0), NULL,
 			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]);
 }
 
@@ -307,7 +293,7 @@ int	xHttpGetElevation(void) {
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 			CertGGLE, sizeof(CertGGLE), xHttpParseElevation, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
+			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0), NULL,
 			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]);
 }
 
@@ -394,10 +380,11 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 
 static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 	return xHttpRequest(HostInfo[ioB2GET(ioHostFOTA)].pName, "GET /firmware/%s.bin", NULL,
-			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert,
+			HostInfo[ioB2GET(ioHostFOTA)].pcCert,
+			HostInfo[ioB2GET(ioHostFOTA)].szCert,
 			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), pvPara, pvPara);
+			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0), pvPara, pvPara);
 }
 
 /**
@@ -412,10 +399,12 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	 * #3 to be defined
 	 */
 	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck);
-	if (iRV > erFAILURE && allSYSFLAGS(sfREBOOT) == 0)
-		iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(cmakeUUID), bCheck);
+//	if (iRV > erFAILURE && allSYSFLAGS(sfREBOOT) == 0)
+	if (allSYSFLAGS(sfREBOOT) == 0)
+		iRV = xHttpClientFirmwareUpgrade((void *) cmakeUUID, bCheck);
+//		iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(cmakeUUID), bCheck);
 	if (bCheck == PERFORM)
-		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_INFO, "FWupg %s", iRV < erSUCCESS ? "FAIL" : "Done");
+		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_NOTICE, "FWupg %s", iRV < erSUCCESS ? "FAIL" : "Done");
 	if (allSYSFLAGS(sfREBOOT) == 0)
 		setSYSFLAGS(sfFW_OK);
 	return iRV;
@@ -447,7 +436,7 @@ int xHttpCoredumpUpload(void) {
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert,HostInfo[ioB2GET(ioHostFOTA)].szCert,
 			NULL, sCDhdr.data_len,
 			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), (void *) psPart,
+			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), (void *) psPart,
 			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
 	}
 	esp_partition_iterator_release(sIter);
@@ -469,8 +458,8 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
 	return xHttpRequest("api.pushover.net", "POST /1/messages.json", caBody,
 			CertGGLE, sizeof(CertGGLE), NULL, 0,
 			httpHDR_VALUES(ctApplicationXwwwFormUrlencoded, ctApplicationJson, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
-			nameSTA, pcMess, u32Val) ;
+			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL,
+			nameSTA, pcMess, u32Val);
 }
 
 // ################################## POST IDENT info to host ######################################
@@ -485,8 +474,7 @@ int	xHttpClientIdentUpload(void * psRomID) {
 			NULL, 0, 						// certificate info
 			NULL, 0, 						// read/write handler & size
 			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL,
-			psRomID);
+			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL, psRomID);
 }
 
 // ######################################### Unused API's ##########################################
@@ -506,7 +494,7 @@ int xHttpGetWeather(void) {
 	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
 			NULL, 0, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
-			16384, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL) ;
+			16384, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL);
 }
 
 // ################################### How's my SSL support ########################################
@@ -515,7 +503,7 @@ int	xHttpHowsMySSL(void) {
 	return xHttpRequest("www.howsmyssl.com", "GET /a/check", NULL,
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL) ;
+			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL);
 }
 
 // ####################################### Bad SSL support #########################################
@@ -524,6 +512,6 @@ int	xHttpBadSSL(void) {
 	return xHttpRequest("www.badssl.com", "GET /dashboard", NULL,
 			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
-			0, xnetDEBUG_FLAGS(0,0,0,0,0,0,0,0,3), NULL) ;
+			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL);
 }
 

@@ -15,10 +15,6 @@ extern "C" {
 
 // ########################################### macros #############################################
 
-#define	xnetDEBUG_FLAGS(A, B, C, D, E, F, G, H, I) (xnet_debug_t) \
-	{	.http=A, .open=B, .write=C, .read=D, .data=E,	\
-		.eagain=F,	.secure=G, .verify=H, .level=I	\
-	}
 
 // ######################################### enumerations ##########################################
 
@@ -26,22 +22,6 @@ enum { PERFORM = 0, CHECK = 1 } ;
 
 // ######################################### structures ############################################
 
-typedef	struct xnet_debug_t {
-	union {
-		u32_t u32 ;
-		struct {
-			bool	http;
-			bool	open;
-			bool	write;
-			bool	read;
-			bool	data;
-			bool	eagain;
-			bool	secure;
-			bool	verify;
-			u8_t	level:2;
-		};
-	};
-} xnet_debug_t ;
 
 // ################################### Global variables ############################################
 
@@ -52,7 +32,7 @@ int	xHttpCompleteRequest(http_rr_t * psReq) ;
 int	xHttpParseResponse(char * pBuf, size_t xLen) ;
 int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		pcc_t pcCert, size_t szCert, void * OnBodyCB, u32_t DataSize,
-		u32_t hvValues, u16_t BufSize, xnet_debug_t Debug, void * pvArg, ...) ;
+		u32_t hvValues, u16_t BufSize, netx_dbg_t Debug, void * pvArg, ...);
 
 int xHttpGetWeather(void) ;
 int	xHttpHowsMySSL(void) ;
