@@ -411,7 +411,7 @@ static void vHttpNotifyHandler(void) {
  */
 static void vHttpTask(void * pvParameters) {
 	int	iRV, iRV2;
-	vTaskSetThreadLocalStoragePointer(NULL, 1, (void *)taskHTTP_MASK);
+	vTaskSetThreadLocalStoragePointer(NULL, buildFRTLSP_EVT_MASK, (void *)taskHTTP_MASK);
 	sRR.sUB.pBuf = pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE);
 	HttpState = stateHTTP_INIT;
 	xRtosSetStateRUN(taskHTTP_MASK) ;
