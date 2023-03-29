@@ -1,22 +1,20 @@
 /*
- * http_client.c
- * Copyright 2014-22 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-23 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include	"main.h"
-#include	"x_http_client.h"
+#include "hal_variables.h"			// required by options.h
 
-#include	"FreeRTOS_Support.h"
-#include	"parserX.h"									// parsing location & TZ requests
-#include	"printfx.h"
-#include	"syslog.h"
-#include	"systiming.h"
-
-#include	"x_string_general.h"
-#include	"x_errors_events.h"
-
-#include	"hal_network.h"
-#include	"hal_fota.h"								// firmware download handler
+#include "FreeRTOS_Support.h"
+#include "hal_network.h"
+#include "hal_fota.h"									// firmware download handler
+#include "options.h"
+#include "parserX.h"									// parsing location & TZ requests
+#include "printfx.h"
+#include "syslog.h"
+#include "systiming.h"
+#include "x_errors_events.h"
+#include "x_http_client.h"
+#include "x_string_general.h"
 
 // ############################### BUILD: debug configuration options ##############################
 

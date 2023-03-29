@@ -3,26 +3,25 @@
  * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include "main.h"
-#include "hal_stdio.h"
+#include "hal_variables.h"			// required by options.h
 
-#include "x_http_server.h"
-#include "x_http_client.h"								// for xHttpFirmware????()
-#include "task_control.h"
 #include "commands.h"
-#include "rules.h"
-
-#include "x_string_general.h"
-#include "x_string_to_values.h"
-#include "printfx.h"
-#include "syslog.h"
-#include "x_errors_events.h"
-#include "x_time.h"
-
+#include "hal_stdio.h"
 #include "hal_network.h"
 #include "hal_fota.h"
 #include "hal_storage.h"
 #include "hal_mcu.h"									// for halMCU_Restart()
+#include "options.h"
+#include "printfx.h"
+#include "rules.h"
+#include "syslog.h"
+#include "task_control.h"
+#include "x_errors_events.h"
+#include "x_http_client.h"								// for xHttpFirmware????()
+#include "x_http_server.h"
+#include "x_string_general.h"
+#include "x_string_to_values.h"
+#include "x_time.h"
 
 // ############################### BUILD: debug configuration options ##############################
 
