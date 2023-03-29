@@ -397,10 +397,8 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	 * #3 to be defined
 	 */
 	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck);
-//	if (iRV > erFAILURE && allSYSFLAGS(sfREBOOT) == 0)
 	if (allSYSFLAGS(sfREBOOT) == 0)
-		iRV = xHttpClientFirmwareUpgrade((void *) cmakeUUID, bCheck);
-//		iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(cmakeUUID), bCheck);
+		iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(cmakeUUID), bCheck);
 	if (bCheck == PERFORM)
 		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_NOTICE, "FWupg %s", iRV < erSUCCESS ? "FAIL" : "Done");
 	if (allSYSFLAGS(sfREBOOT) == 0)
