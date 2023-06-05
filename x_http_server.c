@@ -359,6 +359,7 @@ static void vHttpNotifyHandler(void) {
 	u32_t fDone = 0;
 	int iRV;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
+		IF_PL(debugTRACK && ioB1GET(ioHTTPtrack), "Received Notify 0x%06X\r\n", fRqst);
 		if (fRqst & reqCOREDUMP) {
 			xHttpCoredumpUpload();
 			fDone |= reqCOREDUMP;
