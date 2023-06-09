@@ -112,6 +112,11 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 	sRR.sCtx.pHost		= pHost;
 	sRR.pcQuery			= pQuery;
 	sRR.pVoid			= pvBody;
+	if (pcCert) {
+		sRR.sCtx.psSec	= &sSecure;
+		sSecure.pcCert	= pcCert;
+		sSecure.szCert	= szCert;
+	}
 	sRR.sfCB.on_body	= (http_data_cb) OnBodyCB;
 	sRR.hvContentLength	= (u64_t) DataSize;
 	sRR.hvValues		= hvValues;
@@ -122,11 +127,6 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.pVoid);
 	IF_myASSERT(debugTRACK, sRR.hvContentType != ctUNDEFINED);
 
-	if (pcCert) {
-		sRR.sCtx.psSec	= &sSecure ;
-		sSecure.pcCert	= pcCert ;
-		sSecure.szCert	= szCert ;
-	}
 	sRR.sCtx.d.val = Debug.val;
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT);
 	IF_SYSTIMER_START(debugTIMING, stHTTP);
