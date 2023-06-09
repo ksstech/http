@@ -60,42 +60,42 @@ const char CertGGLE[]	=
 // ################################### Common HTTP API functions ###################################
 
 int	xHttpBuildHeader(http_parser * psParser) {
-	http_rr_t * psRR = psParser->data ;
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf)) ;
+	http_rr_t * psRR = psParser->data;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf));
 
-	vuprintfx(&psRR->sUB, psRR->pcQuery, psRR->VaList) ;
-	uprintfx(&psRR->sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@kss.co.za\r\nUser-Agent: irmacos\r\n", psRR->sCtx.pHost) ;
+	vuprintfx(&psRR->sUB, psRR->pcQuery, psRR->VaList);
+	uprintfx(&psRR->sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@kss.co.za\r\nUser-Agent: irmacos\r\n", psRR->sCtx.pHost);
 	if (psRR->hvAccept) {
-		uprintfx(&psRR->sUB, "Accept: %s\r\n", ctValues[psRR->hvAccept]) ;
-		psRR->hvAccept	= ctUNDEFINED ;
+		uprintfx(&psRR->sUB, "Accept: %s\r\n", ctValues[psRR->hvAccept]);
+		psRR->hvAccept	= ctUNDEFINED;
 	}
 	if (psRR->hvConnect)
 		uprintfx(&psRR->sUB, "Connection: %s\r\n", coValues[psRR->hvConnect]);
 	// from here on items common to requests and responses...
 	if (psRR->pcBody) {
 		if (psRR->hvContentType) {
-			uprintfx(&psRR->sUB, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]) ;
+			uprintfx(&psRR->sUB, "Content-Type: %s\r\n", ctValues[psRR->hvContentType]);
 			if (psRR->hvContentType == ctApplicationOctetStream) {
 				IF_myASSERT(debugTRACK, INRANGE(1, psRR->hvContentLength, 2*MEGA));
 				/* Since the actual binary payload will only be added in the callback
 				 * we will only add a single CRLF
 				 * pair here, the second added at the end of this function.
 				 * The callback will be responsible for adding the final terminating strCRLF */
-				uprintfx(&psRR->sUB, "Content-Length: %d\r\n", psRR->hvContentLength) ;
+				uprintfx(&psRR->sUB, "Content-Length: %d\r\n", psRR->hvContentLength);
 				// no actual binary content added, done later...
 			} else {									// currently handle json/xml/text/html here
-				psRR->hvContentLength = vsprintfx(NULL, psRR->pcBody, psRR->VaList) ;	// determine body length
-				uprintfx(&psRR->sUB, "Content-Length: %d\r\n\r\n", psRR->hvContentLength) ;
-				vuprintfx(&psRR->sUB, psRR->pcBody, psRR->VaList) ;// add actual content
+				psRR->hvContentLength = vsprintfx(NULL, psRR->pcBody, psRR->VaList);	// determine body length
+				uprintfx(&psRR->sUB, "Content-Length: %d\r\n\r\n", psRR->hvContentLength);
+				vuprintfx(&psRR->sUB, psRR->pcBody, psRR->VaList);// add actual content
 			}
 		} else
 			SL_ERR(debugAPPL_PLACE);
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd strCRLF pair
-	uprintfx(&psRR->sUB, strCRLF) ;
-//	IF_P(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s\r\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
-	IF_P(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s\r\n", psRR->sUB.Used, psRR->sUB.pBuf) ;
-	return psRR->sUB.Used ;
+	uprintfx(&psRR->sUB, strCRLF);
+//	IF_P(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s\r\n", psRR->sUB.Used, psRR->sUB.pBuf);
+//	IF_PX(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%+-hhY\r\n", psRR->sUB.Used, psRR->sUB.pBuf);
+	return psRR->sUB.Used;
 }
 
 /**
@@ -153,7 +153,7 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		iRV = xNetSend(&sRR.sCtx, sRR.sUB.pBuf, xLen);
 		if (iRV > 0) {									// successfully written some (or all)
 			if (sRR.hvContentType == ctApplicationOctetStream)
-				iRV = sRR.hdlr_req(&sRR) ;				// should return same as xNetSendX()
+				iRV = sRR.hdlr_req(&sRR);				// should return same as xNetSendX()
 			if (iRV > 0) {								// now do the actual read
 				iRV = xNetRecvBlocks(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size, configHTTP_RX_WAIT);
 				if (iRV > 0) {							// actually read something
@@ -203,7 +203,7 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 }
 
 int	xHttpGetLocation(void) {
-	const char caQuery[] = "POST /geolocation/v1/geolocate?key="keyGOOGLE ;
+	const char caQuery[] = "POST /geolocation/v1/geolocate?key="keyGOOGLE;
 	return xHttpRequest("www.googleapis.com", caQuery, "{ }\r\n",
 			CertGGLE, sizeof(CertGGLE), xHttpParseGeoLoc, 0,
 			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
@@ -223,9 +223,9 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 	jsmntok_t *	psTokenList;
 	int	NumTok, iRV = erFAILURE;
 	const char * pKey = " Insufficient";
-	NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
+	NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList);
 	if (NumTok > 0) {
-		x32_t	xVal ;
+		x32_t	xVal;
 		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "dstOffset", (px_t) &xVal.i32, cvI32);
 		if (iRV >= erSUCCESS) {
 			sNVSvars.sTZ.daylight = xVal.i32;			// convert i32 -> i16 & store
@@ -249,7 +249,7 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 }
 
 int	xHttpGetTimeZone(void) {
-	char const * caQuery = "GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="keyGOOGLE ;
+	char const * caQuery = "GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="keyGOOGLE;
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 			CertGGLE, sizeof(CertGGLE), xHttpParseTimeZone, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
@@ -266,10 +266,10 @@ int	xHttpGetTimeZone(void) {
  *		https://maps.googleapis.com/maps/api/elevation/json?locations=39.7391536,-104.9847034&key=API_KEY
  */
 int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) {
-	int	iRV = erFAILURE ;
-	const char * pKey = " Insufficient" ;
-	jsmn_parser	sParser ;
-	jsmntok_t *	psTokenList ;
+	int	iRV = erFAILURE;
+	const char * pKey = " Insufficient";
+	jsmn_parser	sParser;
+	jsmntok_t *	psTokenList;
 	int NumTok = xJsonParse(pcBuf, xLen, &sParser, &psTokenList);
 	if (NumTok > 0) {									// parse Elevation
 		iRV = xJsonParseKeyValue(pcBuf, psTokenList, NumTok, pKey = "elevation", (px_t) &sNVSvars.GeoLocation[geoALT], cvF32);
@@ -287,7 +287,7 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 }
 
 int	xHttpGetElevation(void) {
-	const char caQuery[] = "GET /maps/api/elevation/json?locations=%.7f,%.7f&key="keyGOOGLE ;
+	const char caQuery[] = "GET /maps/api/elevation/json?locations=%.7f,%.7f&key="keyGOOGLE;
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 			CertGGLE, sizeof(CertGGLE), xHttpParseElevation, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
@@ -341,7 +341,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 	if (iRV < 1)					// 1=NewFW  0=LatestFW  -1=Error
 		return iRV;
 	part_xfer_t	sFI;
-	iRV = halFOTA_Begin(&sFI) ;
+	iRV = halFOTA_Begin(&sFI);
 	if (iRV != erSUCCESS)
 		return iRV;
 	sFI.pBuf = (void *) pBuf;
@@ -349,7 +349,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 	sFI.xDone = 0;
 	http_rr_t * psReq = psParser->data;
 	sFI.xFull = psReq->hvContentLength;
-	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT) ;
+	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 
 	while (xLen) {										// deal with all received packets
 		iRV = halFOTA_Write(&sFI);
@@ -359,7 +359,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 		if (sFI.xDone == sFI.xFull)
 			break;
 		IF_SYSTIMER_START(debugTIMING, stFOTA);
-		iRV = xNetRecvBlocks(&psReq->sCtx, (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT) ;
+		iRV = xNetRecvBlocks(&psReq->sCtx, (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT);
 		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
 		if (iRV > 0) {
 			sFI.xLen = iRV;
@@ -450,7 +450,7 @@ int xHttpCoredumpUpload(void) {
 #endif
 
 int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
-	const char caBody[] = "token="tokenPUSHOVER "&user="userPUSHOVER "&title=%U&message=%U%%40%u" ;
+	const char caBody[] = "token="tokenPUSHOVER "&user="userPUSHOVER "&title=%U&message=%U%%40%u";
 	return xHttpRequest("api.pushover.net", "POST /1/messages.json", caBody,
 			CertGGLE, sizeof(CertGGLE), NULL, 0,
 			httpHDR_VALUES(ctApplicationXwwwFormUrlencoded, ctApplicationJson, 0, 0),
@@ -486,7 +486,7 @@ int	xHttpClientIdentUpload(void * psRomID) {
 // ###################################### WEATHER support ##########################################
 
 int xHttpGetWeather(void) {
-	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID=cf177bb6e86c95045841c63e99ad2ff4" ;
+	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID=cf177bb6e86c95045841c63e99ad2ff4";
 	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
 			NULL, 0, NULL, 0,
 			httpHDR_VALUES(ctTextPlain,0,0,0),
