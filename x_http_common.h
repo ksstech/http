@@ -41,7 +41,7 @@ enum {													// Header Fields
 	hfPragma,
 	hfTransferEncoding,
 	hfNUMBER,
-} ;
+};
 
 enum {													// Content Types
 	ctUNDEFINED					= 0,
@@ -65,7 +65,7 @@ enum {													// Content Types
 	ctImageGif,
 #endif
 	ctNUMBER,
-} ;
+};
 
 enum {													// Connection Types
 	coUNDEFINED					= 0,
@@ -73,7 +73,7 @@ enum {													// Connection Types
 	coUpgrade,
 	coClose,
 	coNUMBER,
-} ;
+};
 
 enum {													// HTTP flags
 	httpFLAG_FROM			= 1 << 0,
@@ -84,82 +84,82 @@ enum {													// HTTP flags
 	httpFLAG_1				= 1 << 5,
 	httpFLAG_2				= 1 << 6,
 	httpFLAG_DEBUG			= 1 << 7,
-} ;
+};
 
 // ######################################### structures ############################################
 
 typedef struct http_rr_t {
-	ubuf_t				sUB ;							// both
-	netx_t				sCtx ;							// both
+	ubuf_t				sUB;							// both
+	netx_t				sCtx;							// both
 /* Sequence of parameters in pVarArg MUST be in same sequence as used by
  * a) the pcQuery format string; and
  * b) the pcBody format string
  */
 	union {
-		pcc_t	pcQuery ;								// client: 'format' GET/PUT/POST/DELETE/PATCH .....
-		pcc_t	pcStatMes ;								// server: status message
-	} ;
-	union {
-		const void * pVoid ;
-		pcc_t	pcBody ;								// both (client 'format' string)
-		int (* hdlr_req) (struct http_rr_t *) ;			// client
-		int	(* hdlr_rsp) (http_parser *) ;				// server
-	} ;
-	va_list				VaList ;						// Client
-	void *				pvArg ;							// Client
-	http_parser_settings 	sfCB ;						// Both
-	struct yuarel		url ;							// Both
-	struct yuarel_param	params[httpYUAREL_MAX_QUERY] ;	// Both
-	char *				parts[httpYUAREL_MAX_PARTS] ;	// Both
-	u64_t				hvContentLength ;				// Both
-	u32_t				hvDate ;						// Both
-	u32_t				hvLastModified ;				// Both
-	char * 				hvStatusMess ;					// Both
-	union {
-		struct __attribute__((packed)) {
-			u8_t		Spare, hvConnect, hvAccept, hvContentType ;
-		} ;
-		u32_t			hvValues ;
+		pcc_t	pcQuery;								// client: 'format' GET/PUT/POST/DELETE/PATCH .....
+		pcc_t	pcStatMes;								// server: status message
 	};
-	u16_t				hvStatus ;						// Client (response to request)
-	u8_t				HdrField ;						// Both
-	s8_t				NumParts ;						// recognize -1 as error/none
-	s8_t				NumQuery ;						// recognize -1 as error/none
+	union {
+		const void * pVoid;
+		pcc_t	pcBody;									// both (client 'format' string)
+		int (* hdlr_req) (struct http_rr_t *);			// client
+		int	(* hdlr_rsp) (http_parser *);				// server
+	};
+	va_list				VaList;							// Client
+	void *				pvArg;							// Client
+	http_parser_settings 	sfCB;						// Both
+	struct yuarel		url;							// Both
+	struct yuarel_param	params[httpYUAREL_MAX_QUERY];	// Both
+	char *				parts[httpYUAREL_MAX_PARTS];	// Both
+	u64_t				hvContentLength;				// Both
+	u32_t				hvDate;							// Both
+	u32_t				hvLastModified;					// Both
+	char * 				hvStatusMess;					// Both
 	union {
 		struct __attribute__((packed)) {
-//			u8_t	f_debug : 1 ;
-			u8_t	f_parts : 1 ;		// set to break URL up into parts
-			u8_t	f_query	: 1 ;		// set to break query up into parts
-			u8_t	f_bodyCB: 1 ;		// set if pcBody contains a CB handler
-			u8_t	f_host	: 1 ;		// host info provided, or not ?
-			u8_t	f_ac_rng: 1 ;		// accept ranges
-		} ;
-		u8_t		f_allflags ;
-	} ;
-} http_rr_t ;
+			u8_t		Spare, hvConnect, hvAccept, hvContentType;
+		};
+		u32_t			hvValues;
+	};
+	u16_t				hvStatus;						// Client (response to request)
+	u8_t				HdrField;						// Both
+	s8_t				NumParts;						// recognize -1 as error/none
+	s8_t				NumQuery;						// recognize -1 as error/none
+	union {
+		struct __attribute__((packed)) {
+//			u8_t	f_debug : 1;
+			u8_t	f_parts : 1;		// set to break URL up into parts
+			u8_t	f_query	: 1;		// set to break query up into parts
+			u8_t	f_bodyCB: 1;		// set if pcBody contains a CB handler
+			u8_t	f_host	: 1;		// host info provided, or not ?
+			u8_t	f_ac_rng: 1;		// accept ranges
+		};
+		u8_t		f_allflags;
+	};
+} http_rr_t;
 
-#define	httpHDR_VALUES(a,b,c,d) ((a<<24)|(b<<16)|(c<<8)|d)
+#define	httpHDR_VALUES(ct, acc, con, d) ((ct << 24) | (acc << 16) | (con << 8) | d)
 
 // ################################### Global variables ############################################
 
-extern const char * const ctValues[] ;
-extern const char * const coValues[] ;
-extern const char * const hfValues[] ;
+extern const char * const ctValues[];
+extern const char * const coValues[];
+extern const char * const hfValues[];
 
 // ###################################### public functions #########################################
 
-int	xHttpCommonFindMatch(const char * const pcTable[], u32_t xSize, const char * pcMatch, size_t xLen) ;
-int	xHttpCommonMessageBeginHandler(http_parser * psParser) ;
-int xHttpCommonUrlHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int xHttpCommonStatusHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int xHttpCommonHeaderFieldHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int xHttpCommonHeaderValueHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int xHttpCommonHeadersCompleteHandler(http_parser * psParser) ;
-int xHttpCommonChunkHeaderHandler(http_parser * psParser) ;
-int xHttpCommonChunkCompleteHandler(http_parser * psParser) ;
-int xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, size_t xLen) ;
-int xHttpCommonMessageCompleteHandler(http_parser * psParser) ;
-size_t	xHttpCommonDoParsing(http_parser * psParser) ;
+int	xHttpCommonFindMatch(const char * const pcTable[], u32_t xSize, const char * pcMatch, size_t xLen);
+int	xHttpCommonMessageBeginHandler(http_parser * psParser);
+int xHttpCommonUrlHandler(http_parser * psParser, const char * pBuf, size_t xLen);
+int xHttpCommonStatusHandler(http_parser * psParser, const char * pBuf, size_t xLen);
+int xHttpCommonHeaderFieldHandler(http_parser * psParser, const char * pBuf, size_t xLen);
+int xHttpCommonHeaderValueHandler(http_parser * psParser, const char * pBuf, size_t xLen);
+int xHttpCommonHeadersCompleteHandler(http_parser * psParser);
+int xHttpCommonChunkHeaderHandler(http_parser * psParser);
+int xHttpCommonChunkCompleteHandler(http_parser * psParser);
+int xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, size_t xLen);
+int xHttpCommonMessageCompleteHandler(http_parser * psParser);
+size_t	xHttpCommonDoParsing(http_parser * psParser);
 
 #ifdef __cplusplus
 }
