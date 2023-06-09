@@ -410,11 +410,12 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 
 // for binary uploads the address and content length+type must be correct
 int xHttpCoredumpUpload(void) {
-	#ifdef CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN
-		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.bin" ;
-//	#elif defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
+	#if (CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN == 1)
+		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.bin";
+	#elif (CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF == 1)
+		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.elf";
 	#else
-		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.elf" ;
+		#error "Invalid/undefined COREDUMP file format!!!"
 	#endif
 	esp_partition_iterator_t sIter;
 	sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
