@@ -107,16 +107,16 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		pcc_t pcCert, size_t szCert,					// host certificate info
 		void * OnBodyCB, u32_t DataSize,				// read/write handler & size
 		u32_t hvValues, u16_t BufSize, netx_dbg_t Debug, void * pvArg, ...) {
-	http_rr_t sRR		= { 0 } ;
-	sock_sec_t sSecure	= { 0 } ;				// LEAVE here else pcCert/szCert gets screwed
-	sRR.sCtx.pHost		= pHost ;
-	sRR.pcQuery			= pQuery ;
-	sRR.pVoid			= pvBody ;
+	http_rr_t sRR		= { 0 };
+	sock_sec_t sSecure	= { 0 };				// LEAVE here else pcCert/szCert gets screwed
+	sRR.sCtx.pHost		= pHost;
+	sRR.pcQuery			= pQuery;
+	sRR.pVoid			= pvBody;
 	sRR.sfCB.on_body	= (http_data_cb) OnBodyCB;
-	sRR.hvContentLength	= (u64_t) DataSize ;
-	sRR.hvValues		= hvValues ;
-	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE ;
-	sRR.pvArg			= pvArg ;
+	sRR.hvContentLength	= (u64_t) DataSize;
+	sRR.hvValues		= hvValues;
+	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE;
+	sRR.pvArg			= pvArg;
 	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=",
 			sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
 	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.pVoid);
