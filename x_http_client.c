@@ -428,13 +428,31 @@ int xHttpCoredumpUpload(void) {
 	int iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(struct cd_hdr_s));
 	SL_WARN("iRV=%d  Len=%lu  Task=%lu  TCB=%lu  V=%-I", iRV, sCDhdr.len, sCDhdr.num, sCDhdr.tcb, sCDhdr.ver);
 
-	if (iRV == ESP_OK && (sCDhdr.data_len != sCDhdr.tasks_num && sCDhdr.tcb_sz != sCDhdr.version)) {
-		iRV = xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, caQuery, halPART_Upload_CB,
-			HostInfo[ioB2GET(ioHostFOTA)].pcCert,HostInfo[ioB2GET(ioHostFOTA)].szCert,
-			NULL, sCDhdr.data_len,
+	if (iRV == ESP_OK && (sCDhdr.len != sCDhdr.num && sCDhdr.tcb != sCDhdr.ver)) {
+		#if 0
+		iRV = xHttpRequest(HostInfo[ioB2GET(ioHostFOTA)].pName,
+			caQuery,
+			NULL,
+			HostInfo[ioB2GET(ioHostFOTA)].pcCert,
+			HostInfo[ioB2GET(ioHostFOTA)].szCert,
+			halPART_Upload_CB,
+			sCDhdr.len,
 			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
-			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), (void *) psPart,
+			0,
+			NETX_DBG_FLAGS(0,0,0,0,0,0,1,1,1,0,0,0,0,0,3,0),
+			(void *) psPart,
 			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
+		#else
+		iRV = xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName,
+			caQuery, halPART_Upload_CB,
+			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert,
+			NULL, sCDhdr.len,
+			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
+			0,
+			NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0),
+			(void *) psPart,
+			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
+		#endif
 	}
 	esp_partition_iterator_release(sIter);
 	return iRV;
@@ -471,7 +489,9 @@ int	xHttpClientIdentUpload(void * psRomID) {
 			NULL, 0, 						// certificate info
 			NULL, 0, 						// read/write handler & size
 			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
-			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL, psRomID);
+			0,
+			NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1),
+			NULL, psRomID);
 }
 
 // ######################################### Unused API's ##########################################
