@@ -72,13 +72,13 @@ static const char HtmlAPdetails[] =
 	"<form action='save_ap' method='get'>"
 	"AP SSID (Max 32 chars incl A-Z, a-z and 0-9):<br><input type='text' name='ssid' size='32'><br>"
 	"AP PSWD (Max 64 chars incl A-Z, a-z and 0-9):<br><input type='text' name='pswd' size='64'><br>"
-#if		(halNET_EXTEND_IP == 1)
+	#if (halNET_EXTEND_IP == 1)
 	"IP NetMask (w.x.y.z):<br><input type='text' name='nm' size='16' value='255.255.255.0'><br>"
 	"IP Gateway (w.x.y.z):<br><input type='text' name='gw' size='16' value='192.168.1.1.'><br>"
 	"IP Address (w.x.y.z):<br><input type='text' name='ip' size='16' value='192.168.1.100'><br>"
 	"IP DNS#1 (w.x.y.z):<br><input type='text' name='d1' size='16' value='192.169.1.1'><br>"
 	"IP DNS#2 (w.x.y.z):<br><input type='text' name='d2' size='16' value='8.8.8.8'><br>"
-#endif
+	#endif
 	"IP MQTT (w.x.y.z):<br><input type='text' name='mqtt' size='16' value='0.0.0.0'><br>"
 	"<br><input type='submit' value='Submit'>"
 	"</form></body></html>";
@@ -105,9 +105,9 @@ static const char HtmlErrorBadQuery[] =
 StaticTask_t ttsHTTP = { 0 };
 StackType_t tsbHTTP[httpSTACK_SIZE] = { 0 };
 
-uint8_t		HttpState;
-netx_t		sServHttpCtx;
-http_rr_t	sRR = { 0 };
+uint8_t HttpState = 0;
+netx_t sServHttpCtx = { 0 };
+http_rr_t sRR = { 0 };
 static u32_t fRqst = 0;
 
 // ###################################### global variables #########################################
@@ -259,7 +259,7 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 
 	} else {		// at this stage all parsing results are OK, just the URL to be matched and processed.
 		if (*psRR->url.path == 0) {						// STEP1: start by matching the URL
-			iURL = urlROOT;							// do NOT try to match, lost single '/'
+			iURL = urlROOT;								// do NOT try to match, lost single '/'
 		} else {
 			iURL = xHttpCommonFindMatch(UrlTable, NO_MEM(UrlTable), psRR->url.path, strlen(psRR->url.path));
 			if (iURL == 0)
