@@ -63,7 +63,7 @@ static const char HtmlSTAdetails[] =
 	"<p>Platform        : " halDEV_MODEL "</p>"
 	"<p>Wifi FW version : " mySTRINGIFY(DEV_WIFI_VER) "</p>"
 	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
-	"<form action='sta_update' method='get'><input type='submit' value='STA_Update'></form>"
+	"<form action='/' method='get'><input type='submit' value='STA_Update'></form>"
 	"</body></html>";
 
 static const char HtmlAPdetails[] =
