@@ -75,7 +75,7 @@ const char * const coValues[coNUMBER]	= {
  * also used by the HTTP server to do a simple match for URL's, brining in the limit
  * of only being able to match ie use single part URL's meaning "/api/something"
  * is not supported since it will not be matched */
-int	xHttpCommonFindMatch(const char * const pcTable[], uint32_t xSize, const char * pcMatch, size_t xLen) {
+int	xHttpCommonFindMatch(const char * const pcTable[], u32_t xSize, const char * pcMatch, size_t xLen) {
 	int	Idx = 0;
 	while (Idx < xSize) {
 		size_t ySize = strlen(*pcTable);				// get length of string in table to compare against
@@ -223,9 +223,9 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 		break;
 	case ctApplicationJson:
 	{	// test parse (count tokens) then allocate memory & parse
-		int32_t iRV = xJsonParse(pcBuf, xLen, &sParser, &psTokenList) ;
 		jsmntok_t *	psTokenList;
 		jsmn_parser	sParser;
+		i32_t iRV = xJsonParse(pcBuf, xLen, &sParser, &psTokenList);
 		if (iRV > erSUCCESS) {							// print parsed tokens
 			iRV = xJsonPrintTokens(pcBuf, psTokenList, iRV, 0);
 		} else {
