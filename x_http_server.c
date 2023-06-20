@@ -162,7 +162,7 @@ static int xvHttpSendResponse(void * pV, const char * format, va_list vaList) {
 	iRV += socprintfx(&psRR->sCtx, "Content-Length: %d\r\n\r\n", psRR->hvContentLength + 2);
 	iRV += vsocprintfx(&psRR->sCtx, format, vaList);				// add the actual content
 	iRV += socprintfx(&psRR->sCtx, strCRLF);						// add the final CR+LF after the body
-	IF_P(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf);
+	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s", psRR->sUB.Used, psRR->sUB.pBuf);
 	return iRV;
 }
 
@@ -178,7 +178,7 @@ static int xHttpServerParseString(char * pVal, char * pDst) {
 	if (xStringParseEncoded(pDst, pVal) == erFAILURE) {
 		return erFAILURE;
 	}
-	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "%s->%s\r\n", pVal, pDst);
+	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "%s->%s\r\n", pVal, pDst);
 	return erSUCCESS;
 }
 
@@ -186,12 +186,12 @@ static int xHttpServerParseIPaddress(char * pSrc, u32_t * pDst) {
 	if (xStringParseEncoded(NULL, pSrc) == erFAILURE) {
 		return erFAILURE;
 	}
-	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "%s", pSrc);
+	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "%s", pSrc);
 	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
 		*pDst = 0;
 		return erFAILURE;
 	}
-	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), " : 0x%08X\r\n", *pDst);
+	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), " : 0x%08X\r\n", *pDst);
 	return erSUCCESS;
 }
 
@@ -201,7 +201,7 @@ static int xHttpHandle_API(http_parser * psParser) {
 	http_rr_t * psRR = psParser->data;
 	// XXX This version will ONLY handle the 1st part of the command(s) received.....
 	xStringParseEncoded(NULL, psRR->parts[1]);
-	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "'%s'\r\n", psRR->parts[1]);
+	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "'%s'\r\n", psRR->parts[1]);
 	int iRV = xCommandProcessString(psRR->parts[1], 0, xvHttpSendResponse, (void *) psParser,
 		"<html><body><h2>Result</h2><pre>%.*s</pre></body></html>", xStdioBufAvail(), pcStdioBufTellRead());
 	vStdioBufReset();
@@ -214,14 +214,14 @@ static void vTaskHttpCloseServer(void) {
 	xRtosClearStatus(flagHTTP_SERV);
 	int iRV = (sServHttpCtx.sd > 0) ? xNetClose(&sServHttpCtx) : 0;
 	HttpState = stateHTTP_INIT;
-	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "server closed (%d)\r\n", iRV);
+	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] server closed (%d)\r\n", iRV);
 }
 
 static void vTaskHttpCloseClient(void) {
 	xRtosClearStatus(flagHTTP_CLNT);
 	int iRV = (sRR.sCtx.sd > 0) ? xNetClose(&sRR.sCtx) : 0;
 	HttpState = stateHTTP_WAITING;
-	IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "client closed (%d)\r\n", iRV);
+	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] client closed (%d)\r\n", iRV);
 }
 
 static void vTaskHttpDeInit(void) {
@@ -342,12 +342,12 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 	default:
 		break;
 	}
-
+//	RP("URL=%d  Body='%s' Hndl=%p\r\n", iURL, psRR->pcBody, psRR->hdlr_rsp);
 	if (psRR->f_bodyCB && psRR->hdlr_rsp) {
 		iRV = psRR->hdlr_rsp(psParser);			// Add dynamic content to buffer via callback
 	} else {
 		iRV = xHttpSendResponse(psParser, psRR->pcBody);
-		IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "Response sent iRV=%d\r\n", iRV);
+		IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] Response sent iRV=%d\r\n", iRV);
 	}
 	if (sServHttpCtx.maxTx < iRV) {
 		sServHttpCtx.maxTx = iRV;
@@ -359,7 +359,7 @@ static void vHttpNotifyHandler(void) {
 	u32_t fDone = 0;
 	int iRV;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
-		IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "Received Notify 0x%06X\r\n", fRqst);
+		IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "Received Notify 0x%06X\r\n", fRqst);
 		if (fRqst & reqCOREDUMP) {
 			xHttpCoredumpUpload();
 			fDone |= reqCOREDUMP;
@@ -430,7 +430,7 @@ static void vHttpTask(void * pvParameters) {
 			break;					// must NOT fall through since the Lx status might have changed
 
 		case stateHTTP_INIT:
-			IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "init\r\n");
+			IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] init\r\n");
 			memset(&sServHttpCtx, 0 , sizeof(sServHttpCtx));
 			sServHttpCtx.sa_in.sin_family	= AF_INET;
 			sServHttpCtx.type				= SOCK_STREAM;
@@ -443,7 +443,7 @@ static void vHttpTask(void * pvParameters) {
 			}
 			xRtosSetStatus(flagHTTP_SERV);
 			HttpState = stateHTTP_WAITING;
-			IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "waiting\r\n");
+			IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] waiting\r\n");
 			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_WAITING:
@@ -462,13 +462,13 @@ static void vHttpTask(void * pvParameters) {
 			}
 			xRtosSetStatus(flagHTTP_CLNT);			// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED;
-			IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "connected\r\n");
+			IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] connected\r\n");
 			/* FALLTHRU */ /* no break */
 
 		case stateHTTP_CONNECTED:
 			iRV = xNetRecv(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size);
 			if (iRV > 0) {							// read something ?
-				IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "start parsing\r\n");
+				IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] start parsing\r\n");
 				if (sServHttpCtx.maxRx < iRV) {
 					sServHttpCtx.maxRx = iRV;
 				}
@@ -492,11 +492,11 @@ static void vHttpTask(void * pvParameters) {
 //				sRR.f_debug			= 1;				// enable debug output
 				sRR.sUB.Used		= iRV;
 				iRV = xHttpCommonDoParsing(&sParser);
-				IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "Parsing done\r\n");
+				IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] Parsing done\r\n");
 				if (iRV > 0) {							// build response if something was parsed....
-					IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "start response handler\r\n");
+					IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] start response handler\r\n");
 					iRV2 = xHttpServerResponseHandler(&sParser);
-					IF_P(debugTRACK && ioB1GET(ioHTTPtrack), "Tx done (%d)\r\n", iRV2);
+					IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] Tx done (%d)\r\n", iRV2);
 				} else {
 					iRV2 = erSUCCESS;
 				}

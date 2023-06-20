@@ -92,15 +92,15 @@ int	xHttpCommonFindMatch(const char * const pcTable[], uint32_t xSize, const cha
 // ################################### Common HTTP API functions ###################################
 
 int xHttpCommonMessageBeginHandler(http_parser * psP) {
-	IF_P(debugTRACK && ((http_rr_t *) psP->data)->sCtx.d.http, "MESSAGE BEGIN\r\n") ;
 	return erSUCCESS ;
+	IF_CP(debugTRACK && ((http_rr_t *) psP->data)->sCtx.d.http, "MESSAGE BEGIN\r\n");
 }
 
 int xHttpCommonUrlHandler(http_parser * psP, const char* pBuf, size_t xLen) {
-//	P("BEFORE: pBuf=%p  xLen=%d  cChr='%c'  url=[%.*s]\r\n", pBuf, xLen, *(pBuf+xLen), xLen, pBuf) ;
 	char * pTerm = (char *) pBuf + xLen ;				// overcome 'const'
 	*pTerm = 0 ;										// terminate the string
-//	P("AFTER : pBuf=%p  xLen=%d  cChr='%c'  url=[%s]\r\n", pBuf, xLen, *(pBuf+xLen), pBuf) ;
+//	CP("BEFORE: pBuf=%p  xLen=%d  cChr='%c'  url=[%.*s]\r\n", pBuf, xLen, *(pBuf+xLen), xLen, pBuf);
+//	CP("AFTER : pBuf=%p  xLen=%d  cChr='%c'  url=[%s]\r\n", pBuf, xLen, *(pBuf+xLen), pBuf);
 
 	http_rr_t * psRes = psP->data ;
 	int Idx = yuarel_parse(&psRes->url, (char *)pBuf) ;		// do the parse
@@ -124,39 +124,39 @@ int xHttpCommonUrlHandler(http_parser * psP, const char* pBuf, size_t xLen) {
 	}
 
 	if (debugTRACK && psRes->sCtx.d.http) {
-		printfx("Struct: scheme:%s  host:%s  port:%d  path:%s  query:%s  fragment:%s\r\n",
+		CP("Struct: scheme:%s  host:%s  port:%d  path:%s  query:%s  fragment:%s\r\n",
 				psRes->url.scheme, psRes->url.host, psRes->url.port,
 				*psRes->url.path == 0 ? "/" : psRes->url.path,
 				psRes->url.query, psRes->url.fragment) ;
 		for (Idx = 0; Idx < psRes->NumParts; ++Idx)
-			printfx("Path part[%d]: '%s'\r\n", Idx, psRes->parts[Idx]) ;
+			CP("Path part[%d]: '%s'\r\n", Idx, psRes->parts[Idx]);
 		for (Idx = 0; Idx < psRes->NumQuery; ++Idx)
-			printfx("Parameter[%d]: name='%s' value='%s'\r\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val) ;
+			CP("Parameter[%d]: name='%s' value='%s'\r\n", Idx, psRes->params[Idx].key, psRes->params[Idx].val);
 	}
 	return erSUCCESS ;
 }
 
 int xHttpCommonStatusHandler(http_parser * psP, const char* pBuf, size_t xLen) {
 	http_rr_t * psReq = psP->data ;
-	IF_P(debugTRACK && psReq->sCtx.d.http, "Status: %d = '%.*s'\r\n", psP->status_code, xLen, pBuf) ;
 	psReq->hvStatus		= psP->status_code ;
 	*((char*) pBuf+xLen)= 0 ;
 	psReq->hvStatusMess = (char *) pBuf ;
 	return erSUCCESS ;
+	IF_CP(debugTRACK && psReq->sCtx.d.http, "Status: %d = '%.*s'\r\n", psP->status_code, xLen, pBuf);
 }
 
 int xHttpCommonHeaderFieldHandler(http_parser * psP, const char* pBuf, size_t xLen) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psP) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	http_rr_t * psReq = psP->data ;
 	psReq->HdrField	= xHttpCommonFindMatch(hfValues, NO_MEM(hfValues), pBuf, xLen) ;
-	IF_P(debugTRACK && psReq->sCtx.d.http, "'%.*s' = ", (int)xLen, pBuf);
 	return erSUCCESS ;
+	IF_CP(debugTRACK && psReq->sCtx.d.http, "'%.*s' = ", (int)xLen, pBuf);
 }
 
 int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xLen) {
 	http_rr_t * psReq = psP->data ;
-	IF_P(debugTRACK && psReq->sCtx.d.http, "'%.*s'\r\n", (int)xLen, pBuf);
 	struct tm sTM ;
+	IF_CP(debugTRACK && psReq->sCtx.d.http, "'%.*s'\r\n", (int)xLen, pBuf);
 	switch (psReq->HdrField) {
 	case hfAcceptRanges:
 		if (strncasecmp("bytes", pBuf, xLen) == 0) psReq->f_ac_rng = 1 ;
@@ -196,7 +196,7 @@ int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xL
 
 int xHttpCommonHeadersCompleteHandler(http_parser * psP) {
 	http_rr_t * psReq = psP->data ;
-	IF_PX(debugTRACK && psReq->sCtx.d.http, "HEADERS COMPLETE: ar=%d  co=%d  ct=%d  host=%d  len=%llu  date=%R  last=%R\r\n",
+	IF_CP(debugTRACK && psReq->sCtx.d.http, "HEADERS COMPLETE: ar=%d  co=%d  ct=%d  host=%d  len=%llu  date=%R  last=%R\r\n",
 			psReq->f_ac_rng, psReq->hvConnect, psReq->hvContentType, psReq->f_host, psP->content_length,
 			xTimeMakeTimestamp(psReq->hvDate, 0), xTimeMakeTimestamp(psReq->hvLastModified, 0)) ;
 	// if we return 1 here the parser will believe there is no body in the message
@@ -204,13 +204,13 @@ int xHttpCommonHeadersCompleteHandler(http_parser * psP) {
 }
 
 int xHttpCommonChunkHeaderHandler(http_parser * psP) {
-	IF_P(debugTRACK && ((http_rr_t *) psP->data)->sCtx.d.http, "CHUNK HEADER\r\n") ;
 	return erSUCCESS ;
+	IF_CP(debugTRACK && ((http_rr_t *) psP->data)->sCtx.d.http, "CHUNK HEADER\r\n");
 }
 
 int	xHttpCommonChunkCompleteHandler(http_parser * psP) {
-	IF_P(debugTRACK && ((http_rr_t *) psP->data)->sCtx.d.http, "CHUNK COMPLETE\r\n") ;
 	return erSUCCESS ;
+	IF_CP(debugTRACK && ((http_rr_t *) psP->data)->sCtx.d.http, "CHUNK COMPLETE\r\n");
 }
 
 int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t xLen) {
@@ -219,8 +219,8 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 	case ctTextPlain:
 	case ctTextHtml:
 	case ctApplicationXml:
-		IF_P(debugTRACK && psReq->sCtx.d.http, "BODY (plain/html/xml)\r\n%.*s", xLen, pcBuf) ;
 		break ;
+		IF_CP(debugTRACK && psReq->sCtx.d.http, "BODY (plain/html/xml)\r\n%.*s", xLen, pcBuf);
 	case ctApplicationJson:
 	{	// test parse (count tokens) then allocate memory & parse
 		jsmntok_t *	psTokenList ;
@@ -229,20 +229,20 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 		if (iRV > erSUCCESS) {							// print parsed tokens
 			iRV = xJsonPrintTokens(pcBuf, psTokenList, iRV, 0) ;
 		} else {
-			IF_PX(debugTRACK && psReq->sCtx.d.http, "BODY (json)\r\n%!'+hhY", xLen, pcBuf) ;	// not parsed, just dump...
+			IF_CP(debugTRACK && psReq->sCtx.d.http, "BODY (json)\r\n%!'+hhY", xLen, pcBuf);	// not parsed, just dump...
 		}
 		if (psTokenList) vRtosFree(psTokenList) ;
 		break ;
 	}
 	default:
-		IF_PX(debugTRACK && psReq->sCtx.d.http, "BODY (other)\r\n%!'+hhY", xLen, pcBuf) ;
+		IF_CP(debugTRACK && psReq->sCtx.d.http, "BODY (other)\r\n%!'+hhY", xLen, pcBuf);
 	}
     return erSUCCESS ;
 }
 
 int xHttpCommonMessageCompleteHandler(http_parser * psP) {
-	IF_P(debugTRACK && ((http_rr_t *) psP->data)->sCtx.d.http, "MESSAGE COMPLETE\r\n") ;
 	return erSUCCESS ;
+	IF_CP(debugTRACK && ((http_rr_t *) psP->data)->sCtx.d.http, "MESSAGE COMPLETE\r\n");
 }
 
 size_t	xHttpCommonDoParsing(http_parser * psP) {
