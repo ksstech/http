@@ -204,8 +204,10 @@ static int xHttpHandle_API(http_parser * psParser) {
 	// XXX This version will ONLY handle the 1st part of the command(s) received.....
 	xStringParseEncoded(NULL, psRR->parts[1]);
 	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "'%s'\r\n", psRR->parts[1]);
+	int Len = xStdioBufAvail();
+	u8_t * Buf = pcStdioBufTellRead();
 	int iRV = xCommandProcessString(psRR->parts[1], 0, xvHttpSendResponse, (void *) psParser,
-		"<html><body><h2>Result</h2><pre>%.*s</pre></body></html>", xStdioBufAvail(), pcStdioBufTellRead());
+		"<html><body><h2>Result</h2><pre>%.*s</pre></body></html>", Len, Buf);
 	vStdioBufReset();
 	return iRV;
 }
