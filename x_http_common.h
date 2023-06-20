@@ -127,7 +127,6 @@ typedef struct http_rr_t {
 	s8_t				NumQuery;						// recognize -1 as error/none
 	union {
 		struct __attribute__((packed)) {
-//			u8_t	f_debug : 1;
 			u8_t	f_parts : 1;		// set to break URL up into parts
 			u8_t	f_query	: 1;		// set to break query up into parts
 			u8_t	f_bodyCB: 1;		// set if pcBody contains a CB handler

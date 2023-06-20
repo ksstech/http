@@ -489,7 +489,6 @@ static void vHttpTask(void * pvParameters) {
 				sRR.f_allflags		= 0;
 				sRR.f_parts			= 1;				// break URL up in parts
 				sRR.f_query			= 1;				// break query up in parts
-//				sRR.f_debug			= 1;				// enable debug output
 				sRR.sUB.Used		= iRV;
 				iRV = xHttpCommonDoParsing(&sParser);
 				IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] Parsing done\r\n");
