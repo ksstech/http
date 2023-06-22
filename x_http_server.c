@@ -157,7 +157,7 @@ static int xvHttpSendResponse(void * pV, const char * format, va_list vaList) {
 	 * pointer it performs a test print and simply return the number of characters that
 	 * would have been printed if a destination was specified.*/
 	psRR->hvContentLength = vsprintfx(NULL, format, vaList);
-	IF_myASSERT(debugRESULT, INRANGE(0ULL, psRR->hvContentLength, 10000ULL));
+	IF_myASSERT(debugRESULT, INRANGE(1ULL, psRR->hvContentLength, 32767ULL));
 
 	/* Now do the actual formatted print of the content length with an additional 2 chars
 	 * added for the extra CR + LF pair to form the blank line after the header values */
