@@ -423,7 +423,7 @@ static void vHttpTask(void * pvParameters) {
 	while (bRtosVerifyState(taskHTTP_MASK)) {
 		if (HttpState != stateHTTP_DEINIT) {
 			EventBits_t CurStat = xNetWaitLx(flagL23_ANY, pdMS_TO_TICKS(10));
-			if (!(CurStat & flagL3_STA) && !(CurStat & flagL3_SAP))
+			if ((CurStat & (flagL3_STA|flagL3_SAP)) == 0)
 				continue;
 		}
 		// Handle HTTP client type requests from other tasks
