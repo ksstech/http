@@ -369,9 +369,9 @@ static void vHttpNotifyHandler(void) {
 			fDone |= reqCOREDUMP;
 		}
 		if (fRqst & reqFW_UPGRADE) {
-			xRtosClearStateRUN(taskGUI_MASK);
+			xRtosTaskClearRUN(taskGUI_MASK);
 			xHttpClientCheckUpgrades(PERFORM);
-			xRtosSetStateRUN(taskGUI_MASK);
+			xRtosTaskSetRUN(taskGUI_MASK);
 			fDone |= reqFW_UPGRADE;
 		}
 		if (fRqst & reqFW_CHECK) {
@@ -418,12 +418,11 @@ static void vHttpTask(void * pvParameters) {
 	vTaskSetThreadLocalStoragePointer(NULL, buildFRTLSP_EVT_MASK, (void *)taskHTTP_MASK);
 	sRR.sUB.pBuf = pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE);
 	HttpState = stateHTTP_INIT;
-	xRtosSetStateRUN(taskHTTP_MASK);
+	xRtosTaskSetRUN(taskHTTP_MASK);
 
-	while (bRtosVerifyState(taskHTTP_MASK)) {
+	while (bRtosTaskWaitOK(taskHTTP_MASK, portMAX_DELAY)) {
 		if (HttpState != stateHTTP_DEINIT) {
-			EventBits_t CurStat = xNetWaitLx(flagL23_ANY, pdMS_TO_TICKS(10));
-			if ((CurStat & (flagL3_STA|flagL3_SAP)) == 0)
+			if (!xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(10)))
 				continue;
 		}
 		// Handle HTTP client type requests from other tasks
@@ -526,8 +525,8 @@ static void vHttpTask(void * pvParameters) {
 
 void vHttpStartStop(void) {
 	if (ioB1GET(ioHTTPstart)) {
-		xRtosClearStateRUN(taskHTTP_MASK);
-		xRtosClearStateDELETE(taskHTTP_MASK);
+		xRtosTaskClearRUN(taskHTTP_MASK);
+		xRtosTaskClearDELETE(taskHTTP_MASK);
 		HttpHandle = xRtosTaskCreateStatic(vHttpTask, "http", httpSTACK_SIZE, NULL, httpPRIORITY, tsbHTTP, &ttsHTTP, tskNO_AFFINITY);
 	} else {
 		vRtosTaskTerminate(taskHTTP_MASK);
@@ -535,11 +534,11 @@ void vHttpStartStop(void) {
 }
 
 void vHttpReport(void) {
-	if (bRtosCheckStatus(flagHTTP_SERV) == 1) {
+	if (xRtosGetStatus(flagHTTP_SERV)) {
 		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0);
 		printfx("\tFSM=%d  maxTX=%u  maxRX=%u  Rqst=0x%X\r\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx, fRqst);
 	}
-	if (bRtosCheckStatus(flagHTTP_CLNT) == 1) {
+	if (xRtosGetStatus(flagHTTP_CLNT)) {
 		xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0);
 	}
 }
