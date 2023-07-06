@@ -399,7 +399,7 @@ static void vHttpNotifyHandler(void) {
 			SL_NOT("GeoXXX discarded, need to restart");
 		}
 		if (fDone) {
-			SL_NOT("fRqst=0x%X  fDone=0x%X\r\n", fRqst, fDone);
+			SL_NOT("fRqst=0x%X  fDone=0x%X", fRqst, fDone);
 			ulTaskNotifyValueClear(NULL, fDone);
 		}
 	}
