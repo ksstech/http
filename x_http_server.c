@@ -378,7 +378,7 @@ static void vHttpNotifyHandler(void) {
 			xHttpClientCheckUpgrades(CHECK);
 			fDone |= reqFW_CHECK;
 		}
-		if (allSYSFLAGS(sfREBOOT) == 0) {
+		if (allSYSFLAGS(sfREBOOT) == 0) {				// reboot NOT requested
 			if (fRqst & reqGEOLOC) {
 				iRV = xHttpGetLocation();
 				if (iRV > erFAILURE)
@@ -394,8 +394,8 @@ static void vHttpNotifyHandler(void) {
 				if (iRV > erFAILURE)
 					fDone |= reqGEOALT;
 			}
-		} else if (fRqst & (reqGEOLOC | reqGEOTZ | reqGEOALT)) {
-			fDone |= (reqGEOLOC | reqGEOTZ | reqGEOALT);
+		} else if (fRqst & (reqGEOALT|reqGEOTZ|reqGEOLOC)) {	// REBOOT is requested
+			fDone |= (reqGEOALT|reqGEOTZ|reqGEOLOC);		// discard whatever is requested
 			SL_NOT("GeoXXX discarded, need to restart");
 		}
 		if (fDone) {
