@@ -225,9 +225,9 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 	{	// test parse (count tokens) then allocate memory & parse
 		jsmntok_t *	psTokenList;
 		jsmn_parser	sParser;
-		i32_t iRV = xJsonParse(pcBuf, xLen, &sParser, &psTokenList);
+		i32_t iRV = xJsonParse((char *)pcBuf, xLen, &sParser, &psTokenList);
 		if (iRV > erSUCCESS) {							// print parsed tokens
-			iRV = xJsonPrintTokens(pcBuf, psTokenList, iRV, 0);
+			iRV = xJsonPrintTokens((char *)pcBuf, psTokenList, iRV, 0);
 		} else {
 			IF_CP(debugTRACK && psReq->sCtx.d.http, "BODY (json)\r\n%!'+hhY", xLen, pcBuf);	// not parsed, just dump...
 		}
