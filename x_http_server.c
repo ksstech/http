@@ -533,12 +533,12 @@ void vHttpStartStop(void) {
 	}
 }
 
-void vHttpReport(void) {
+void vHttpReport(report_t * psR) {
 	if (xRtosGetStatus(flagHTTP_SERV)) {
-		xNetReport(&sServHttpCtx, "HTTPsrv", 0, 0, 0);
-		printfx("\tFSM=%d  maxTX=%u  maxRX=%u  Rqst=0x%X\r\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx, fRqst);
+		xNetReport(psR, &sServHttpCtx, "HTTPsrv", 0, 0, 0);
+		wprintfx(psR, "\tFSM=%d  maxTX=%u  maxRX=%u  Rqst=0x%X\r\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx, fRqst);
 	}
 	if (xRtosGetStatus(flagHTTP_CLNT)) {
-		xNetReport(&sRR.sCtx, "HTTPclt", 0, 0, 0);
+		xNetReport(psR, &sRR.sCtx, "HTTPclt", 0, 0, 0);
 	}
 }

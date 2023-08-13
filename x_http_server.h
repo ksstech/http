@@ -23,7 +23,7 @@ extern "C" {
 
 // ######################################### enumerations ##########################################
 
-enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNECTED } ;
+enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNECTED };
 
 // ######################################### structures ############################################
 
@@ -33,8 +33,8 @@ enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNEC
 
 // ###################################### public functions #########################################
 
-void vHttpStartStop(void) ;
-void vHttpReport(void) ;
+void vHttpStartStop(void);
+void vHttpReport(report_t * psR);
 
 #ifdef __cplusplus
 }
