@@ -184,7 +184,7 @@ static int xHttpServerParseString(char * pVal, char * pDst) {
 	return erSUCCESS;
 }
 
-static int xHttpServerParseIPaddress(char * pSrc, u32_t * pDst) {
+int xHttpServerParseIPaddress(char * pSrc, u32_t * pDst) {
 	if (xStringParseEncoded(NULL, pSrc) == erFAILURE) {
 		return erFAILURE;
 	}
@@ -294,13 +294,27 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 			psRR->pcBody	= (char *) HtmlErrorBadQuery;
 
 		} else {
-			nvs_wifi_t tmpWifi = { 0 };
+			u8_t ssid[SO_MEM(wifi_sta_config_t, ssid)] = { 0 };
+			u8_t pswd[SO_MEM(wifi_sta_config_t, password)] = { 0 };
 			i = 0;
 			// all IP parameter keys matched, parse them
-			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ap_info[0].ssid);
+			iRV = xHttpServerParseString(psRR->params[i++].val, (char *) ssid);
 			if (iRV == erSUCCESS)
-				iRV = xHttpServerParseString(psRR->params[i++].val, (char *) tmpWifi.ap_info[0].pswd);
+				iRV = xHttpServerParseString(psRR->params[i++].val, (char *) pswd);
+			if (iRV == erSUCCESS) {
+				// Check if values allow successful Wifi connection (& persist if successful)
+				iRV = halWL_WifiCredentialsTest(-1, (char *) ssid, (char *) pswd);
+				if (iRV == erSUCCESS) {						// inform client of success or not....
+					xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK);
+					psRR->pcBody = (char *) HtmlAPconfigOK;
+					setSYSFLAGS(sfREBOOT);
+				} else {
+					xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE);
+					psRR->pcBody = (char *) HtmlAPconfigFAIL;
+				}
+			}
 			#if	(halNET_EXTEND_IP == 1)
+			/* Add support here
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipNM);
 			if (iRV == erSUCCESS)
@@ -311,19 +325,10 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS1);
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipDNS2);
-			#endif
 			if (iRV == erSUCCESS)
 				iRV = xHttpServerParseIPaddress(psRR->params[i++].val, &tmpWifi.ipMQTT);
-			// Check if values allow successful Wifi connection (& persist if successful)
-			iRV = halWL_TestCredentials(-1, (char *) tmpWifi.ap_info[0].ssid, (char *) tmpWifi.ap_info[0].pswd);
-			if (iRV == erSUCCESS) {						// inform client of success or not....
-				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK);
-				psRR->pcBody	= (char *) HtmlAPconfigOK;
-				setSYSFLAGS(sfREBOOT);
-			} else {
-				xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_ACCEPTABLE);
-				psRR->pcBody	= (char *) HtmlAPconfigFAIL;
-			}
+			*/
+			#endif
 		}
 		break;
 
@@ -346,7 +351,7 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 	default:
 		break;
 	}
-//	RP("URL=%d  Body='%s' Hndl=%p\r\n", iURL, psRR->pcBody, psRR->hdlr_rsp);
+
 	if (psRR->f_bodyCB && psRR->hdlr_rsp) {
 		iRV = psRR->hdlr_rsp(psParser);			// Add dynamic content to buffer via callback
 	} else {
