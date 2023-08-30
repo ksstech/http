@@ -15,8 +15,6 @@ extern "C" {
 
 // ###################################### BUILD : CONFIG definitions ###############################
 
-#define	httpPRIORITY				4
-#define	httpSTACK_SIZE				(configMINIMAL_STACK_SIZE + 5120 + (flagSTACK * 256))
 
 // ########################################### macros #############################################
 
