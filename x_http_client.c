@@ -354,12 +354,15 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 }
 
 static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
-	return xHttpRequest(HostInfo[ioB2GET(ioHostFOTA)].pName, "GET /firmware/%s.bin", NULL,
-			HostInfo[ioB2GET(ioHostFOTA)].pcCert,
-			HostInfo[ioB2GET(ioHostFOTA)].szCert,
+	u8_t optHostFOTA = ioB2GET(ioHostFOTA);
+	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,0) :
+											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+	return xHttpRequest(HostInfo[optHostFOTA].pName, "GET /firmware/%s.bin", NULL,
+			HostInfo[optHostFOTA].pcCert,
+			HostInfo[optHostFOTA].szCert,
 			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
-			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0), pvPara, pvPara);
+			0, dbgFlags, pvPara, pvPara);
 }
 
 /**
