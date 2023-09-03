@@ -89,26 +89,26 @@ enum {													// HTTP flags
 // ######################################### structures ############################################
 
 typedef struct http_rr_t {
-	ubuf_t				sUB;							// both
-	netx_t				sCtx;							// both
-/* Sequence of parameters in pVarArg MUST be in same sequence as used by
- * a) the pcQuery format string; and
- * b) the pcBody format string
- */
+	ubuf_t sUB;											// both
+	netx_t sCtx;										// both
+	/* Sequence of parameters in pVarArg MUST be in same sequence as used by
+	 * a) the pcQuery format string; and
+	 * b) the pcBody format string
+	 */
 	union {
-		pcc_t	pcQuery;								// client: 'format' GET/PUT/POST/DELETE/PATCH .....
-		pcc_t	pcStatMes;								// server: status message
+		pcc_t pcQuery;									// client: 'format' GET/PUT/POST/DELETE/PATCH .....
+		pcc_t pcStatMes;								// server: status message
 	};
 	union {
 		const void * pVoid;
-		pcc_t	pcBody;									// both (client 'format' string)
+		pcc_t pcBody;									// both (client 'format' string)
 		int (* hdlr_req) (struct http_rr_t *);			// client
 		int	(* hdlr_rsp) (http_parser *);				// server
 	};
-	va_list				VaList;							// Client
-	void *				pvArg;							// Client
-	http_parser_settings 	sfCB;						// Both
-	struct yuarel		url;							// Both
+	va_list VaList;										// Client
+	void * pvArg;										// Client
+	http_parser_settings sfCB;							// Both
+	struct yuarel url;									// Both
 	struct yuarel_param	params[httpYUAREL_MAX_QUERY];	// Both
 	char *				parts[httpYUAREL_MAX_PARTS];	// Both
 	u64_t				hvContentLength;				// Both
@@ -116,24 +116,22 @@ typedef struct http_rr_t {
 	u32_t				hvLastModified;					// Both
 	char * 				hvStatusMess;					// Both
 	union {
-		struct __attribute__((packed)) {
-			u8_t		Spare, hvConnect, hvAccept, hvContentType;
-		};
-		u32_t			hvValues;
+		struct __attribute__((packed)) { u8_t Spare, hvConnect, hvAccept, hvContentType; };
+		u32_t hvValues;
 	};
-	u16_t				hvStatus;						// Client (response to request)
-	u8_t				HdrField;						// Both
-	s8_t				NumParts;						// recognize -1 as error/none
-	s8_t				NumQuery;						// recognize -1 as error/none
+	u16_t hvStatus;										// Client (response to request)
+	u8_t HdrField;										// Both
+	s8_t NumParts;										// recognize -1 as error/none
+	s8_t NumQuery;										// recognize -1 as error/none
 	union {
 		struct __attribute__((packed)) {
-			u8_t	f_parts : 1;		// set to break URL up into parts
-			u8_t	f_query	: 1;		// set to break query up into parts
-			u8_t	f_bodyCB: 1;		// set if pcBody contains a CB handler
-			u8_t	f_host	: 1;		// host info provided, or not ?
-			u8_t	f_ac_rng: 1;		// accept ranges
+			u8_t f_parts:1;								// set to break URL up into parts
+			u8_t f_query:1;								// set to break query up into parts
+			u8_t f_bodyCB:1;							// set if pcBody contains a CB handler
+			u8_t f_host:1;								// host info provided, or not ?
+			u8_t f_ac_rng:1;							// accept ranges
 		};
-		u8_t		f_allflags;
+		u8_t f_allflags;
 	};
 } http_rr_t;
 
