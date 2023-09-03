@@ -368,7 +368,7 @@ static void vHttpNotifyHandler(void) {
 	u32_t fDone = 0;
 	int iRV;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
-		IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "Received Notify 0x%06X\r\n", fRqst);
+		IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "Received Notify 0x%06X\r\n", fRqst);
 		if (fRqst & reqCOREDUMP) {
 			xHttpCoredumpUpload();
 			fDone |= reqCOREDUMP;
@@ -401,10 +401,10 @@ static void vHttpNotifyHandler(void) {
 			}
 		} else if (fRqst & (reqGEOALT|reqGEOTZ|reqGEOLOC)) {	// REBOOT is requested
 			fDone |= (reqGEOALT|reqGEOTZ|reqGEOLOC);		// discard whatever is requested
-			SL_NOT("GeoXXX discarded, need to restart");
+			IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "GeoXXX discarded, need to restart");
 		}
 		if (fDone) {
-			SL_NOT("fRqst=0x%X  fDone=0x%X", fRqst, fDone);
+			IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "fRqst=0x%X  fDone=0x%X", fRqst, fDone);
 			ulTaskNotifyValueClear(NULL, fDone);
 		}
 	}
