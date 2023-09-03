@@ -47,8 +47,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 		uprintfx(&psRR->sUB, "Accept: %s\r\n", ctValues[psRR->hvAccept]);
 		psRR->hvAccept	= ctUNDEFINED;
 	}
-	if (psRR->hvConnect)
-		uprintfx(&psRR->sUB, "Connection: %s\r\n", coValues[psRR->hvConnect]);
+	if (psRR->hvConnect) uprintfx(&psRR->sUB, "Connection: %s\r\n", coValues[psRR->hvConnect]);
 	// from here on items common to requests and responses...
 	if (psRR->pcBody) {
 		if (psRR->hvContentType) {
@@ -121,9 +120,8 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 	va_end(vArgs);
 
 	sRR.sCtx.type = SOCK_STREAM;
-	sRR.sCtx.sa_in.sin_family	= AF_INET;
-	if (sRR.sCtx.sa_in.sin_port == 0)
-		sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
+	sRR.sCtx.sa_in.sin_family = AF_INET;
+	if (sRR.sCtx.sa_in.sin_port == 0) sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
 	sRR.sCtx.flags = SO_REUSEADDR;
 	int iRV = xNetOpen(&sRR.sCtx);
 	if (iRV == erSUCCESS) {								// if socket=open, write request
@@ -357,10 +355,9 @@ static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 	u8_t optHostFOTA = ioB2GET(ioHostFOTA);
 	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,0) :
 											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	return xHttpRequest(HostInfo[optHostFOTA].pName, "GET /firmware/%s.bin", NULL,
-			HostInfo[optHostFOTA].pcCert,
-			HostInfo[optHostFOTA].szCert,
-			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,
+	return xHttpRequest(HostInfo[optHostFOTA].pName, "GET /firmware/%s.bin", NULL,	// host, query & body
+			HostInfo[optHostFOTA].pcCert, HostInfo[optHostFOTA].szCert,				// cert pntr & size
+			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,		// handler & size
 			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
 			0, dbgFlags, pvPara, pvPara);
 }
