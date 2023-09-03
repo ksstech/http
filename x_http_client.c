@@ -96,22 +96,19 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 	sRR.sfCB.on_body	= (http_data_cb) OnBodyCB;
 	sRR.hvContentLength	= (u64_t) DataSize;
 	sRR.hvValues		= hvValues;
-	sRR.sUB.Size		= BufSize ? BufSize : configHTTP_BUFSIZE;
 	sRR.pvArg			= pvArg;
+	sRR.sCtx.d.val = Debug.val;
+	http_parser sParser;
+	http_parser_init(&sParser, HTTP_RESPONSE);			// clear all parser fields/values
+	sParser.data = &sRR;
+	psUBufCreate(&sRR.sUB, NULL, BufSize ? BufSize : configHTTP_BUFSIZE, 0);	// setup ubuf_t structure
 	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=",
 			sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
 	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.pVoid);
 	IF_myASSERT(debugTRACK, sRR.hvContentType != ctUNDEFINED);
 
-	sRR.sCtx.d.val = Debug.val;
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT);
 	IF_SYSTIMER_START(debugTIMING, stHTTP);
-	http_parser sParser;
-	http_parser_init(&sParser, HTTP_RESPONSE);			// clear all parser fields/values
-	sParser.data = &sRR;
-
-	// setup the ubuf_t structure for printing
-	psUBufCreate(&sRR.sUB, NULL, sRR.sUB.Size, 0);
 
 	va_list vArgs;
 	va_start(vArgs, pvArg);
