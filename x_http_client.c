@@ -353,7 +353,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 
 static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 	u8_t optHostFOTA = ioB2GET(ioHostFOTA);
-	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,0) :
+	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
 											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest(HostInfo[optHostFOTA].pName, "GET /firmware/%s.bin", NULL,	// host, query & body
 			HostInfo[optHostFOTA].pcCert, HostInfo[optHostFOTA].szCert,				// cert pntr & size
