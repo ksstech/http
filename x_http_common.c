@@ -251,9 +251,7 @@ size_t xHttpCommonDoParsing(http_parser * psP) {
 	psRR->sfCB.on_status		= xHttpCommonStatusHandler;
 	psRR->sfCB.on_header_field	= xHttpCommonHeaderFieldHandler;
 	psRR->sfCB.on_header_value	= xHttpCommonHeaderValueHandler;
-	if (debugTRACK && psRR->sfCB.on_body == NULL) {
-		psRR->sfCB.on_body		= xHttpCommonMessageBodyHandler;
-	}
+	if (debugTRACK && !psRR->sfCB.on_body) psRR->sfCB.on_body = xHttpCommonMessageBodyHandler;
 	if (debugTRACK && psRR->sCtx.d.http) {
 		psRR->sfCB.on_message_begin		= xHttpCommonMessageBeginHandler;
 		psRR->sfCB.on_chunk_header		= xHttpCommonChunkHeaderHandler;
@@ -271,7 +269,7 @@ size_t xHttpCommonDoParsing(http_parser * psP) {
 			iRV = erFAILURE;
 		}
 		if (INRANGE(HTTP_STATUS_BAD_REQUEST, psP->status_code, HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED)) {
-			SL_NOT("http error=%d (%s)", psP->status_code, psRR->hvStatusMess);
+			SL_NOT("%s (%d)", psRR->hvStatusMess, psP->status_code);
 			iRV = erFAILURE;
 		}
 	}
