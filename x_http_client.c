@@ -70,7 +70,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd strCRLF pair
 	uprintfx(&psRR->sUB, strCRLF);
-	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s\r\n", psRR->sUB.Used, psRR->sUB.pBuf);
+	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s\r\n", xUBufGetUsed(&psRR->sUB), pcUBufTellRead(&psRR->sUB));
 	return psRR->sUB.Used;
 }
 
