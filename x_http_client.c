@@ -42,7 +42,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf));
 
 	vuprintfx(&psRR->sUB, psRR->pcQuery, psRR->VaList);
-	uprintfx(&psRR->sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@kss.co.za\r\nUser-Agent: irmacos\r\n", psRR->sCtx.pHost);
+	uprintfx(&psRR->sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@irmacos.com\r\nUser-Agent: irmacos\r\n", psRR->sCtx.pHost);
 	if (psRR->hvAccept) {
 		uprintfx(&psRR->sUB, "Accept: %s\r\n", ctValues[psRR->hvAccept]);
 		psRR->hvAccept	= ctUNDEFINED;
