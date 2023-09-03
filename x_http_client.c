@@ -65,45 +65,61 @@ int	xHttpBuildHeader(http_parser * psParser) {
 				uprintfx(&psRR->sUB, "Content-Length: %d\r\n\r\n", psRR->hvContentLength);
 				vuprintfx(&psRR->sUB, psRR->pcBody, psRR->VaList);// add actual content
 			}
-		} else
+		} else {
 			SL_ERR(debugAPPL_PLACE);
+		}
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd strCRLF pair
 	uprintfx(&psRR->sUB, strCRLF);
-	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%.*s\r\n", xUBufGetUsed(&psRR->sUB), pcUBufTellRead(&psRR->sUB));
+	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%*s\r\n", xUBufGetUsed(&psRR->sUB), pcUBufTellRead(&psRR->sUB));
 	return psRR->sUB.Used;
 }
 
 /**
- * @brief	Build HTTP request packet and initiates the communications
- * @brief	Coordinate connecting, parsing, responding and disconnecting activities
+ * @brief	Build HTTP request packet and initiates connect, parse, respond & disconnect activities
+ * @param	pHost - pointer to hostname to connect to
+ * @param	pQuery - HTTP query string, can contain printf formatting string
+ * @param	pcBody - POST request ??
+ * 			pcBody - GET request (NULL ??)
+ *			handler - PUT request ??
+ * @param	pcCert - pointer to TLS certificate
+ * @param	szCert - size of TLS certificate
+ * @param	OnBodyCB - Callback to handle the response body
+ * @param	DataSize - size of data to be transmitted
+ * @param	hvValues - header values
+ * @param	BufSize - size of Tx/RX buffer to be allocated, if NULL use default
+ * @param	Debug - UDP, TCP and HTTP debug flags
+ * @param	pvArg - POST request
+ * 			pvArg - GET request (NULL ??)
+ * 			pvArg - PUT request (parameter for handler)
+ * @param	variable length list of arguments for use with pQuery
  * @return	erFAILURE or result of xHttpCommonDoParsing() being 0 or more
  */
 int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		pcc_t pcCert, size_t szCert,					// host certificate info
 		void * OnBodyCB, u32_t DataSize,				// read/write handler & size
 		u32_t hvValues, u16_t BufSize, netx_dbg_t Debug, void * pvArg, ...) {
-	http_rr_t sRR		= { 0 };
-	sock_sec_t sSecure	= { 0 };				// LEAVE here else pcCert/szCert gets screwed
-	sRR.sCtx.pHost		= pHost;
-	sRR.pcQuery			= pQuery;
-	sRR.pVoid			= pvBody;
+	http_rr_t sRR = { 0 };
+	sock_sec_t sSecure = { 0 };		// LEAVE here else pcCert/szCert gets screwed
+	sRR.sCtx.pHost = pHost;
+	sRR.pcQuery = pQuery;
+	sRR.pcBody = pvBody;
 	if (pcCert) {
-		sRR.sCtx.psSec	= &sSecure;
-		sSecure.pcCert	= pcCert;
-		sSecure.szCert	= szCert;
+		sRR.sCtx.psSec = &sSecure;
+		sSecure.pcCert = pcCert;
+		sSecure.szCert = szCert;
 	}
-	sRR.sfCB.on_body	= (http_data_cb) OnBodyCB;
+	sRR.sfCB.on_body = (http_data_cb) OnBodyCB;
 	sRR.hvContentLength	= (u64_t) DataSize;
-	sRR.hvValues		= hvValues;
 	sRR.pvArg			= pvArg;
+	sRR.hvValues = hvValues;
 	sRR.sCtx.d.val = Debug.val;
 	http_parser sParser;
 	http_parser_init(&sParser, HTTP_RESPONSE);			// clear all parser fields/values
 	sParser.data = &sRR;
 	psUBufCreate(&sRR.sUB, NULL, BufSize ? BufSize : configHTTP_BUFSIZE, 0);	// setup ubuf_t structure
 	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=",
-			sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
+									sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
 	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.pVoid);
 	IF_myASSERT(debugTRACK, sRR.hvContentType != ctUNDEFINED);
 
@@ -310,12 +326,10 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
  */
 static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen);
-	if (iRV < 1)					// 1=NewFW  0=LatestFW  -1=Error
-		return iRV;
+	if (iRV < 1) return iRV;		// 1=NewFW  0=LatestFW  -1=Error
 	part_xfer_t	sFI;
 	iRV = halFOTA_Begin(&sFI);
-	if (iRV != erSUCCESS)
-		return iRV;
+	if (iRV != erSUCCESS) return iRV;
 	sFI.pBuf = (void *) pBuf;
 	sFI.xLen = xLen;
 	sFI.xDone = 0;
@@ -325,11 +339,9 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 
 	while (xLen) {										// deal with all received packets
 		iRV = halFOTA_Write(&sFI);
-		if (iRV != ESP_OK)
-			break;
+		if (iRV != ESP_OK) break;
 		sFI.xDone += sFI.xLen;
-		if (sFI.xDone == sFI.xFull)
-			break;
+		if (sFI.xDone == sFI.xFull) break;
 		IF_SYSTIMER_START(debugTIMING, stFOTA);
 		iRV = xNetRecvBlocks(&psReq->sCtx, (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT);
 		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
@@ -343,8 +355,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
 	iRV = halFOTA_End(&sFI);
-	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
-		setSYSFLAGS(sfREBOOT);
+	if (iRV == erSUCCESS && sFI.iRV == ESP_OK) setSYSFLAGS(sfREBOOT);
 	return sFI.iRV;
 }
 
@@ -371,12 +382,10 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	 * #3 to be defined
 	 */
 	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck);
-	if (allSYSFLAGS(sfREBOOT) == 0)
-		iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(cmakeUUID), bCheck);
+	if (allSYSFLAGS(sfREBOOT) == 0) iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(cmakeUUID), bCheck);
 	if (bCheck == PERFORM)
 		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_NOTICE, "FWupg %s", iRV < erSUCCESS ? "FAIL" : "Done");
-	if (allSYSFLAGS(sfREBOOT) == 0)
-		setSYSFLAGS(sfFW_OK);
+	if (allSYSFLAGS(sfREBOOT) == 0) setSYSFLAGS(sfFW_OK);
 	return iRV;
 }
 
