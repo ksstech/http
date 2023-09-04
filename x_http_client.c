@@ -191,11 +191,12 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 }
 
 int	xHttpGetLocation(void) {
+	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	const char caQuery[] = "POST /geolocation/v1/geolocate?key="keyGOOGLE;
 	return xHttpRequest("www.googleapis.com", caQuery, "{ }\r\n",
 			CertGGLE, SizeGGLE, xHttpParseGeoLoc, 0,
-			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
-			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0), NULL);
+			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0), 0, dbgFlags, NULL);
 }
 
 // ##################################### TIMEZONE support ##########################################
@@ -238,11 +239,12 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 
 int	xHttpGetTimeZone(void) {
 	char const * caQuery = "GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="keyGOOGLE;
+	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
-			CertGGLE, SizeGGLE, xHttpParseTimeZone, 0,
-			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
-			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0), NULL,
-			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]);
+		CertGGLE, SizeGGLE, xHttpParseTimeZone, 0,
+		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0), 0, dbgFlags, NULL,
+		sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON], xTimeStampAsSeconds(RunTime));
 }
 
 // ########################################## Elevation #############################################
@@ -276,11 +278,12 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 
 int	xHttpGetElevation(void) {
 	const char caQuery[] = "GET /maps/api/elevation/json?locations=%.7f,%.7f&key="keyGOOGLE;
+	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
-			CertGGLE, SizeGGLE, xHttpParseElevation, 0,
-			httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
-			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0), NULL,
-			sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]);
+		CertGGLE, SizeGGLE, xHttpParseElevation, 0,
+		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0), 0, dbgFlags, NULL,
+		sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]);
 }
 
 // ################################# Firmware Over The Air support #################################
@@ -360,14 +363,14 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 }
 
 static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
-	u8_t optHostFOTA = ioB2GET(ioHostFOTA);
 	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
 											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	return xHttpRequest(HostInfo[optHostFOTA].pName, "GET /firmware/%s.bin", NULL,	// host, query & body
-			HostInfo[optHostFOTA].pcCert, HostInfo[optHostFOTA].szCert,				// cert pntr & size
-			bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,		// handler & size
-			httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
-			0, dbgFlags, pvPara, pvPara);
+	u8_t optHost = ioB2GET(ioHostFOTA);
+	return xHttpRequest(HostInfo[optHost].pName, "GET /firmware/%s.bin", NULL,	// host, query & body
+		HostInfo[optHost].pcCert, HostInfo[optHost].szCert,						// cert pntr & size
+		bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,		// handler & size
+		httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0), 0, dbgFlags, NULL,
+		pvPara);
 }
 
 /**
@@ -412,28 +415,18 @@ int xHttpCoredumpUpload(void) {
 	SL_WARN("iRV=%d  Len=%lu  Task=%lu  TCB=%lu  V=%-I", iRV, sCDhdr.len, sCDhdr.num, sCDhdr.tcb, sCDhdr.ver);
 
 	if (iRV == ESP_OK && (sCDhdr.len != sCDhdr.num && sCDhdr.tcb != sCDhdr.ver)) {
+		netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+		u8_t optHost = ioB2GET(ioHostFOTA);
 		#if 0
-		iRV = xHttpRequest(HostInfo[ioB2GET(ioHostFOTA)].pName,
-			caQuery,
-			NULL,
-			HostInfo[ioB2GET(ioHostFOTA)].pcCert,
-			HostInfo[ioB2GET(ioHostFOTA)].szCert,
-			halPART_Upload_CB,
-			sCDhdr.len,
-			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
-			0,
-			NETX_DBG_FLAGS(0,0,0,0,0,0,1,1,1,0,0,0,0,0,3,0),
-			(void *) psPart,
+		iRV = xHttpRequest(HostInfo[optHost].pName, caQuery, NULL,
+			HostInfo[optHost].pcCert, HostInfo[optHost].szCert, halPART_Upload_CB, sCDhdr.len,
+			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0), 0, dbgFlags, (void *) psPart,
 			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
 		#else
-		iRV = xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName,
-			caQuery, halPART_Upload_CB,
-			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert,
-			NULL, sCDhdr.len,
-			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
-			0,
-			NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0),
-			(void *) psPart,
+		iRV = xHttpRequest(HostInfo[optHost].pName, caQuery, halPART_Upload_CB,
+			HostInfo[optHost].pcCert, HostInfo[optHost].szCert, NULL, sCDhdr.len,
+			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0), 0, dbgFlags, (void *) psPart,
 			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
 		#endif
 	}
@@ -467,14 +460,13 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
  * @param[in]	pointer to tag ROM ID string
  */
 int	xHttpClientIdentUpload(void * psRomID) {
+	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, "PATCH /ibuttons.dat",
 			"'%M' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\r\n",
-			NULL, 0, 						// certificate info
-			NULL, 0, 						// read/write handler & size
-			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
-			0,
-			NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1),
-			NULL, psRomID);
+			NULL, 0, NULL, 0,
+			httpHDR_VALUES(ctTextPlain, 0, 0, 0), 0, dbgFlags, NULL,
+			psRomID);
 }
 
 // ######################################### Unused API's ##########################################
