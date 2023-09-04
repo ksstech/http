@@ -300,11 +300,14 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 	if (psParser->status_code != HTTP_STATUS_OK) {
 		IF_SL_WARN(debugTRACK && ioB1GET(ioFOTA), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
 	} else if (psRR->hvContentLength == 0ULL) {
-		SL_ERR("'%s' invalid size (%llu)", psRR->pvArg, psRR->hvContentLength);
+		SL_ERR("invalid size (%llu)", psRR->hvContentLength);
+
 	} else if (psRR->hvContentType != ctApplicationOctetStream) {
-		SL_ERR("'%s' invalid content (%d/%s)", psRR->pvArg, psRR->hvContentType, ctValues[psRR->hvContentType]);
+		SL_ERR("invalid content (%d/%s)", psRR->hvContentType, ctValues[psRR->hvContentType]);
+
 	} else if (psRR->hvConnect == coClose) {
 		SL_ERR("Connection closed unexpectedly");
+
 	} else {
 		/* BuildSeconds			: halfway(?) time of running FW
 		 * hvLastModified		: creation time of available FW
