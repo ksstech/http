@@ -111,7 +111,6 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 	}
 	sRR.sfCB.on_body = (http_data_cb) OnBodyCB;
 	sRR.hvContentLength	= (u64_t) DataSize;
-	sRR.pvArg			= pvArg;
 	sRR.hvValues = hvValues;
 	sRR.sCtx.d.val = Debug.val;
 	http_parser sParser;
@@ -128,6 +127,7 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 
 	va_list vArgs;
 	va_start(vArgs, pvArg);
+	sRR.pvArg = pvArg;
 	sRR.VaList = vArgs;
 	int xLen = xHttpBuildHeader(&sParser);
 	va_end(vArgs);
