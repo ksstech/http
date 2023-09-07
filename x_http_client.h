@@ -49,17 +49,17 @@ int xHttpGetWeather(void) ;
 int	xHttpHowsMySSL(void) ;
 int	xHttpBadSSL(void) ;
 
-int xHttpClientCheckUpgrades(bool bCheck) ;
+int xHttpClientCheckUpgrades(bool bCheck);
 
-int xHttpGetLocation(void) ;
-int	xHttpGetElevation(void) ;
-int xHttpGetTimeZone(void) ;
+int xHttpGetLocation(void);
+int	xHttpGetElevation(void);
+int xHttpGetTimeZone(void);
 
-int	xHttpClientPushOver(const char * pcMess, u32_t) ;
+int	xHttpClientPushOver(const char * pcMess, u32_t);
 
-int	xHttpClientRulesDownload(void) ;
+int	xHttpClientRulesDownload(void);
 
-int	xHttpClientIdentUpload(void * pvPara) ;
+int	xHttpClientIdentUpload(void * pvPara);
 int	xHttpCoredumpUpload(void);
 
 #ifdef __cplusplus
