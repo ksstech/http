@@ -237,8 +237,8 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 }
 
 int	xHttpGetLocation(void) {
-	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	const char caQuery[] = "POST /geolocation/v1/geolocate?key="keyGOOGLE;
 	return xHttpRequest("www.googleapis.com", caQuery, "{ }\r\n",
 			CertGGLE, SizeGGLE, xHttpParseGeoLoc, 0,
@@ -285,8 +285,8 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 
 int	xHttpGetTimeZone(void) {
 	char const * caQuery = "GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="keyGOOGLE;
-	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 		CertGGLE, SizeGGLE, xHttpParseTimeZone, 0,
 		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0), 0, dbgFlags, NULL,
@@ -324,8 +324,8 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 
 int	xHttpGetElevation(void) {
 	const char caQuery[] = "GET /maps/api/elevation/json?locations=%.7f,%.7f&key="keyGOOGLE;
-	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 		CertGGLE, SizeGGLE, xHttpParseElevation, 0,
 		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0), 0, dbgFlags, NULL,
@@ -344,7 +344,8 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 	http_rr_t * psRR = psParser->data;
 	int iRV = erFAILURE;
 	if (psParser->status_code != HTTP_STATUS_OK) {
-		//IF_SL_WARN(debugTRACK && ioB1GET(ioFOTA), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
+		IF_SL_INFO(debugTRACK && ioB1GET(dbgHTTPreq), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
+
 	} else if (psRR->hvContentLength == 0ULL) {
 		SL_ERR("invalid size (%llu)", psRR->hvContentLength);
 
@@ -362,7 +363,7 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 		#define	fotaMIN_DIF_SECONDS	120
 		s32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS;
 		iRV = (i32Diff < 0) ? erSUCCESS : 1;
-		IF_SL_NOT(debugTRACK && ioB1GET(ioFOTA), "found  %R vs %R  Diff=%ld  FW %s",
+		IF_SL_NOT(debugTRACK && ioB1GET(dbgHTTPreq), "found  %R vs %R  Diff=%ld  FW %s",
 				xTimeMakeTimestamp(psRR->hvLastModified, 0),
 				xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "old" : "new");
 	}
@@ -412,7 +413,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 }
 
 static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
-	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
 											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	u8_t optHost = ioB2GET(ioHostFOTA);
 	return xHttpRequest(HostInfo[optHost].pName, "GET /firmware/%s.bin", NULL,	// host, query & body
@@ -466,10 +467,10 @@ int xHttpCoredumpUpload(void) {
 	SL_WARN("iRV=%d  Len=%lu  Task=%lu  TCB=%lu  V=%-I", iRV, sCDhdr.len, sCDhdr.num, sCDhdr.tcb, sCDhdr.ver);
 
 	if (iRV == ESP_OK && (sCDhdr.len != sCDhdr.num && sCDhdr.tcb != sCDhdr.ver)) {
-		netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-		u8_t optHost = ioB2GET(ioHostFOTA);
-		#if 0
+		netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+													NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+		u8_t optHost = ioB2GET(ioHostCONF);
+		#if (buildNEW_CODE == 0)
 		iRV = xHttpRequest(HostInfo[optHost].pName, caQuery, NULL,
 			HostInfo[optHost].pcCert, HostInfo[optHost].szCert, halPART_Upload_CB, sCDhdr.len,
 			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0), 0, dbgFlags, (void *) psPart,
@@ -511,9 +512,10 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
  * @param[in]	pointer to tag ROM ID string
  */
 int	xHttpClientIdentUpload(void * psRomID) {
-	netx_dbg_t dbgFlags = ioB1GET(ioFOTA) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, "PATCH /ibuttons.dat",
+	int ioHost = ioB2GET(ioHostCONF);
+	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+	return xHttpRequest(HostInfo[ioHost].pName, "PATCH /ibuttons.dat",
 			"'%M' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\r\n",
 			NULL, 0, NULL, 0,
 			httpHDR_VALUES(ctTextPlain, 0, 0, 0), 0, dbgFlags, NULL,
@@ -534,27 +536,29 @@ int	xHttpClientIdentUpload(void * psRomID) {
 
 int xHttpGetWeather(void) {
 	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID=cf177bb6e86c95045841c63e99ad2ff4";
+	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
 			NULL, 0, NULL, 0,
-			httpHDR_VALUES(ctTextPlain,0,0,0),
-			16384, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL);
+			httpHDR_VALUES(ctTextPlain, 0, 0, 0), 16384, dbgFlags, NULL);
 }
 
 // ################################### How's my SSL support ########################################
 
-int	xHttpHowsMySSL(void) {
+int	xHttpHowsMySSL(int ioHost) {
+	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest("www.howsmyssl.com", "GET /a/check", NULL,
-			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert, NULL, 0,
-			httpHDR_VALUES(ctTextPlain,0,0,0),
-			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL);
+			HostInfo[ioHost].pcCert, HostInfo[ioHost].szCert, NULL, 0,
+			httpHDR_VALUES(ctTextPlain, 0, 0, 0), 0, dbgFlags, NULL);
 }
 
 // ####################################### Bad SSL support #########################################
 
-int	xHttpBadSSL(void) {
+int	xHttpBadSSL(int ioHost) {
+	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest("www.badssl.com", "GET /dashboard", NULL,
-			HostInfo[ioB2GET(ioHostFOTA)].pcCert, HostInfo[ioB2GET(ioHostFOTA)].szCert, NULL, 0,
-			httpHDR_VALUES(ctTextPlain,0,0,0),
-			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL);
+			HostInfo[ioHost].pcCert, HostInfo[ioHost].szCert, NULL, 0,
+			httpHDR_VALUES(ctTextPlain, 0, 0, 0), 0, dbgFlags, NULL);
 }
-

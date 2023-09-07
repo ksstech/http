@@ -45,9 +45,9 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		pcc_t pcCert, size_t szCert, void * OnBodyCB, u32_t DataSize,
 		u32_t hvValues, u16_t BufSize, netx_dbg_t Debug, void * pvArg, ...);
 
-int xHttpGetWeather(void) ;
-int	xHttpHowsMySSL(void) ;
-int	xHttpBadSSL(void) ;
+int xHttpGetWeather(void);
+int	xHttpHowsMySSL(int ioHost);
+int	xHttpBadSSL(int ioHost);
 
 int xHttpClientCheckUpgrades(bool bCheck);
 
