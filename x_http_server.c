@@ -5,6 +5,8 @@
 
 #include "hal_variables.h"			// required by options.h
 
+#if (includeHTTP_TASK > 0)
+
 #include "commands.h"
 #include "hal_stdio.h"
 #include "hal_network.h"
@@ -108,7 +110,6 @@ StackType_t tsbHTTP[httpSTACK_SIZE] = { 0 };
 uint8_t HttpState = 0;
 netx_t sServHttpCtx = { 0 };
 http_rr_t sRR = { 0 };
-static u32_t fRqst = 0;
 
 // ###################################### global variables #########################################
 
@@ -364,52 +365,6 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 	return iRV;
 }
 
-static void vHttpNotifyHandler(void) {
-	u32_t fDone = 0;
-	int iRV;
-	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
-		IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "Received Notify 0x%06X\r\n", fRqst);
-		if (fRqst & reqCOREDUMP) {
-			xHttpCoredumpUpload();
-			fDone |= reqCOREDUMP;
-		}
-		if (fRqst & reqFW_UPGRADE) {
-			xRtosTaskClearRUN(taskGUI_MASK);
-			xHttpClientCheckUpgrades(PERFORM);
-			xRtosTaskSetRUN(taskGUI_MASK);
-			fDone |= reqFW_UPGRADE;
-		}
-		if (fRqst & reqFW_CHECK) {
-			xHttpClientCheckUpgrades(CHECK);
-			fDone |= reqFW_CHECK;
-		}
-		if (allSYSFLAGS(sfREBOOT) == 0) {				// reboot NOT requested
-			if (fRqst & reqGEOLOC) {
-				iRV = xHttpGetLocation();
-				if (iRV > erFAILURE)
-					fDone |= reqGEOLOC;
-			}
-			if (fRqst & reqGEOTZ) {
-				iRV = xHttpGetTimeZone();
-				if (iRV > erFAILURE)
-					fDone |= reqGEOTZ;
-			}
-			if (fRqst & reqGEOALT) {
-				iRV = xHttpGetElevation();
-				if (iRV > erFAILURE)
-					fDone |= reqGEOALT;
-			}
-		} else if (fRqst & (reqGEOALT|reqGEOTZ|reqGEOLOC)) {	// REBOOT is requested
-			fDone |= (reqGEOALT|reqGEOTZ|reqGEOLOC);		// discard whatever is requested
-			IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "GeoXXX discarded, need to restart");
-		}
-		if (fDone) {
-			IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "fRqst=0x%X  fDone=0x%X", fRqst, fDone);
-			ulTaskNotifyValueClear(NULL, fDone);
-		}
-	}
-}
-
 /**
  *vTaskHttp()
  * @param pvParameters
@@ -430,9 +385,7 @@ static void vHttpTask(void * pvParameters) {
 			if (!xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(10)))
 				continue;
 		}
-		// Handle HTTP client type requests from other tasks
-		vHttpNotifyHandler();
-
+		vHttpRequestNotifyHandler(); 		// Handle HTTP client type requests from other tasks
 		switch(HttpState) {
 		case stateHTTP_DEINIT:
 			vTaskHttpDeInit();
@@ -547,3 +500,4 @@ void vHttpReport(report_t * psR) {
 		xNetReport(psR, &sRR.sCtx, "HTTPclt", 0, 0, 0);
 	}
 }
+#endif

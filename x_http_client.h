@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include 	"x_http_common.h"
+#include  "x_http_common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,7 +18,18 @@ extern "C" {
 
 // ######################################### enumerations ##########################################
 
-enum { PERFORM = 0, CHECK = 1 } ;
+enum { PERFORM = 0, CHECK = 1 };
+
+enum {								// HTTP requests
+	reqCOREDUMP		= (1 << 0),
+	reqFW_UPGRADE	= (1 << 1),
+	reqFW_CHECK		= (1 << 2),
+	reqGEOLOC		= (1 << 3),
+	reqGEOTZ		= (1 << 4),
+	reqGEOALT		= (1 << 5),
+	reqNOTIFIED		= (1 << 24)
+};
+
 
 // ######################################### structures ############################################
 
@@ -28,8 +39,8 @@ enum { PERFORM = 0, CHECK = 1 } ;
 
 // ###################################### public functions #########################################
 
-int	xHttpCompleteRequest(http_rr_t * psReq) ;
-int	xHttpParseResponse(char * pBuf, size_t xLen) ;
+void vHttpRequestNotifyHandler(void);
+
 int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		pcc_t pcCert, size_t szCert, void * OnBodyCB, u32_t DataSize,
 		u32_t hvValues, u16_t BufSize, netx_dbg_t Debug, void * pvArg, ...);

@@ -37,6 +37,52 @@
 
 // ################################### Common HTTP API functions ###################################
 
+void vHttpRequestNotifyHandler(void) {
+	u32_t fRqst = 0, fDone = 0;
+	int iRV;
+	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
+		IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "Received Notify 0x%06X\r\n", fRqst);
+		if (fRqst & reqCOREDUMP) {
+			xHttpCoredumpUpload();
+			fDone |= reqCOREDUMP;
+		}
+		if (fRqst & reqFW_UPGRADE) {
+			xRtosTaskClearRUN(taskGUI_MASK);
+			xHttpClientCheckUpgrades(PERFORM);
+			xRtosTaskSetRUN(taskGUI_MASK);
+			fDone |= reqFW_UPGRADE;
+		}
+		if (fRqst & reqFW_CHECK) {
+			xHttpClientCheckUpgrades(CHECK);
+			fDone |= reqFW_CHECK;
+		}
+		if (allSYSFLAGS(sfREBOOT) == 0) {				// reboot NOT requested
+			if (fRqst & reqGEOLOC) {
+				iRV = xHttpGetLocation();
+				if (iRV > erFAILURE)
+					fDone |= reqGEOLOC;
+			}
+			if (fRqst & reqGEOTZ) {
+				iRV = xHttpGetTimeZone();
+				if (iRV > erFAILURE)
+					fDone |= reqGEOTZ;
+			}
+			if (fRqst & reqGEOALT) {
+				iRV = xHttpGetElevation();
+				if (iRV > erFAILURE)
+					fDone |= reqGEOALT;
+			}
+		} else if (fRqst & (reqGEOALT|reqGEOTZ|reqGEOLOC)) {	// REBOOT is requested
+			fDone |= (reqGEOALT|reqGEOTZ|reqGEOLOC);		// discard whatever is requested
+			IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "GeoXXX discarded, need to restart");
+		}
+		if (fDone) {
+			IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "fRqst=0x%X  fDone=0x%X", fRqst, fDone);
+			ulTaskNotifyValueClear(NULL, fDone);
+		}
+	}
+}
+
 int	xHttpBuildHeader(http_parser * psParser) {
 	http_rr_t * psRR = psParser->data;
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psParser) && halCONFIG_inSRAM(psRR) && halCONFIG_inSRAM(psRR->sUB.pBuf));
@@ -263,13 +309,13 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 	int nTok = xJsonParse((char *)pcBuf, xLen, &sParser, &psTL);
 	if (nTok > 0) {									// parse elevation & resolution
 		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, (char *)pcBuf, psTL, nTok, 0);
-		iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "elevation", (px_t) &sNVSvars.GeoLocation[geoALT], cvF32);
+		iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "elevation", (px_t) &sNVSvars.GeoLoc[geoALT], cvF32);
 		if (iRV >= erSUCCESS)							// parse Resolution
-			iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "resolution", (px_t) &sNVSvars.GeoLocation[geoRES], cvF32);
+			iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "resolution", (px_t) &sNVSvars.GeoLoc[geoRES], cvF32);
 	}
 	if (iRV >= erSUCCESS) {
 		setSYSFLAGS(vfGEOALT);
-		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLocation[geoALT], sNVSvars.GeoLocation[geoRES]);
+		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLoc[geoALT], sNVSvars.GeoLoc[geoRES]);
 	}
 	if (psTL)
 		vRtosFree(psTL);
@@ -283,7 +329,7 @@ int	xHttpGetElevation(void) {
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 		CertGGLE, SizeGGLE, xHttpParseElevation, 0,
 		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0), 0, dbgFlags, NULL,
-		sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON]);
+		sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON]);
 }
 
 // ################################# Firmware Over The Air support #################################
@@ -401,8 +447,10 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 int xHttpCoredumpUpload(void) {
 	#if (CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN == 1)
 		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.bin";
+
 	#elif (CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF == 1)
 		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.elf";
+
 	#else
 		#error "Invalid/undefined COREDUMP file format!!!"
 	#endif
