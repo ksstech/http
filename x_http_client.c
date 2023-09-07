@@ -231,8 +231,7 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLocation[geoLAT],
 				sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]);
 	}
-	if (psTL)
-		vRtosFree(psTL);
+	if (psTL) vRtosFree(psTL);
     return iRV;
 }
 
@@ -317,8 +316,7 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 		setSYSFLAGS(vfGEOALT);
 		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLoc[geoALT], sNVSvars.GeoLoc[geoRES]);
 	}
-	if (psTL)
-		vRtosFree(psTL);
+	if (psTL) vRtosFree(psTL);
     return iRV;
 }
 
