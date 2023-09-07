@@ -219,17 +219,17 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 	int nTok = xJsonParse((char *)pcBuf, xLen, &sParser, &psTL);
 	if (nTok) {											// parse latitude, longitude & accuracy
 		IF_EXEC_4(debugTRACK && ioB1GET(dbgHTTPreq), xJsonPrintTokens, (char *)pcBuf, psTL, nTok, 0);
-		iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "lat", (px_t) &sNVSvars.GeoLocation[geoLAT], cvF32);
+		iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "lat", (px_t) &sNVSvars.GeoLoc[geoLAT], cvF32);
 		if (iRV >= erSUCCESS) {
-			iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "lng", (px_t) &sNVSvars.GeoLocation[geoLON], cvF32);
+			iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "lng", (px_t) &sNVSvars.GeoLoc[geoLON], cvF32);
 			if (iRV >= erSUCCESS)
-				iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "accuracy", (px_t) &sNVSvars.GeoLocation[geoACC], cvF32);
+				iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "accuracy", (px_t) &sNVSvars.GeoLoc[geoACC], cvF32);
 		}
 	}
 	if (iRV >= erSUCCESS) {
 		setSYSFLAGS(vfGEOLOC);
-		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLocation[geoLAT],
-				sNVSvars.GeoLocation[geoLON], sNVSvars.GeoLocation[geoACC]);
+		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLoc[geoLAT],
+				sNVSvars.GeoLoc[geoLON], sNVSvars.GeoLoc[geoACC]);
 	}
 	if (psTL) vRtosFree(psTL);
     return iRV;
@@ -289,7 +289,7 @@ int	xHttpGetTimeZone(void) {
 	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
 		CertGGLE, SizeGGLE, xHttpParseTimeZone, 0,
 		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0), 0, dbgFlags, NULL,
-		sNVSvars.GeoLocation[geoLAT], sNVSvars.GeoLocation[geoLON], xTimeStampAsSeconds(RunTime));
+		sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], xTimeStampAsSeconds(RunTime));
 }
 
 // ########################################## Elevation #############################################
