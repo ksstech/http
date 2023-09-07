@@ -117,21 +117,21 @@ http_rr_t sRR = { 0 };
 // ################################## local/static support functions ###############################
 
 static int xHttpServerSetResponseStatus(http_parser * psParser, int Status) {
-	http_rr_t * psRR	= psParser->data;
-	psParser->status_code	= Status;
+	http_rr_t * psRR = psParser->data;
+	psParser->status_code = Status;
 
 	// set common defaults for responses
-	psRR->hvContentType		= ctTextHtml;
-	psRR->hvAccept			= ctUNDEFINED;
-	psRR->hvConnect			= coClose;
+	psRR->hvContentType	= ctTextHtml;
+	psRR->hvAccept = ctUNDEFINED;
+	psRR->hvConnect = coClose;
 
 	switch(Status) {
-	case HTTP_STATUS_OK:				psRR->pcStatMes	= "OK";				break;	// 200
-	case HTTP_STATUS_BAD_REQUEST:		psRR->pcStatMes	= "Bad Request";		break;	// 400
-	case HTTP_STATUS_NOT_FOUND:			psRR->pcStatMes	= "Not Found";			break;	// 404
-	case HTTP_STATUS_NOT_ACCEPTABLE:	psRR->pcStatMes	= "Not Acceptable";	break;	// 406
-	case HTTP_STATUS_NOT_IMPLEMENTED:	psRR->pcStatMes	= "Not Implemented";	break;	// 501
-	default:							SL_ERR(debugAPPL_PLACE);
+	case HTTP_STATUS_OK: psRR->pcStatMes = "OK"; break;								// 200
+	case HTTP_STATUS_BAD_REQUEST: psRR->pcStatMes = "Bad Request"; break;			// 400
+	case HTTP_STATUS_NOT_FOUND: psRR->pcStatMes	= "Not Found"; break;				// 404
+	case HTTP_STATUS_NOT_ACCEPTABLE: psRR->pcStatMes = "Not Acceptable"; break;		// 406
+	case HTTP_STATUS_NOT_IMPLEMENTED: psRR->pcStatMes = "Not Implemented"; break;	// 501
+	default: SL_ERR(debugAPPL_PLACE);
 	}
 	if (INRANGE(HTTP_STATUS_BAD_REQUEST, Status, HTTP_STATUS_UNAVAILABLE_FOR_LEGAL_REASONS))
 		psRR->hvConnect = coClose;					// force connection to be closed
@@ -178,22 +178,15 @@ static int xHttpSendResponse(http_parser * psParser, const char * format, ...) {
 }
 
 static int xHttpServerParseString(char * pVal, char * pDst) {
-	if (xStringParseEncoded(pDst, pVal) == erFAILURE) {
-		return erFAILURE;
-	}
+	if (xStringParseEncoded(pDst, pVal) == erFAILURE)  return erFAILURE;
 	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "%s->%s\r\n", pVal, pDst);
 	return erSUCCESS;
 }
 
 int xHttpServerParseIPaddress(char * pSrc, u32_t * pDst) {
-	if (xStringParseEncoded(NULL, pSrc) == erFAILURE) {
-		return erFAILURE;
-	}
+	if (xStringParseEncoded(NULL, pSrc) == erFAILURE) return erFAILURE;
 	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "%s", pSrc);
-	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) {
-		*pDst = 0;
-		return erFAILURE;
-	}
+	if (pcStringParseIpAddr(pSrc, (px_t) pDst) == pcFAILURE) { *pDst = 0; return erFAILURE; }
 	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), " : 0x%08X\r\n", *pDst);
 	return erSUCCESS;
 }
@@ -382,8 +375,7 @@ static void vHttpTask(void * pvParameters) {
 
 	while (bRtosTaskWaitOK(taskHTTP_MASK, portMAX_DELAY)) {
 		if (HttpState != stateHTTP_DEINIT) {
-			if (!xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(10)))
-				continue;
+			if (!xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(10))) continue;
 		}
 		vHttpRequestNotifyHandler(); 		// Handle HTTP client type requests from other tasks
 		switch(HttpState) {
@@ -494,7 +486,7 @@ void vHttpStartStop(void) {
 void vHttpReport(report_t * psR) {
 	if (xRtosGetStatus(flagHTTP_SERV)) {
 		xNetReport(psR, &sServHttpCtx, "HTTPsrv", 0, 0, 0);
-		wprintfx(psR, "\tFSM=%d  maxTX=%u  maxRX=%u  Rqst=0x%X\r\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx, fRqst);
+		wprintfx(psR, "\tFSM=%d  maxTX=%u  maxRX=%u\r\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx);
 	}
 	if (xRtosGetStatus(flagHTTP_CLNT)) {
 		xNetReport(psR, &sRR.sCtx, "HTTPclt", 0, 0, 0);
