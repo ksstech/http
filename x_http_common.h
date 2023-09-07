@@ -1,13 +1,12 @@
 /*
- * Copyright 2014-22 Andre. M Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-23 Andre. M Maree / KSS Technologies (Pty) Ltd.
  */
 
 #pragma once
 
-#include	"x_ubuf.h"
-#include	"socketsX.h"
-
 #include 	"http_parser.h"
+#include	"socketsX.h"
+#include	"x_ubuf.h"
 #include	"yuarel.h"
 
 #ifdef __cplusplus
@@ -141,7 +140,7 @@ typedef struct http_rr_t {
 
 extern const char * const ctValues[];
 extern const char * const coValues[];
-extern const char * const hfValues[];
+//extern const char * const hfValues[];
 
 // ###################################### public functions #########################################
 
