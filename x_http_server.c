@@ -5,8 +5,6 @@
 
 #include "hal_variables.h"			// required by options.h
 
-#if (includeHTTP_TASK > 0)
-
 #include "commands.h"
 #include "hal_stdio.h"
 #include "hal_network.h"
@@ -260,8 +258,7 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 			iURL = urlROOT;								// do NOT try to match, lost single '/'
 		} else {
 			iURL = xHttpCommonFindMatch(UrlTable, NO_MEM(UrlTable), psRR->url.path, strlen(psRR->url.path));
-			if (iURL == 0)
-				iURL = urlNOTFOUND;
+			if (iURL == 0) iURL = urlNOTFOUND;
 		}
 	}
 
@@ -285,7 +282,7 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 			(strcmp(psRR->params[i++].key, halSTORAGE_KEY_MQTT) != 0)) {
 			// missing/corrupted/wrong key for an IP parameter, stop parsing & complain...
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST);
-			psRR->pcBody	= (char *) HtmlErrorBadQuery;
+			psRR->pcBody = (char *) HtmlErrorBadQuery;
 
 		} else {
 			u8_t ssid[SO_MEM(wifi_sta_config_t, ssid)] = { 0 };
@@ -329,32 +326,29 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
 	case urlAPI:
 		if (psRR->NumParts == 2) {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_OK);
-			psRR->f_bodyCB 	= 1;
-			psRR->hdlr_rsp	= xHttpHandle_API;
+			psRR->f_bodyCB = 1;
+			psRR->hdlr_rsp = xHttpHandle_API;
 		} else {
 			xHttpServerSetResponseStatus(psParser, HTTP_STATUS_BAD_REQUEST);
-			psRR->pcBody 	= "<html><body><h2>** API command option Required **</h2></body></html>";
+			psRR->pcBody = "<html><body><h2>** API command option Required **</h2></body></html>";
 		}
 		break;
 
 	case urlNOTFOUND:
 		xHttpServerSetResponseStatus(psParser, HTTP_STATUS_NOT_FOUND);
-		psRR->pcBody 	= "<html><body><h2>** URL Nor found **</h2></body></html>";
+		psRR->pcBody = "<html><body><h2>** URL Nor found **</h2></body></html>";
 		break;
 
 	default:
 		break;
 	}
 
-	if (psRR->f_bodyCB && psRR->hdlr_rsp) {
-		iRV = psRR->hdlr_rsp(psParser);			// Add dynamic content to buffer via callback
-	} else {
+	if (psRR->f_bodyCB && psRR->hdlr_rsp) iRV = psRR->hdlr_rsp(psParser); // Add dynamic content to buffer via callback
+	else {
 		iRV = xHttpSendResponse(psParser, psRR->pcBody);
 		IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] Response sent iRV=%d\r\n", iRV);
 	}
-	if (sServHttpCtx.maxTx < iRV) {
-		sServHttpCtx.maxTx = iRV;
-	}
+	if (sServHttpCtx.maxTx < iRV) sServHttpCtx.maxTx = iRV;
 	return iRV;
 }
 
@@ -379,22 +373,17 @@ static void vHttpTask(void * pvParameters) {
 		}
 		vHttpRequestNotifyHandler(); 		// Handle HTTP client type requests from other tasks
 		switch(HttpState) {
-		case stateHTTP_DEINIT:
-			vTaskHttpDeInit();
-			break;					// must NOT fall through since the Lx status might have changed
+		case stateHTTP_DEINIT: vTaskHttpDeInit(); break;// must NOT fall through since the Lx status might have changed
 
 		case stateHTTP_INIT:
 			IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] init\r\n");
 			memset(&sServHttpCtx, 0 , sizeof(sServHttpCtx));
-			sServHttpCtx.sa_in.sin_family	= AF_INET;
-			sServHttpCtx.type				= SOCK_STREAM;
-			sServHttpCtx.sa_in.sin_port		= htons(IP_PORT_HTTP);
-			sServHttpCtx.flags				= SO_REUSEADDR;
+			sServHttpCtx.sa_in.sin_family = AF_INET;
+			sServHttpCtx.type = SOCK_STREAM;
+			sServHttpCtx.sa_in.sin_port = htons(IP_PORT_HTTP);
+			sServHttpCtx.flags = SO_REUSEADDR;
 			iRV = xNetOpen(&sServHttpCtx);
-			if (iRV < erSUCCESS) {
-				HttpState = stateHTTP_DEINIT;
-				break;
-			}
+			if (iRV < erSUCCESS) { HttpState = stateHTTP_DEINIT; break; }
 			xRtosSetStatus(flagHTTP_SERV);
 			HttpState = stateHTTP_WAITING;
 			IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] waiting\r\n");
@@ -403,17 +392,12 @@ static void vHttpTask(void * pvParameters) {
 		case stateHTTP_WAITING:
 			iRV = xNetAccept(&sServHttpCtx, &sRR.sCtx, httpINTERVAL_MS);
 			if (iRV < 0) {
-				if (sServHttpCtx.error != EAGAIN) {
-					HttpState = stateHTTP_DEINIT;
-				}
+				if (sServHttpCtx.error != EAGAIN) HttpState = stateHTTP_DEINIT;
 				break;
 			}
 
 			iRV = xNetSetRecvTO(&sRR.sCtx, httpINTERVAL_MS);
-			if (iRV != erSUCCESS) {
-				HttpState = stateHTTP_DEINIT;
-				break;
-			}
+			if (iRV != erSUCCESS) { HttpState = stateHTTP_DEINIT; break; }
 			xRtosSetStatus(flagHTTP_CLNT);			// mark as having a client connection
 			HttpState = stateHTTP_CONNECTED;
 			IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] connected\r\n");
@@ -423,9 +407,7 @@ static void vHttpTask(void * pvParameters) {
 			iRV = xNetRecv(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size);
 			if (iRV > 0) {							// read something ?
 				IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "[HTTP] start parsing\r\n");
-				if (sServHttpCtx.maxRx < iRV) {
-					sServHttpCtx.maxRx = iRV;
-				}
+				if (sServHttpCtx.maxRx < iRV) sServHttpCtx.maxRx = iRV;
 				http_parser 	sParser;				// then process the packet
 				http_parser_init(&sParser, HTTP_REQUEST);
 				sParser.data		= &sRR;
@@ -464,8 +446,7 @@ static void vHttpTask(void * pvParameters) {
 				vTaskHttpCloseClient();
 			}
 			break;
-		default:
-			SL_ERR(debugAPPL_PLACE);
+		default: SL_ERR(debugAPPL_PLACE);
 		}
 	}
 	vTaskHttpDeInit();
@@ -488,8 +469,5 @@ void vHttpReport(report_t * psR) {
 		xNetReport(psR, &sServHttpCtx, "HTTPsrv", 0, 0, 0);
 		wprintfx(psR, "\tFSM=%d  maxTX=%u  maxRX=%u\r\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx);
 	}
-	if (xRtosGetStatus(flagHTTP_CLNT)) {
-		xNetReport(psR, &sRR.sCtx, "HTTPclt", 0, 0, 0);
-	}
+	if (xRtosGetStatus(flagHTTP_CLNT)) xNetReport(psR, &sRR.sCtx, "HTTPclt", 0, 0, 0);
 }
-#endif
