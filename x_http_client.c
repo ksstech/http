@@ -218,7 +218,7 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 		}
 	}
 	if (iRV >= erSUCCESS) {
-		setSYSFLAGS(vfGEOLOC);
+		setSYSFLAGS(vfNVSBLOB);
 		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLoc[geoLAT],
 				sNVSvars.GeoLoc[geoLON], sNVSvars.GeoLoc[geoACC]);
 	}
@@ -265,7 +265,7 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 		}
 	}
 	if (iRV >= erSUCCESS) {
-		setSYSFLAGS(vfGEOTZ);
+		setSYSFLAGS(vfNVSBLOB);
 		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->TZname);
 	}
 	if (psTL)
@@ -304,7 +304,7 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 			iRV = xJsonParseKeyValue((char *)pcBuf, psTL, nTok, pKey = "resolution", (px_t) &sNVSvars.GeoLoc[geoRES], cvF32);
 	}
 	if (iRV >= erSUCCESS) {
-		setSYSFLAGS(vfGEOALT);
+		setSYSFLAGS(vfNVSBLOB);
 		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLoc[geoALT], sNVSvars.GeoLoc[geoRES]);
 	}
 	if (psTL) vRtosFree(psTL);
