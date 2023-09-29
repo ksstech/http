@@ -35,7 +35,18 @@
 	#define	keyGOOGLE				"fakegoogle"
 #endif
 
+extern TaskHandle_t TnetHandle;
 // ################################### Common HTTP API functions ###################################
+
+void vHttpRequestNotifyTask(u32_t ulValue) {
+	#if (includeHTTP_TASK > 0)
+	xTaskNotify(HttpHandle, ulValue, eSetBits);
+	#elif (includeTNET_TASK > 0)
+	xTaskNotify(TnetHandle, ulValue, eSetBits);
+	#else
+	#error "No task configured to handle HTTP requests"
+	#endif
+}
 
 void vHttpRequestNotifyHandler(void) {
 	u32_t fRqst = 0, fDone = 0;
