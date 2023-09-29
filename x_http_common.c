@@ -80,8 +80,7 @@ int	xHttpCommonFindMatch(const char * const pcTable[], u32_t xSize, const char *
 	while (Idx < xSize) {
 		size_t ySize = strlen(*pcTable);				// get length of string in table to compare against
 		if (ySize == xLen) {
-			if (strncasecmp(*pcTable, pcMatch, ySize) == 0)
-				return Idx;
+			if (strncasecmp(*pcTable, pcMatch, ySize) == 0) return Idx;
 		}
 		pcTable++;
 		Idx++;
@@ -158,38 +157,14 @@ int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xL
 	IF_CP(debugTRACK && psReq->sCtx.d.http, "'%.*s'\r\n", (int)xLen, pBuf);
 	struct tm sTM;
 	switch (psReq->HdrField) {
-	case hfAcceptRanges:
-		if (strncasecmp("bytes", pBuf, xLen) == 0) psReq->f_ac_rng = 1;
-		break;
-
-	case hfConnection:
-		psReq->hvConnect = xHttpCommonFindMatch(coValues, NO_MEM(coValues), pBuf, xLen);
-		break;
-
-	case hfContentLength:
-		psReq->hvContentLength = psP->content_length;
-		break;
-
-	case hfContentType:
-		psReq->hvContentType = xHttpCommonFindMatch(ctValues, NO_MEM(ctValues), pBuf, xLen);
-		break;
-
-	case hfDate:
-		strptime(pBuf, "%a, %d %b %Y %T", &sTM);
-		psReq->hvDate = mktime(&sTM);
-		break;
-
-	case hfHost:
-		psReq->f_host = 1;
-		break;
-
-	case hfLastModified:
-		strptime(pBuf, "%a, %d %b %Y %T", &sTM);
-		psReq->hvLastModified = mktime(&sTM);
-		break;
-
-	default:
-		break;
+	case hfAcceptRanges: if (strncasecmp("bytes", pBuf, xLen) == 0) psReq->f_ac_rng = 1; break;
+	case hfConnection: psReq->hvConnect = xHttpCommonFindMatch(coValues, NO_MEM(coValues), pBuf, xLen); break;
+	case hfContentLength: psReq->hvContentLength = psP->content_length; break;
+	case hfContentType: psReq->hvContentType = xHttpCommonFindMatch(ctValues, NO_MEM(ctValues), pBuf, xLen); break;
+	case hfDate: strptime(pBuf, "%a, %d %b %Y %T", &sTM); psReq->hvDate = mktime(&sTM); break;
+	case hfHost: psReq->f_host = 1; break;
+	case hfLastModified: strptime(pBuf, "%a, %d %b %Y %T", &sTM); psReq->hvLastModified = mktime(&sTM); break;
+	default: break;
 	}
 	return erSUCCESS;
 }
