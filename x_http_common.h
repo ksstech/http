@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include 	"http_parser.h"
-#include	"socketsX.h"
-#include	"x_ubuf.h"
-#include	"yuarel.h"
+#include "http_parser.h"
+#include "socketsX.h"
+#include "x_ubuf.h"
+#include "yuarel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -138,9 +138,6 @@ typedef struct http_rr_t {
 
 // ################################### Global variables ############################################
 
-extern const char * const ctValues[];
-extern const char * const coValues[];
-//extern const char * const hfValues[];
 
 // ###################################### public functions #########################################
 
