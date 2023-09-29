@@ -5,6 +5,7 @@
 
 #include "hal_config.h"
 
+#if (includeHTTP_TASK > 0)
 #include "commands.h"
 #include "hal_stdio.h"
 #include "hal_network.h"
@@ -372,7 +373,10 @@ static void vHttpTask(void * pvParameters) {
 		if (HttpState != stateHTTP_DEINIT) {
 			if (!xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(10))) continue;
 		}
+
+		#if (includeHTTP_TASK > 0)
 		vHttpRequestNotifyHandler(); 		// Handle HTTP client type requests from other tasks
+		#endif
 		switch(HttpState) {
 		case stateHTTP_DEINIT: vTaskHttpDeInit(); break;// must NOT fall through since the Lx status might have changed
 
