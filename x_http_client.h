@@ -33,13 +33,14 @@ extern "C" {
 enum { PERFORM = 0, CHECK = 1 };
 
 enum {								// HTTP requests
-	reqCOREDUMP		= (1 << 0),
-	reqFW_UPGRADE	= (1 << 1),
-	reqFW_CHECK		= (1 << 2),
-	reqGEOLOC		= (1 << 3),
-	reqGEOTZ		= (1 << 4),
-	reqGEOALT		= (1 << 5),
-	reqNOTIFIED		= (1 << 24)
+	reqGEOALT		= (1 << 0),
+	reqGEOTZ		= (1 << 1),
+	reqGEOLOC		= (1 << 2),
+	reqFW_CHECK		= (1 << 3),
+	reqFW_UPGRADE	= (1 << 4),
+	reqCOREDUMP		= (1 << 5),
+	// add extra here
+	reqNOTIFIED		= (1 << 24)		// flag used to indicate "have sent request"
 };
 
 
@@ -51,6 +52,7 @@ enum {								// HTTP requests
 
 // ###################################### public functions #########################################
 
+void vHttpRequestNotifyTask(u32_t ulValue);
 void vHttpRequestNotifyHandler(void);
 
 int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
