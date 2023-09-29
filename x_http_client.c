@@ -41,43 +41,34 @@ void vHttpRequestNotifyHandler(void) {
 	u32_t fRqst = 0, fDone = 0;
 	int iRV;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
-		IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "Received Notify 0x%06X\r\n", fRqst);
-		if (fRqst & reqCOREDUMP) {
-			xHttpCoredumpUpload();
-			fDone |= reqCOREDUMP;
-		}
+		SL_INFO("Received Notify 0x%06X\r\n", fRqst);
+		if (fRqst & reqCOREDUMP) { xHttpCoredumpUpload(); fDone |= reqCOREDUMP; }
 		if (fRqst & reqFW_UPGRADE) {
 			xRtosTaskClearRUN(taskGUI_MASK);
 			xHttpClientCheckUpgrades(PERFORM);
 			xRtosTaskSetRUN(taskGUI_MASK);
 			fDone |= reqFW_UPGRADE;
 		}
-		if (fRqst & reqFW_CHECK) {
-			xHttpClientCheckUpgrades(CHECK);
-			fDone |= reqFW_CHECK;
-		}
+		if (fRqst & reqFW_CHECK) { xHttpClientCheckUpgrades(CHECK); fDone |= reqFW_CHECK; }
 		if (allSYSFLAGS(sfREBOOT) == 0) {				// reboot NOT requested
 			if (fRqst & reqGEOLOC) {
 				iRV = xHttpGetLocation();
-				if (iRV > erFAILURE)
-					fDone |= reqGEOLOC;
+				if (iRV > erFAILURE) fDone |= reqGEOLOC;
 			}
 			if (fRqst & reqGEOTZ) {
 				iRV = xHttpGetTimeZone();
-				if (iRV > erFAILURE)
-					fDone |= reqGEOTZ;
+				if (iRV > erFAILURE) fDone |= reqGEOTZ;
 			}
 			if (fRqst & reqGEOALT) {
 				iRV = xHttpGetElevation();
-				if (iRV > erFAILURE)
-					fDone |= reqGEOALT;
+				if (iRV > erFAILURE) fDone |= reqGEOALT;
 			}
-		} else if (fRqst & (reqGEOALT|reqGEOTZ|reqGEOLOC)) {	// REBOOT is requested
-			fDone |= (reqGEOALT|reqGEOTZ|reqGEOLOC);		// discard whatever is requested
-			IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "GeoXXX discarded, need to restart");
+		} else if (fRqst & (reqGEOLOC|reqGEOTZ|reqGEOALT)) {	// REBOOT is requested
+			fDone |= (reqGEOLOC|reqGEOTZ|reqGEOALT);	// discard whatever is requested
+			SL_INFO("GeoXXX requests discarded, restart...");
 		}
 		if (fDone) {
-			IF_SL_INFO(debugTRACK && ioB1GET(ioHTTPtrack), "fRqst=0x%X  fDone=0x%X", fRqst, fDone);
+			SL_INFO("fRqst=0x%X  fDone=0x%X", fRqst, fDone);
 			ulTaskNotifyValueClear(NULL, fDone);
 		}
 	}
