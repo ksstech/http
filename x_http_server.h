@@ -4,10 +4,9 @@
 
 #pragma once
 
-#include	"hal_config.h"
-#include	"FreeRTOS_Support.h"
-
-#include 	"http_parser.h"
+#include "x_http_common.h"
+#include "FreeRTOS_Support.h"
+#include "http_parser.h"
 
 #ifdef __cplusplus
 extern "C" {
