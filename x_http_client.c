@@ -2,13 +2,12 @@
  * Copyright 2014-23 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include "hal_variables.h"			// required by options.h
-
+#include "hal_config.h"
+#include "hal_fota.h"									// firmware download handler
+#include "hal_network.h"
+#include "hal_options.h"
 #include "certificates.h"
 #include "FreeRTOS_Support.h"
-#include "hal_network.h"
-#include "hal_fota.h"									// firmware download handler
-#include "options.h"
 #include "parserX.h"									// parsing location & TZ requests
 #include "printfx.h"
 #include "syslog.h"
