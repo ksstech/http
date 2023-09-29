@@ -469,14 +469,14 @@ int xHttpCoredumpUpload(void) {
 		netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
 													NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 		u8_t optHost = ioB2GET(ioHostCONF);
-		#if (buildNEW_CODE == 0)
-		iRV = xHttpRequest(HostInfo[optHost].pName, caQuery, NULL,
-			HostInfo[optHost].pcCert, HostInfo[optHost].szCert, halPART_Upload_CB, sCDhdr.len,
+		#if (buildNEW_CODE == 1)
+		iRV = xHttpRequest(HostInfo[optHost].pName, caQuery, halPART_Upload_CB,
+			HostInfo[optHost].pcCert, HostInfo[optHost].szCert, NULL, sCDhdr.len,
 			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0), 0, dbgFlags, (void *) psPart,
 			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
 		#else
-		iRV = xHttpRequest(HostInfo[optHost].pName, caQuery, halPART_Upload_CB,
-			HostInfo[optHost].pcCert, HostInfo[optHost].szCert, NULL, sCDhdr.len,
+		iRV = xHttpRequest(HostInfo[optHost].pName, caQuery, NULL,
+			HostInfo[optHost].pcCert, HostInfo[optHost].szCert, halPART_Upload_CB, sCDhdr.len,
 			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0), 0, dbgFlags, (void *) psPart,
 			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
 		#endif
