@@ -34,7 +34,12 @@
 	#define	keyGOOGLE				"fakegoogle"
 #endif
 
+// ################################### Global variables ############################################
+
 extern TaskHandle_t TnetHandle;
+extern const char * const ctValues[];
+extern const char * const coValues[];
+
 // ################################### Common HTTP API functions ###################################
 
 void vHttpRequestNotifyTask(u32_t ulValue) {

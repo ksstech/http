@@ -4,7 +4,12 @@
 
 #pragma once
 
-#include  "x_http_common.h"
+#if (includeHTTP_TASK > 0)
+	#include "x_http_server.h"
+#elif (includeTNET_TASK > 0)
+	#include "tnet_server.h"
+#endif
+#include "x_http_common.h"								// for xHttpFirmware????()
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,6 +20,13 @@ extern "C" {
 
 // ########################################### macros #############################################
 
+#if (includeHTTP_TASK > 0)
+	#define flagTASK_TO_TEST flagHTTP_SERV
+#elif (includeTNET_TASK > 0)
+	#define flagTASK_TO_TEST flagTNET_SERV
+#else
+	#error "No task defined to handle HTTP requests"
+#endif
 
 // ######################################### enumerations ##########################################
 
