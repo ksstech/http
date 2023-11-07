@@ -367,7 +367,7 @@ static void vHttpTask(void * pvParameters) {
 	vTaskSetThreadLocalStoragePointer(NULL, buildFRTLSP_EVT_MASK, (void *)taskHTTP_MASK);
 	sRR.sUB.pBuf = pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE);
 	HttpState = stateHTTP_INIT;
-	xRtosTaskSetRUN(taskHTTP_MASK);
+	xRtosSetTaskRUN(taskHTTP_MASK);
 
 	while (bRtosTaskWaitOK(taskHTTP_MASK, portMAX_DELAY)) {
 		if (HttpState != stateHTTP_DEINIT) {
@@ -461,8 +461,8 @@ static void vHttpTask(void * pvParameters) {
 
 void vHttpStartStop(void) {
 	if (ioB1GET(ioHTTPstart)) {
-		xRtosTaskClearRUN(taskHTTP_MASK);
-		xRtosTaskClearDELETE(taskHTTP_MASK);
+		xRtosClearTaskRUN(taskHTTP_MASK);
+		xRtosClearTaskDELETE(taskHTTP_MASK);
 		HttpHandle = xRtosTaskCreateStatic(vHttpTask, "http", httpSTACK_SIZE, NULL, httpPRIORITY, tsbHTTP, &ttsHTTP, tskNO_AFFINITY);
 	} else {
 		vRtosTaskTerminate(taskHTTP_MASK);
@@ -470,10 +470,10 @@ void vHttpStartStop(void) {
 }
 
 void vHttpReport(report_t * psR) {
-	if (xRtosGetStatus(flagHTTP_SERV)) {
+	if (xRtosCheckStatus(flagHTTP_SERV)) {
 		xNetReport(psR, &sServHttpCtx, "HTTPsrv", 0, 0, 0);
 		wprintfx(psR, "\tFSM=%d  maxTX=%u  maxRX=%u\r\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx);
 	}
-	if (xRtosGetStatus(flagHTTP_CLNT)) xNetReport(psR, &sRR.sCtx, "HTTPclt", 0, 0, 0);
+	if (xRtosCheckStatus(flagHTTP_CLNT)) xNetReport(psR, &sRR.sCtx, "HTTPclt", 0, 0, 0);
 }
 #endif

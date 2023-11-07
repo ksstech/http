@@ -59,9 +59,9 @@ void vHttpRequestNotifyHandler(void) {
 		SL_INFO("Received Notify 0x%06X\r\n", fRqst);
 		if (fRqst & reqCOREDUMP) { xHttpCoredumpUpload(); fDone |= reqCOREDUMP; }
 		if (fRqst & reqFW_UPGRADE) {
-			xRtosTaskClearRUN(taskGUI_MASK);
+			xRtosClearTaskRUN(taskGUI_MASK);
 			xHttpClientCheckUpgrades(PERFORM);
-			xRtosTaskSetRUN(taskGUI_MASK);
+			xRtosSetTaskRUN(taskGUI_MASK);
 			fDone |= reqFW_UPGRADE;
 		}
 		if (fRqst & reqFW_CHECK) { xHttpClientCheckUpgrades(CHECK); fDone |= reqFW_CHECK; }
