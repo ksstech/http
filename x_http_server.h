@@ -31,7 +31,8 @@ enum { stateHTTP_DEINIT = 1, stateHTTP_INIT, stateHTTP_WAITING, stateHTTP_CONNEC
 // ###################################### public functions #########################################
 
 void vHttpStartStop(void);
-void vHttpReport(report_t * psR);
+struct report_t;
+void vHttpReport(struct report_t * psR);
 
 #ifdef __cplusplus
 }
