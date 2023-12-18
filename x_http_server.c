@@ -61,7 +61,7 @@ static const char HtmlSTAdetails[] =
 	"<h3>'IRMACOS: STA details'</h3>"
 	"<p>Manufacturer    : " halDEV_VENDOR "</p>"
 	"<p>Platform        : " halDEV_MODEL "</p>"
-	"<p>Wifi FW version : " mySTRINGIFY(DEV_WIFI_VER) "</p>"
+	"<p>Wifi FW version : " DEV_WIFI_VER "</p>"
 	"<p>Firmware Ver#   : " DEV_FW_VER_STR "</p>"
 	"<form action='/' method='get'><input type='submit' value='STA_Update'></form>"
 	"</body></html>";
