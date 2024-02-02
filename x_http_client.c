@@ -57,7 +57,7 @@ void vHttpRequestNotifyHandler(void) {
 	u32_t fRqst = 0, fDone = 0;
 	int iRV;
 	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
-		SL_INFO("Received Notify 0x%06X\r\n", fRqst);
+		SL_INFO("Received Notify x%X", fRqst);
 		if (fRqst & reqCOREDUMP) { xHttpCoredumpUpload(); fDone |= reqCOREDUMP; }
 		if (fRqst & reqFW_UPGRADE) {
 			xRtosClearTaskRUN(taskGUI_MASK);
@@ -84,7 +84,7 @@ void vHttpRequestNotifyHandler(void) {
 			SL_INFO("GeoXXX requests discarded, restart...");
 		}
 		if (fDone) {
-			SL_INFO("fRqst=0x%X  fDone=0x%X", fRqst, fDone);
+			SL_INFO("fRqst=x%X  fDone=x%X", fRqst, fDone);
 			ulTaskNotifyValueClear(NULL, fDone);
 		}
 	}
