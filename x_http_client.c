@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-23 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
+ * Copyright 2014-24 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
 #include "hal_config.h"
