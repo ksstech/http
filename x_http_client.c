@@ -540,7 +540,7 @@ int	xHttpClientIdentUpload(void * psRomID) {
 // ###################################### WEATHER support ##########################################
 
 int xHttpGetWeather(void) {
-	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID=cf177bb6e86c95045841c63e99ad2ff4";
+	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID="idOPENWEATHER;
 	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
 												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
