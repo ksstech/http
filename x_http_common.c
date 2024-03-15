@@ -3,7 +3,7 @@
  * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include "hal_config.h"
+#include "hal_platform.h"
 #include "x_http_common.h"
 #include "parserX.h"
 #include "x_buffers.h"

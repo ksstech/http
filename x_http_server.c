@@ -3,7 +3,7 @@
  * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include "hal_config.h"
+#include "hal_platform.h"
 
 #if (includeHTTP_TASK > 0)
 #include "commands.h"

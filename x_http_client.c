@@ -1,6 +1,6 @@
 // x_http_client.c - Copyright 2014-24 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
 
-#include "hal_config.h"
+#include "hal_platform.h"
 #include "hal_fota.h"									// firmware download handler
 #include "hal_network.h"
 #include "hal_options.h"
