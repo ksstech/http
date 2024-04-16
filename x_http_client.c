@@ -50,19 +50,29 @@ void vHttpRequestNotifyTask(u32_t ulValue) {
 	#endif
 }
 
-void vHttpRequestNotifyHandler(void) {
+/**
+ * @brief	
+ * @return	
+*/
+int vHttpRequestNotifyHandler(void) {
 	u32_t fRqst = 0, fDone = 0;
-	int iRV;
-	if (xTaskNotifyWait(0, 0, &fRqst, 0) == pdTRUE) {
+	int iRV = erSUCCESS;
+	if (xTaskNotifyWait(0, 0, &fRqst, pdMS_TO_TICKS(0)) == pdTRUE) {
 		SL_INFO("Received Notify x%X", fRqst);
-		if (fRqst & reqCOREDUMP) { xHttpCoredumpUpload(); fDone |= reqCOREDUMP; }
+		if (fRqst & reqCOREDUMP) {
+			iRV = xHttpCoredumpUpload();
+			fDone |= reqCOREDUMP;
+		}
 		if (fRqst & reqFW_UPGRADE) {
-			xRtosClearTaskRUN(taskGUI_MASK);
-			xHttpClientCheckUpgrades(PERFORM);
-			xRtosSetTaskRUN(taskGUI_MASK);
+			xRtosClearTaskRUN(taskGUI_MASK);			// Stop GUI task
+			iRV = xHttpClientCheckUpgrades(PERFORM);
+			xRtosSetTaskRUN(taskGUI_MASK);				// Start GUI task
 			fDone |= reqFW_UPGRADE;
 		}
-		if (fRqst & reqFW_CHECK) { xHttpClientCheckUpgrades(CHECK); fDone |= reqFW_CHECK; }
+		if (fRqst & reqFW_CHECK) {
+			xHttpClientCheckUpgrades(CHECK);
+			fDone |= reqFW_CHECK;
+		}
 		if (allSYSFLAGS(sfREBOOT) == 0) {				// reboot NOT requested
 			if (fRqst & reqGEOLOC) {
 				iRV = xHttpGetLocation();
@@ -85,6 +95,7 @@ void vHttpRequestNotifyHandler(void) {
 			ulTaskNotifyValueClear(NULL, fDone);
 		}
 	}
+	return iRV;
 }
 
 int	xHttpBuildHeader(http_parser * psParser) {
@@ -111,7 +122,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 				uprintfx(&psRR->sUB, "Content-Length: %d\r\n", psRR->hvContentLength);
 				// no actual binary content added, done later...
 			} else {									// currently handle json/xml/text/html here
-				psRR->hvContentLength = vsprintfx(NULL, psRR->pcBody, psRR->VaList);	// determine body length
+				psRR->hvContentLength = vsnprintfx(NULL, xpfMAXLEN_MAXVAL, psRR->pcBody, psRR->VaList);	// determine body length
 				uprintfx(&psRR->sUB, "Content-Length: %d\r\n\r\n", psRR->hvContentLength);
 				vuprintfx(&psRR->sUB, psRR->pcBody, psRR->VaList);// add actual content
 			}
@@ -235,7 +246,7 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLoc[geoLAT],
 				sNVSvars.GeoLoc[geoLON], sNVSvars.GeoLoc[geoACC]);
 	}
-	if (psTL) vRtosFree(psTL);
+	if (psTL) free(psTL);
     return iRV;
 }
 
@@ -281,8 +292,7 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 		setSYSFLAGS(vfNVSBLOB);
 		SL_NOT("%Z(%s)", &sTSZ, sTSZ.pTZ->TZname);
 	}
-	if (psTL)
-		vRtosFree(psTL);
+	if (psTL) free(psTL);
     return iRV;
 }
 
@@ -320,7 +330,7 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 		setSYSFLAGS(vfNVSBLOB);
 		SL_NOT("alt=%.7f  res=%.7f", sNVSvars.GeoLoc[geoALT], sNVSvars.GeoLoc[geoRES]);
 	}
-	if (psTL) vRtosFree(psTL);
+	if (psTL) free(psTL);
     return iRV;
 }
 
@@ -337,8 +347,8 @@ int	xHttpGetElevation(void) {
 // ################################# Firmware Over The Air support #################################
 
 /**
- * Check if a valid firmware upgrade exists
- * @return	erFAILURE if file not found/empty file/invalid content/connection closed
+ * @brief	Check if a valid firmware upgrade exists
+ * @return	erFAILURE if not found / empty / invalid content / connection closed
  * 			0 if no newer upgrade file exists
  * 			1 if valid upgrade file exists
  */
@@ -373,15 +383,15 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 }
 
 /**
- * Check if a valid download exists, if so, download and write to flash.
+ * @brief	check if a valid download exists, if so, download and write to flash.
  * @param	psParser
  * @param	pBuf
  * @param	xLen
- * @return
+ * @return	If error erFAILURE or less, 0 if no valid upgrade, 1 if valid upgrade
  */
 static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen);
-	if (iRV < 1) return iRV;		// 1=NewFW  0=LatestFW  -1=Error
+	if (iRV <= 0) return iRV;		// 0=NotNew  -1=Error
 	part_xfer_t	sFI;
 	iRV = halFOTA_Begin(&sFI);
 	if (iRV != erSUCCESS) return iRV;
@@ -409,12 +419,18 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 	}
 
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
-	iRV = halFOTA_End(&sFI);
+	int iRV1 = halFOTA_End(&sFI);						// even if Write error, close
+	if (iRV < erSUCCESS) return iRV;					// Write error, return
+	if (iRV1 < erSUCCESS) return iRV1;					// End error, return
 	if (iRV == erSUCCESS && sFI.iRV == ESP_OK) setSYSFLAGS(sfREBOOT);
 	return sFI.iRV;
 }
 
-static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
+/**
+ * @brief	Initiate FW upgrade check or request
+ * @return	If error erFAILURE or less, 0 if no valid upgrade or result from xHttpClientPerformFOTA()
+*/
+static int xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
 											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 	u8_t optHost = ioB2GET(ioHostFOTA);
@@ -427,7 +443,7 @@ static int	xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
 
 /**
  * @brief	step through multiple FW upgrade options till a valid option found or until all options done.
- * @return
+ * @return	
  */
 int xHttpClientCheckUpgrades(bool bCheck) {
 	clrSYSFLAGS(sfFW_OK);
@@ -437,16 +453,21 @@ int xHttpClientCheckUpgrades(bool bCheck) {
 	 * #3 to be defined
 	 */
 	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck);
-	if (allSYSFLAGS(sfREBOOT) == 0) iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(buildUUID), bCheck);
+	if (allSYSFLAGS(sfREBOOT) == 0)
+		iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(buildUUID), bCheck);
 	if (bCheck == PERFORM)
 		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_NOTICE, "FWupg %s", iRV < erSUCCESS ? "FAIL" : "Done");
-	if (allSYSFLAGS(sfREBOOT) == 0) setSYSFLAGS(sfFW_OK);
+	if (allSYSFLAGS(sfREBOOT) == 0) 
+		setSYSFLAGS(sfFW_OK);
 	return iRV;
 }
 
 // ################################## PUT core dump to host ########################################
 
-// for binary uploads the address and content length+type must be correct
+/**
+ * @brief 
+ * @return	result from esp_partition_read() or xHttpRequest()
+ */
 int xHttpCoredumpUpload(void) {
 	#if (CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN == 1)
 		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.bin";

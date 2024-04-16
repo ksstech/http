@@ -206,7 +206,7 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 		} else {
 			IF_CP(debugTRACK && psReq->sCtx.d.http, "BODY (json)\r\n%!'+hhY", xLen, pcBuf);	// not parsed, just dump...
 		}
-		if (psTokenList) vRtosFree(psTokenList);
+		if (psTokenList) free(psTokenList);
 		break;
 	}
 	default:

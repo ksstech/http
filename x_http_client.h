@@ -53,7 +53,7 @@ enum {								// HTTP requests
 // ###################################### public functions #########################################
 
 void vHttpRequestNotifyTask(u32_t ulValue);
-void vHttpRequestNotifyHandler(void);
+int vHttpRequestNotifyHandler(void);
 int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 		pcc_t pcCert, size_t szCert, void * OnBodyCB, u32_t DataSize,
 		u32_t hvValues, u16_t BufSize, netx_dbg_t Debug, void * pvArg, ...);
