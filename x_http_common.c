@@ -173,7 +173,7 @@ int xHttpCommonHeadersCompleteHandler(http_parser * psP) {
 	http_rr_t * psReq = psP->data;
 	IF_CP(debugTRACK && psReq->sCtx.d.http, "HEADERS COMPLETE: ar=%d  co=%d  ct=%d  host=%d  len=%llu  date=%R  last=%R\r\n",
 			psReq->f_ac_rng, psReq->hvConnect, psReq->hvContentType, psReq->f_host, psP->content_length,
-			xTimeMakeTimestamp(psReq->hvDate, 0), xTimeMakeTimestamp(psReq->hvLastModified, 0));
+			xTimeMakeTimeStamp(psReq->hvDate, 0), xTimeMakeTimeStamp(psReq->hvLastModified, 0));
 	// if we return 1 here the parser will believe there is no body in the message
 	return erSUCCESS;
 }

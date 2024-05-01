@@ -376,8 +376,8 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 		s32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS;
 		iRV = (i32Diff < 0) ? erSUCCESS : 1;
 		IF_SL_NOT(debugTRACK && ioB1GET(dbgHTTPreq), "found  %R vs %R  Diff=%ld  FW %s",
-				xTimeMakeTimestamp(psRR->hvLastModified, 0),
-				xTimeMakeTimestamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "old" : "new");
+				xTimeMakeTimeStamp(psRR->hvLastModified, 0),
+				xTimeMakeTimeStamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "old" : "new");
 	}
 	return iRV;
 }
