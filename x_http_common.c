@@ -1,7 +1,4 @@
-/*
- * http_common.c
- * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
- */
+// http_common.c - Copyright (c) 2014-24 Andre M. Maree / KSS Technologies (Pty) Ltd.
 
 #include "hal_platform.h"
 #include "x_http_common.h"
@@ -80,7 +77,9 @@ int	xHttpCommonFindMatch(const char * const pcTable[], u32_t xSize, const char *
 	while (Idx < xSize) {
 		size_t ySize = strlen(*pcTable);				// get length of string in table to compare against
 		if (ySize == xLen) {
-			if (strncasecmp(*pcTable, pcMatch, ySize) == 0) return Idx;
+			if (strncasecmp(*pcTable, pcMatch, ySize) == 0) {
+				return Idx;
+			}
 		}
 		pcTable++;
 		Idx++;
@@ -103,7 +102,8 @@ int xHttpCommonUrlHandler(http_parser * psP, const char * pBuf, size_t xLen) {
 
 	http_rr_t * psRes = psP->data;
 	int Idx = yuarel_parse(&psRes->url, (char *)pBuf);		// do the parse
-	if (Idx == erFAILURE) return erFAILURE;
+	if (Idx == erFAILURE)
+		return erFAILURE;
 
 	/* This is to handle the special case where the whole URL is just "/"
 	 * The yuarel parser then (incorrectly) returns " HTTP" and "1.1" as
@@ -138,7 +138,7 @@ int xHttpCommonUrlHandler(http_parser * psP, const char * pBuf, size_t xLen) {
 int xHttpCommonStatusHandler(http_parser * psP, const char* pBuf, size_t xLen) {
 	http_rr_t * psReq = psP->data;
 	IF_CP(debugTRACK && psReq->sCtx.d.http, "Status: %d = '%.*s'\r\n", psP->status_code, xLen, pBuf);
-	psReq->hvStatus		= psP->status_code;
+	psReq->hvStatus = psP->status_code;
 	*((char*) pBuf+xLen)= 0;
 	psReq->hvStatusMess = (char *) pBuf;
 	return erSUCCESS;
@@ -157,14 +157,31 @@ int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xL
 	IF_CP(debugTRACK && psReq->sCtx.d.http, "'%.*s'\r\n", (int)xLen, pBuf);
 	struct tm sTM;
 	switch (psReq->HdrField) {
-	case hfAcceptRanges: if (strncasecmp("bytes", pBuf, xLen) == 0) psReq->f_ac_rng = 1; break;
-	case hfConnection: psReq->hvConnect = xHttpCommonFindMatch(coValues, NO_MEM(coValues), pBuf, xLen); break;
-	case hfContentLength: psReq->hvContentLength = psP->content_length; break;
-	case hfContentType: psReq->hvContentType = xHttpCommonFindMatch(ctValues, NO_MEM(ctValues), pBuf, xLen); break;
-	case hfDate: strptime(pBuf, "%a, %d %b %Y %T", &sTM); psReq->hvDate = mktime(&sTM); break;
-	case hfHost: psReq->f_host = 1; break;
-	case hfLastModified: strptime(pBuf, "%a, %d %b %Y %T", &sTM); psReq->hvLastModified = mktime(&sTM); break;
-	default: break;
+	case hfAcceptRanges:
+		if (strncasecmp("bytes", pBuf, xLen) == 0)
+			psReq->f_ac_rng = 1;
+		break;
+	case hfConnection:
+		psReq->hvConnect = xHttpCommonFindMatch(coValues, NO_MEM(coValues), pBuf, xLen);
+		break;
+	case hfContentLength:
+		psReq->hvContentLength = psP->content_length;
+		break;
+	case hfContentType:
+		psReq->hvContentType = xHttpCommonFindMatch(ctValues, NO_MEM(ctValues), pBuf, xLen);
+		break;
+	case hfDate:
+		strptime(pBuf, "%a, %d %b %Y %T", &sTM); psReq->hvDate = mktime(&sTM);
+		break;
+	case hfHost:
+		psReq->f_host = 1;
+		break;
+	case hfLastModified:
+		strptime(pBuf, "%a, %d %b %Y %T", &sTM);
+		psReq->hvLastModified = mktime(&sTM);
+		break;
+	default:
+		break;
 	}
 	return erSUCCESS;
 }
@@ -206,7 +223,8 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 		} else {
 			IF_CP(debugTRACK && psReq->sCtx.d.http, "BODY (json)\r\n%!'+hhY", xLen, pcBuf);	// not parsed, just dump...
 		}
-		if (psTokenList) free(psTokenList);
+		if (psTokenList)
+			free(psTokenList);
 		break;
 	}
 	default:
@@ -226,7 +244,8 @@ size_t xHttpCommonDoParsing(http_parser * psP) {
 	psRR->sfCB.on_status		= xHttpCommonStatusHandler;
 	psRR->sfCB.on_header_field	= xHttpCommonHeaderFieldHandler;
 	psRR->sfCB.on_header_value	= xHttpCommonHeaderValueHandler;
-	if (debugTRACK && !psRR->sfCB.on_body) psRR->sfCB.on_body = xHttpCommonMessageBodyHandler;
+	if (debugTRACK && !psRR->sfCB.on_body)
+		psRR->sfCB.on_body = xHttpCommonMessageBodyHandler;
 	if (debugTRACK && psRR->sCtx.d.http) {
 		psRR->sfCB.on_message_begin		= xHttpCommonMessageBeginHandler;
 		psRR->sfCB.on_chunk_header		= xHttpCommonChunkHeaderHandler;

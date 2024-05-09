@@ -99,8 +99,8 @@ typedef struct http_rr_t {
 		pcc_t pcStatMes;								// server: status message
 	};
 	union {
-		const void * pVoid;
-		pcc_t pcBody;									// both (client 'format' string)
+		const void * xUnion;
+		const char * pcBody;							// both (client 'format' string)
 		int (* hdlr_req) (struct http_rr_t *);			// client
 		int	(* hdlr_rsp) (http_parser *);				// server
 	};
@@ -137,8 +137,6 @@ typedef struct http_rr_t {
 #define	httpHDR_VALUES(ct, acc, con, d) ((ct << 24) | (acc << 16) | (con << 8) | d)
 
 // ################################### Global variables ############################################
-
-
 // ###################################### public functions #########################################
 
 int	xHttpCommonFindMatch(const char * const pcTable[], u32_t xSize, const char * pcMatch, size_t xLen);

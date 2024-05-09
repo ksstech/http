@@ -474,6 +474,7 @@ void vHttpReport(report_t * psR) {
 		xNetReport(psR, &sServHttpCtx, "HTTPsrv", 0, 0, 0);
 		wprintfx(psR, "\tFSM=%d  maxTX=%u  maxRX=%u\r\n", HttpState, sServHttpCtx.maxTx, sServHttpCtx.maxRx);
 	}
-	if (xRtosCheckStatus(flagHTTP_CLNT)) xNetReport(psR, &sRR.sCtx, "HTTPclt", 0, 0, 0);
+	if (xRtosCheckStatus(flagHTTP_CLNT))
+		xNetReport(psR, &sRR.sCtx, "HTTPclt", 0, 0, 0);
 }
 #endif

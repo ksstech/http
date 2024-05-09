@@ -17,7 +17,6 @@
 // ############################### BUILD: debug configuration options ##############################
 
 #define	debugFLAG					0xF000
-
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
 #define	debugPARAM					(debugFLAG_GLOBAL & debugFLAG & 0x4000)
@@ -41,13 +40,13 @@ extern const char * const coValues[];
 // ################################### Common HTTP API functions ###################################
 
 void vHttpRequestNotifyTask(u32_t ulValue) {
-	#if (includeHTTP_TASK > 0)
+#if (includeHTTP_TASK > 0)
 	xTaskNotify(HttpHandle, ulValue, eSetBits);
-	#elif (includeTNET_TASK > 0)
+#elif (includeTNET_TASK > 0)
 	xTaskNotify(TnetHandle, ulValue, eSetBits);
-	#else
+#else
 	#error "No task configured to handle HTTP requests"
-	#endif
+#endif
 }
 
 /**
@@ -108,7 +107,8 @@ int	xHttpBuildHeader(http_parser * psParser) {
 		uprintfx(&psRR->sUB, "Accept: %s\r\n", ctValues[psRR->hvAccept]);
 		psRR->hvAccept	= ctUNDEFINED;
 	}
-	if (psRR->hvConnect) uprintfx(&psRR->sUB, "Connection: %s\r\n", coValues[psRR->hvConnect]);
+	if (psRR->hvConnect)
+		uprintfx(&psRR->sUB, "Connection: %s\r\n", coValues[psRR->hvConnect]);
 	// from here on items common to requests and responses...
 	if (psRR->pcBody) {
 		if (psRR->hvContentType) {
@@ -195,7 +195,8 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 
 	sRR.sCtx.type = SOCK_STREAM;
 	sRR.sCtx.sa_in.sin_family = AF_INET;
-	if (sRR.sCtx.sa_in.sin_port == 0) sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
+	if (sRR.sCtx.sa_in.sin_port == 0)
+		sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
 	sRR.sCtx.flags = SO_REUSEADDR;
 	int iRV = xNetOpen(&sRR.sCtx);
 	if (iRV == erSUCCESS) {								// if socket=open, write request
@@ -391,10 +392,12 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
  */
 static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen);
-	if (iRV <= 0) return iRV;		// 0=NotNew  -1=Error
+	if (iRV <= 0)
+		return iRV;					// 0 = NotNew  -1 = Error
 	part_xfer_t	sFI;
 	iRV = halFOTA_Begin(&sFI);
-	if (iRV != erSUCCESS) return iRV;
+	if (iRV != erSUCCESS)
+		return iRV;
 	sFI.pBuf = (void *) pBuf;
 	sFI.xLen = xLen;
 	sFI.xDone = 0;
@@ -404,9 +407,11 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 
 	while (xLen) {										// deal with all received packets
 		iRV = halFOTA_Write(&sFI);
-		if (iRV != ESP_OK) break;
+		if (iRV != ESP_OK)
+			break;
 		sFI.xDone += sFI.xLen;
-		if (sFI.xDone == sFI.xFull) break;
+		if (sFI.xDone == sFI.xFull)
+			break;
 		IF_SYSTIMER_START(debugTIMING, stFOTA);
 		iRV = xNetRecvBlocks(&psReq->sCtx, (sFI.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT);
 		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
@@ -420,9 +425,12 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
 	int iRV1 = halFOTA_End(&sFI);						// even if Write error, close
-	if (iRV < erSUCCESS) return iRV;					// Write error, return
-	if (iRV1 < erSUCCESS) return iRV1;					// End error, return
-	if (iRV == erSUCCESS && sFI.iRV == ESP_OK) setSYSFLAGS(sfREBOOT);
+	if (iRV < erSUCCESS)
+		return iRV;					// Write error, return
+	if (iRV1 < erSUCCESS)
+		return iRV1;					// End error, return
+	if (iRV == erSUCCESS && sFI.iRV == ESP_OK)
+		setSYSFLAGS(sfREBOOT);
 	return sFI.iRV;
 }
 
