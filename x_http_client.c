@@ -39,6 +39,9 @@ extern const char * const coValues[];
 
 // ################################### Common HTTP API functions ###################################
 
+/**
+ * @brief	Notify correct (HTTP/TNET) server task to execute an HTTP (client) request 
+*/
 void vHttpRequestNotifyTask(u32_t ulValue) {
 #if (includeHTTP_TASK > 0)
 	xTaskNotify(HttpHandle, ulValue, eSetBits);
@@ -139,27 +142,24 @@ int	xHttpBuildHeader(http_parser * psParser) {
 /**
  * @brief	Build HTTP request packet and initiates connect, parse, respond & disconnect activities
  * @param	pHost - pointer to hostname to connect to
- * @param	pQuery - HTTP query string, can contain printf formatting string
- * @param	pcBody - POST request ??
- * 			pcBody - GET request (NULL ??)
- *			handler - PUT request ??
  * @param	pcCert - pointer to TLS certificate
  * @param	szCert - size of TLS certificate
+ * @param	pQuery - HTTP query string, can contain printf formatting string
+ * @param	pvBody - POST request ??
+ * 			pvBody - GET request (NULL ??)
+ *			pvBody - PUT request handler ??
  * @param	OnBodyCB - Callback to handle the response body
  * @param	DataSize - size of data to be transmitted
- * @param	hvValues - header values
  * @param	BufSize - size of Tx/RX buffer to be allocated, if NULL use default
- * @param	Debug - UDP, TCP and HTTP debug flags
+ * @param	hvValues - header values
  * @param	pvArg - POST request
  * 			pvArg - GET request (NULL ??)
  * 			pvArg - PUT request (parameter for handler)
- * @param	variable length list of arguments for use with pQuery
+ * @param	varArgs length list of arguments for use with pQuery
  * @return	erFAILURE or result of xHttpCommonDoParsing() being 0 or more
  */
-int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
-		pcc_t pcCert, size_t szCert,					// host certificate info
-		void * OnBodyCB, u32_t DataSize,				// read/write handler & size
-		u32_t hvValues, u16_t BufSize, netx_dbg_t Debug, void * pvArg, ...) {
+int	xHttpRequest(pcc_t pHost, pcc_t pcCert, size_t szCert, const char *pQuery, const void * xUnion,
+		void * OnBodyCB, u32_t DataSize, u16_t BufSize, u32_t hvValues, void * pvArg, ...) {
 	http_rr_t sRR = { 0 };
 	sock_sec_t sSecure = { 0 };		// LEAVE here else pcCert/szCert gets screwed
 	sRR.sCtx.pHost = pHost;
@@ -251,12 +251,11 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 }
 
 int	xHttpGetLocation(void) {
-	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	const char caQuery[] = "POST /geolocation/v1/geolocate?key="keyGOOGLE;
-	return xHttpRequest("www.googleapis.com", caQuery, "{ }\r\n",
-			CertGGLE, SizeGGLE, xHttpParseGeoLoc, 0,
-			httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0), 0, dbgFlags, NULL);
+	return xHttpRequest("www.googleapis.com", CertGGLE, SizeGGLE,
+		"POST /geolocation/v1/geolocate?key="keyGOOGLE, "{ }\r\n",
+		xHttpParseGeoLoc, httpDATASIZE_NONE, httpBUFSIZE_NONE,
+		httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
+		NULL);	// no parameters
 }
 
 // ##################################### TIMEZONE support ##########################################
@@ -297,13 +296,11 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
 }
 
 int	xHttpGetTimeZone(void) {
-	char const * caQuery = "GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="keyGOOGLE;
-	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
-		CertGGLE, SizeGGLE, xHttpParseTimeZone, 0,
-		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0), 0, dbgFlags, NULL,
-		sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], xTimeStampAsSeconds(RunTime));
+	return xHttpRequest("maps.googleapis.com", CertGGLE, SizeGGLE,
+		"GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="keyGOOGLE, NULL,
+		xHttpParseTimeZone, httpDATASIZE_NONE, httpBUFSIZE_NONE,
+		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
+		NULL, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], xTimeStampAsSeconds(RunTime));
 }
 
 // ########################################## Elevation #############################################
@@ -335,13 +332,11 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 }
 
 int	xHttpGetElevation(void) {
-	const char caQuery[] = "GET /maps/api/elevation/json?locations=%.7f,%.7f&key="keyGOOGLE;
-	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	return xHttpRequest("maps.googleapis.com", caQuery, NULL,
-		CertGGLE, SizeGGLE, xHttpParseElevation, 0,
-		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0), 0, dbgFlags, NULL,
-		sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON]);
+	return xHttpRequest("maps.googleapis.com", CertGGLE, SizeGGLE,
+		"GET /maps/api/elevation/json?locations=%.7f,%.7f&key="keyGOOGLE, NULL,
+		xHttpParseElevation, httpDATASIZE_NONE, httpBUFSIZE_NONE,
+		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
+		NULL, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON]);	// Lat+Lon as parameter
 }
 
 // ################################# Firmware Over The Air support #################################
@@ -437,15 +432,13 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
  * @brief	Initiate FW upgrade check or request
  * @return	If error erFAILURE or less, 0 if no valid upgrade or result from xHttpClientPerformFOTA()
 */
-static int xHttpClientFirmwareUpgrade(void * pvPara, bool bCheck) {
-	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-											NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+static int xHttpClientFirmwareUpgrade(void * pvFileName, bool bCheck) {
 	u8_t optHost = ioB2GET(ioHostFOTA);
-	return xHttpRequest(HostInfo[optHost].pName, "GET /firmware/%s.bin", NULL,	// host, query & body
-		HostInfo[optHost].pcCert, HostInfo[optHost].szCert,						// cert pntr & size
-		bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, 0,		// handler & size
-		httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0), 0, dbgFlags, NULL,
-		pvPara);
+	return xHttpRequest(HostInfo[optHost].pName, HostInfo[optHost].pcCert, HostInfo[optHost].szCert,
+		"GET /firmware/%s.bin", NULL,
+		bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA, httpDATASIZE_NONE, httpBUFSIZE_NONE,
+		httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
+		NULL, pvFileName);		// firmware filename as parameter into query
 }
 
 /**
@@ -527,12 +520,11 @@ int xHttpCoredumpUpload(void) {
 #endif
 
 int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
-	const char caBody[] = "token="tokenPUSHOVER "&user="userPUSHOVER "&title=%U&message=%U%%40%u";
-	return xHttpRequest("api.pushover.net", "POST /1/messages.json", caBody,
-			CertGGLE, SizeGGLE, NULL, 0,
+	return xHttpRequest("api.pushover.net", CertGGLE, SizeGGLE,
+			"POST /1/messages.json", "token="tokenPUSHOVER "&user="userPUSHOVER "&title=%U&message=%U%%40%u",
+			NULL, httpDATASIZE_NONE, httpBUFSIZE_NONE,
 			httpHDR_VALUES(ctApplicationXwwwFormUrlencoded, ctApplicationJson, 0, 0),
-			0, NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1), NULL,
-			nameSTA, pcMess, u32Val);
+			NULL, nameSTA, pcMess, u32Val);	// No argument, 3x varargs
 }
 
 // ################################## POST IDENT info to host ######################################
@@ -542,14 +534,11 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
  * @param[in]	pointer to tag ROM ID string
  */
 int	xHttpClientIdentUpload(void * psRomID) {
-	int ioHost = ioB2GET(ioHostCONF);
-	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	return xHttpRequest(HostInfo[ioHost].pName, "PATCH /ibuttons.dat",
-			"'%M' , 'DS1990R' , 'Heavy Duty' , 'Maxim'\r\n",
-			NULL, 0, NULL, 0,
-			httpHDR_VALUES(ctTextPlain, 0, 0, 0), 0, dbgFlags, NULL,
-			psRomID);
+	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, NULL, 0, 
+			"PATCH /ibuttons.dat", "{'%M' , 'DS1990R' , 'Heavy Duty' , 'Maxim' }\r\n",
+			NULL, httpDATASIZE_NONE, httpBUFSIZE_NONE,
+			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
+			NULL, psRomID);			// No argument, vararg
 }
 
 // ######################################### Unused API's ##########################################
@@ -565,30 +554,29 @@ int	xHttpClientIdentUpload(void * psRomID) {
 // ###################################### WEATHER support ##########################################
 
 int xHttpGetWeather(void) {
-	const char caQuery[] = "GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID="keyOPENWEATHER;
-	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	return xHttpRequest("api.openweathermap.org", caQuery, NULL,
-			NULL, 0, NULL, 0,
-			httpHDR_VALUES(ctTextPlain, 0, 0, 0), 16384, dbgFlags, NULL);
+	return xHttpRequest("api.openweathermap.org", NULL, 0,
+			"GET /data/2.5/forecast/?q=Johannesburg,ZA&APPID="keyOPENWEATHER, NULL,
+			NULL, httpDATASIZE_NONE, 16384,
+			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
+			NULL);					// No argument or varargs
 }
 
 // ################################### How's my SSL support ########################################
 
 int	xHttpHowsMySSL(int ioHost) {
-	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	return xHttpRequest("www.howsmyssl.com", "GET /a/check", NULL,
-			HostInfo[ioHost].pcCert, HostInfo[ioHost].szCert, NULL, 0,
-			httpHDR_VALUES(ctTextPlain, 0, 0, 0), 0, dbgFlags, NULL);
+	return xHttpRequest("www.howsmyssl.com", HostInfo[ioHost].pcCert, HostInfo[ioHost].szCert,
+			"GET /a/check", NULL,
+			NULL, httpDATASIZE_NONE, httpBUFSIZE_NONE,
+			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
+			NULL);					// No argument or varargs
 }
 
 // ####################################### Bad SSL support #########################################
 
 int	xHttpBadSSL(int ioHost) {
-	netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-												NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-	return xHttpRequest("www.badssl.com", "GET /dashboard", NULL,
-			HostInfo[ioHost].pcCert, HostInfo[ioHost].szCert, NULL, 0,
-			httpHDR_VALUES(ctTextPlain, 0, 0, 0), 0, dbgFlags, NULL);
+	return xHttpRequest("www.badssl.com", HostInfo[ioHost].pcCert, HostInfo[ioHost].szCert,
+			"GET /dashboard", NULL,
+			NULL, httpDATASIZE_NONE, httpBUFSIZE_NONE,
+			httpHDR_VALUES(ctTextPlain, 0, 0, 0),
+			NULL);					// No argument or varargs
 }
