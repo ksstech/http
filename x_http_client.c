@@ -132,7 +132,7 @@ int	xHttpBuildHeader(http_parser * psParser) {
 	}
 	// add the final CR after the headers and payload, if binary payload this is 2nd strCRLF pair
 	uprintfx(&psRR->sUB, strCRLF);
-	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%*s\r\n", xUBufGetUsed(&psRR->sUB), pcUBufTellRead(&psRR->sUB));
+	IF_PX(debugTRACK && ioB1GET(ioHTTPtrack) && psRR->sCtx.d.http, "Content:\r\n%*s\r\n", xUBufGetUsed(&psRR->sUB), pcUBufTellRead(&psRR->sUB));
 	return psRR->sUB.Used;
 }
 
@@ -178,11 +178,10 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 	http_parser_init(&sParser, HTTP_RESPONSE);			// clear all parser fields/values
 	sParser.data = &sRR;
 	psUBufCreate(&sRR.sUB, NULL, BufSize ? BufSize : configHTTP_BUFSIZE, 0);	// setup ubuf_t structure
-	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=",
-									sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
-	IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.pVoid);
 	IF_myASSERT(debugTRACK, sRR.hvContentType != ctUNDEFINED);
 
+	IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=", sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
+	IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.xUnion);
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT);
 	IF_SYSTIMER_START(debugTIMING, stHTTP);
 
@@ -210,11 +209,11 @@ int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
 					sRR.sUB.Used = iRV;
 					iRV = xHttpCommonDoParsing(&sParser);	// return erFAILURE or some 0+ number
 				} else {
-					IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), " nothing read ie to parse\r\n");
+					IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing read ie to parse\r\n");
 					iRV = erFAILURE;
 				}
 			} else {
-				IF_CP(debugTRACK && ioB1GET(ioHTTPtrack), " nothing written (by handler) so can't expect to read\r\n");
+				IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing written (by handler) so can't expect to read\r\n");
 				iRV = erFAILURE;
 			}
 		}
