@@ -45,9 +45,11 @@ enum {								// HTTP requests
 
 void vHttpRequestNotifyTask(u32_t ulValue);
 int vHttpRequestNotifyHandler(void);
-int	xHttpRequest(pcc_t pHost, pcc_t pQuery, const void * pvBody,
-		pcc_t pcCert, size_t szCert, void * OnBodyCB, u32_t DataSize,
-		u32_t hvValues, u16_t BufSize, netx_dbg_t Debug, void * pvArg, ...);
+int	xHttpRequest(pcc_t pHost, pcc_t pcCert, size_t szCert,
+		const char *pQuery, const void *xUnion,
+		void * OnBodyCB, u32_t DataSize, u16_t BufSize,
+		u32_t hvValues,
+		void * pvArg, ...);
 int xHttpGetWeather(void);
 int	xHttpHowsMySSL(int ioHost);
 int	xHttpBadSSL(int ioHost);
