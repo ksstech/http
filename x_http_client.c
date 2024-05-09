@@ -171,31 +171,34 @@ int	xHttpRequest(pcc_t pHost, pcc_t pcCert, size_t szCert, const char *pQuery, c
 	http_rr_t sRR = { 0 };
 	sock_sec_t sSecure = { 0 };		// LEAVE here else pcCert/szCert gets screwed
 	sRR.sCtx.pHost = pHost;
-	sRR.pcQuery = pQuery;
-	sRR.pcBody = pvBody;
 	if (pcCert) {
 		sRR.sCtx.psSec = &sSecure;
 		sSecure.pcCert = pcCert;
 		sSecure.szCert = szCert;
 	}
+	sRR.pcQuery = pQuery;
+	sRR.xUnion = xUnion;
 	sRR.sfCB.on_body = (http_data_cb) OnBodyCB;
 	sRR.hvContentLength	= (u64_t) DataSize;
+	psUBufCreate(&sRR.sUB, NULL, BufSize ? BufSize : configHTTP_BUFSIZE, 0);	// setup ubuf_t structure
 	sRR.hvValues = hvValues;
-	sRR.sCtx.d.val = Debug.val;
+	sRR.pvArg = pvArg;
+	// Default xNet debug flags
+	sRR.sCtx.d = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
+										NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+
 	http_parser sParser;
 	http_parser_init(&sParser, HTTP_RESPONSE);			// clear all parser fields/values
 	sParser.data = &sRR;
-	psUBufCreate(&sRR.sUB, NULL, BufSize ? BufSize : configHTTP_BUFSIZE, 0);	// setup ubuf_t structure
-	IF_myASSERT(debugTRACK, sRR.hvContentType != ctUNDEFINED);
 
 	IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), "H='%s'  Q='%s'  cb=%p  hv=0x%08X  B=", sRR.sCtx.pHost, sRR.pcQuery, sRR.sfCB.on_body, sRR.hvValues);
 	IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), sRR.hvContentType == ctApplicationOctetStream ? "%p\r\n" : "%s\r\n", sRR.xUnion);
+	IF_myASSERT(debugTRACK, sRR.hvContentType != ctUNDEFINED);
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT);
 	IF_SYSTIMER_START(debugTIMING, stHTTP);
 
 	va_list vArgs;
 	va_start(vArgs, pvArg);
-	sRR.pvArg = pvArg;
 	sRR.VaList = vArgs;
 	int xLen = xHttpBuildHeader(&sParser);
 	va_end(vArgs);
