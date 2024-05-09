@@ -2,6 +2,7 @@
 
 #include "hal_platform.h"
 #include "hal_fota.h"									// firmware download handler
+#include "hal_memory.h"
 #include "hal_network.h"
 #include "hal_options.h"
 #include "certificates.h"
@@ -23,6 +24,9 @@
 #define	debugRESULT					(debugFLAG_GLOBAL & debugFLAG & 0x8000)
 
 // ###################################### BUILD : CONFIG definitions ###############################
+
+#define httpBUFSIZE_NONE			0
+#define httpDATASIZE_NONE			0
 
 #define configHTTP_BUFSIZE			4096
 #define configHTTP_RX_WAIT			5000	// 500
