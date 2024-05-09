@@ -31,6 +31,14 @@
 	#define	keyGOOGLE				"fakegoogle"
 #endif
 
+#ifndef	tokenPUSHOVER
+	#define	tokenPUSHOVER			"faketoken"
+#endif
+
+#ifndef	userPUSHOVER
+	#define	userPUSHOVER			"fakeuser"
+#endif
+
 // ################################### Global variables ############################################
 
 extern TaskHandle_t TnetHandle;
@@ -510,14 +518,6 @@ int xHttpCoredumpUpload(void) {
 }
 
 // ###################################### Various gateways #########################################
-
-#ifndef	tokenPUSHOVER
-	#define	tokenPUSHOVER "faketoken"
-#endif
-
-#ifndef	userPUSHOVER
-	#define	userPUSHOVER "fakeuser"
-#endif
 
 int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
 	return xHttpRequest("api.pushover.net", CertGGLE, SizeGGLE,
