@@ -530,8 +530,8 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
 // ################################## POST IDENT info to host ######################################
 
 /**
- * xHttpClientIdentUpload - Upload single DS1990 tag info to cloud
- * @param[in]	pointer to tag ROM ID string
+ * @brief	Upload single DS1990 tag info to cloud
+ * @param	psRomID pointer to tag ROM ID string
  */
 int	xHttpClientIdentUpload(void * psRomID) {
 	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, NULL, 0, 
