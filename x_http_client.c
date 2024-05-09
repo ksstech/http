@@ -477,43 +477,31 @@ int xHttpClientCheckUpgrades(bool bCheck) {
  * @return	result from esp_partition_read() or xHttpRequest()
  */
 int xHttpCoredumpUpload(void) {
-	#if (CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN == 1)
-		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.bin";
-
-	#elif (CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF == 1)
-		const char caQuery[] = "PUT /coredump/%M_%X_%X_%llu.elf";
-
-	#else
-		#error "Invalid/undefined COREDUMP file format!!!"
-	#endif
-	esp_partition_iterator_t sIter;
-	sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
-	IF_myASSERT(debugRESULT, sIter != 0);
-
-	const esp_partition_t *	psPart = esp_partition_get(sIter);
-	IF_myASSERT(debugRESULT, psPart != 0);
-
-	struct cd_hdr_s { u32_t len, ver, num, tcb; } sCDhdr;
-	int iRV = esp_partition_read(psPart, 0, &sCDhdr, sizeof(struct cd_hdr_s));
-	SL_WARN("iRV=%d  Len=%lu  Task=%lu  TCB=%lu  V=%-I", iRV, sCDhdr.len, sCDhdr.num, sCDhdr.tcb, sCDhdr.ver);
-
-	if (iRV == ESP_OK && (sCDhdr.len != sCDhdr.num && sCDhdr.tcb != sCDhdr.ver)) {
-		netx_dbg_t dbgFlags = ioB1GET(dbgHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-													NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-		u8_t optHost = ioB2GET(ioHostCONF);
-		#if (buildNEW_CODE == 1)
-		iRV = xHttpRequest(HostInfo[optHost].pName, caQuery, halPART_Upload_CB,
-			HostInfo[optHost].pcCert, HostInfo[optHost].szCert, NULL, sCDhdr.len,
-			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0), 0, dbgFlags, (void *) psPart,
-			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
-		#else
-		iRV = xHttpRequest(HostInfo[optHost].pName, caQuery, NULL,
-			HostInfo[optHost].pcCert, HostInfo[optHost].szCert, halPART_Upload_CB, sCDhdr.len,
-			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0), 0, dbgFlags, (void *) psPart,
-			macSTA, esp_reset_reason(), DEV_FW_VER_NUM, sTSZ.usecs/MICROS_IN_SECOND);
-		#endif
+	esp_core_dump_summary_t	sCDsummary = { 0 };
+	size_t CDaddr, CDsize;
+	int iRV = esp_core_dump_get_summary(&sCDsummary);
+	if (iRV == ESP_OK) {
+		iRV = esp_core_dump_image_get(&CDaddr, &CDsize);
+		if (iRV == ESP_OK) {
+			SL_WARN("Ver=%-I  Task='%s'  Addr=%p  Size=%lu", sCDsummary.core_dump_version, sCDsummary.exc_task, CDaddr, CDsize);
+		}
 	}
-	esp_partition_iterator_release(sIter);
+	if (iRV >= ESP_OK) {
+		esp_partition_iterator_t sIter;
+		sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
+		IF_myASSERT(debugRESULT, sIter != 0);
+
+		const esp_partition_t *	psPart = esp_partition_get(sIter);
+		IF_myASSERT(debugRESULT, psPart != 0);
+
+		u8_t optHost = ioB2GET(ioHostCONF);
+		iRV = xHttpRequest(HostInfo[optHost].pName, HostInfo[optHost].pcCert, HostInfo[optHost].szCert,
+			"PUT /coredump/%M_%X_%X_%llu.elf", halPART_Upload_CB,
+			NULL, CDsize, httpBUFSIZE_NONE,
+			httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
+			(void *) psPart, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, xTimeStampAsSeconds(sTSZ.usecs));
+		esp_partition_iterator_release(sIter);
+	}
 	return iRV;
 }
 
