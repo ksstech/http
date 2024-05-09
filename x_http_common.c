@@ -1,6 +1,7 @@
 // http_common.c - Copyright (c) 2014-24 Andre M. Maree / KSS Technologies (Pty) Ltd.
 
 #include "hal_platform.h"
+#include "hal_memory.h"
 #include "x_http_common.h"
 #include "parserX.h"
 #include "x_buffers.h"
