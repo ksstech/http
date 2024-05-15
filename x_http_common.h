@@ -1,6 +1,4 @@
-/*
- * Copyright 2014-24 Andre. M Maree / KSS Technologies (Pty) Ltd.
- */
+// x_http_common.h
 
 #pragma once
 
@@ -17,6 +15,10 @@ extern "C" {
 
 #define	httpYUAREL_MAX_PARTS		8
 #define	httpYUAREL_MAX_QUERY		8
+
+#define	httpHDR_VALUES(ct, acc, con, d) ((ct << 24) | (acc << 16) | (con << 8) | d)
+
+#define httpEOL	"\r\n"				// Linux = NL, macOS = CR,  Win = CRLF
 
 // ######################################### enumerations ##########################################
 
@@ -98,24 +100,25 @@ typedef struct http_rr_t {
 		pcc_t pcQuery;									// client: 'format' GET/PUT/POST/DELETE/PATCH .....
 		pcc_t pcStatMes;								// server: status message
 	};
-	union {
-		const void * xUnion;
-		const char * pcBody;							// both (client 'format' string)
-		int (* hdlr_req) (struct http_rr_t *);			// client
-		int	(* hdlr_rsp) (http_parser *);				// server
+	union {												// body related
+		void * pvBody;
+ 		const char * pcBody;							// datasize == 0 then content/format
+		int (* cbBody) (struct http_rr_t *);			// datasize != 0 then content handler
 	};
 	va_list VaList;										// Client
 	void * pvArg;										// Client
 	http_parser_settings sfCB;							// Both
 	struct yuarel url;									// Both
 	struct yuarel_param	params[httpYUAREL_MAX_QUERY];	// Both
-	char *				parts[httpYUAREL_MAX_PARTS];	// Both
-	u64_t				hvContentLength;				// Both
-	u32_t				hvDate;							// Both
-	u32_t				hvLastModified;					// Both
-	char * 				hvStatusMess;					// Both
+	char * parts[httpYUAREL_MAX_PARTS];					// Both
+	u64_t hvContentLength;								// Both
+	u32_t hvDate;										// Both
+	u32_t hvLastModified;								// Both
+	char * hvStatusMess;								// Both
 	union {
-		struct __attribute__((packed)) { u8_t Spare, hvConnect, hvAccept, hvContentType; };
+		struct __attribute__((packed)) { 
+			u8_t Spare, hvConnect, hvAccept, hvContentType;
+		};
 		u32_t hvValues;
 	};
 	u16_t hvStatus;										// Client (response to request)
@@ -134,7 +137,7 @@ typedef struct http_rr_t {
 	};
 } http_rr_t;
 
-#define	httpHDR_VALUES(ct, acc, con, d) ((ct << 24) | (acc << 16) | (con << 8) | d)
+typedef int (* hdlr_req_t) (struct http_rr_t *);
 
 // ################################### Global variables ############################################
 // ###################################### public functions #########################################

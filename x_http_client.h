@@ -38,18 +38,12 @@ enum {								// HTTP requests
 	reqNOTIFIED		= (1 << 24)		// flag used to indicate "have sent request"
 };
 
-
 // ######################################### structures ############################################
 // ################################### Global variables ############################################
 // ###################################### public functions #########################################
 
 void vHttpRequestNotifyTask(u32_t ulValue);
 int vHttpRequestNotifyHandler(void);
-int	xHttpRequest(pcc_t pHost, pcc_t pcCert, size_t szCert,
-		const char *pQuery, const void *xUnion,
-		void * OnBodyCB, u32_t DataSize, u16_t BufSize,
-		u32_t hvValues,
-		void * pvArg, ...);
 int xHttpGetWeather(void);
 int	xHttpHowsMySSL(int ioHost);
 int	xHttpBadSSL(int ioHost);
