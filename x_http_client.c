@@ -371,9 +371,8 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 		#define	fotaMIN_DIF_SECONDS	120
 		s32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS;
 		iRV = (i32Diff < 0) ? erSUCCESS : 1;
-		IF_SL_NOT(debugTRACK && ioB1GET(dbHTTPreq), "found  %R vs %R  Diff=%ld  FW %s",
-				xTimeMakeTimeStamp(psRR->hvLastModified, 0),
-				xTimeMakeTimeStamp(BuildSeconds, 0), i32Diff, i32Diff < 0 ? "old" : "new");
+		IF_SL_NOT(debugTRACK && ioB1GET(dbHTTPreq), "found  %r vs %r  Diff=%!r %s FW",
+				psRR->hvLastModified, BuildSeconds, i32Diff, i32Diff < 0 ? "old" : "new");
 	}
 	return iRV;
 }
@@ -473,12 +472,10 @@ int xHttpCoredumpUpload(void) {
 	esp_core_dump_summary_t	sCDsummary = { 0 };
 	size_t CDaddr, CDsize;
 	int iRV = esp_core_dump_get_summary(&sCDsummary);
+	if (iRV == ESP_OK)
+		iRV = esp_core_dump_image_get(&CDaddr, &CDsize);
 	if (iRV != ESP_OK)
-		return iRV;
-	iRV = esp_core_dump_image_get(&CDaddr, &CDsize);
-	if (iRV != ESP_OK)
-		return iRV;
-	SL_WARN("Ver=%-I  Task='%s'  Addr=%p  Size=%lu", sCDsummary.core_dump_version, sCDsummary.exc_task, CDaddr, CDsize);
+		goto exit;
 	esp_partition_iterator_t sIter;
 
 	sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
@@ -491,15 +488,13 @@ int xHttpCoredumpUpload(void) {
 		"PUT /coredump/%M_%X_%X_%llu.elf", halPART_Upload_CB, NULL, CDsize, 0,
 		httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
 		(void *) psPart, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, xTimeStampAsSeconds(sTSZ.usecs));
-
-	if (iRV > erFAILURE) {
+	if (iRV > erFAILURE)
 		ESP_ERROR_CHECK(esp_partition_erase_range(psPart, 0, u32RoundUP(CDsize, 4096)));
-		IF_PX(debugTRACK && ioB1GET(dbCDump), "Erased psPart=%p\r\n", psPart);
-	} else {
-		IF_PX(debugTRACK && ioB1GET(dbCDump), "NOT Erased psPart=%p iRV=%d\r\n", psPart, iRV);
-	}
-	SL_WARN("Coredump Task=%s Size=%lu uploaded", sCDsummary.exc_task, CDsize);
 	esp_partition_iterator_release(sIter);
+exit:
+	SL_LOG((iRV > erFAILURE) ? SL_SEV_WARNING : SL_SEV_ERROR, "Ver=%-I Task='%s' Addr=%p Size=%lu iRV=%d %s",
+			sCDsummary.core_dump_version, sCDsummary.exc_task, CDaddr, CDsize, iRV,
+			(iRV > erFAILURE) ? "Uploaded & erased" : "Upload failed, NOT erased");
 	return iRV;
 }
 
