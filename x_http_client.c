@@ -492,7 +492,7 @@ int xHttpCoredumpUpload(void) {
 		ESP_ERROR_CHECK(esp_partition_erase_range(psPart, 0, u32RoundUP(CDsize, 4096)));
 	esp_partition_iterator_release(sIter);
 exit:
-	SL_LOG((iRV > erFAILURE) ? SL_SEV_WARNING : SL_SEV_ERROR, "Ver=%-I Task='%s' Addr=%p Size=%lu iRV=%d %s",
+	SL_LOG((iRV > erFAILURE) ? SL_SEV_NOTICE : SL_SEV_ERROR, "Ver=%-I Task='%s' Addr=%p Size=%lu iRV=%d %s",
 			sCDsummary.core_dump_version, sCDsummary.exc_task, CDaddr, CDsize, iRV,
 			(iRV > erFAILURE) ? "Uploaded & erased" : "Upload failed, NOT erased");
 	return iRV;
