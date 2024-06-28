@@ -18,7 +18,7 @@ extern "C" {
 
 #define	httpHDR_VALUES(ct, acc, con, d) ((ct << 24) | (acc << 16) | (con << 8) | d)
 
-#define httpEOL	"\r\n"				// Linux = NL, macOS = CR,  Win = CRLF
+#define httpNL	"\r\n"
 
 // ######################################### enumerations ##########################################
 
@@ -100,11 +100,11 @@ typedef struct http_rr_t {
 		pcc_t pcQuery;									// client: 'format' GET/PUT/POST/DELETE/PATCH .....
 		pcc_t pcStatMes;								// server: status message
 	};
-	union {												// body related
-		void * pvBody;
- 		const char * pcBody;							// datasize == 0 then content/format
-		int (* cbBody) (struct http_rr_t *);			// datasize != 0 then content handler
+	union {
+		const char * pcBody;							// content/format
+		int (* cbBody) (struct http_rr_t *);			// upload content handler
 	};
+	int (* hdlr) (struct http_rr_t *);					// upload content handler
 	va_list VaList;										// Client
 	void * pvArg;										// Client
 	http_parser_settings sfCB;							// Both
