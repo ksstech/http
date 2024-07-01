@@ -17,6 +17,7 @@ extern "C" {
 // ######################################## Enumerations ###########################################
 
 enum { PERFORM = 0, CHECK = 1 };
+enum { httpFW_ERROR = -1, httpFW_OLD_FOUND = 0, httpFW_NEW_FOUND = 1 };
 
 enum {													// REQuest NUMbers
 	reqNUM_COREDUMP,
