@@ -288,6 +288,7 @@ int	xHttpGetElevation(void) {
 /**
  * @brief	Check if a valid firmware upgrade exists
  * @return	erFAILURE if not found / empty / invalid content / connection closed
+ * 			-1 if some HTTP type error
  * 			0 if no newer upgrade file exists
  * 			1 if valid upgrade file exists
  */
@@ -295,7 +296,7 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 	http_rr_t * psRR = psParser->data;
 	int iRV = erFAILURE;
 	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_SL_INFO(debugTRACK && ioB1GET(dbHTTPreq), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
+		IF_SL_WARN(debugTRACK && ioB1GET(ioFOTA), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
 
 	} else if (psRR->hvContentLength == 0ULL) {
 		SL_ERR("invalid size (%llu)", psRR->hvContentLength);
@@ -313,9 +314,9 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 		//						: How much later must FW be to be considered new?
 		#define	fotaMIN_DIF_SECONDS	120
 		s32_t i32Diff = psRR->hvLastModified - BuildSeconds - fotaMIN_DIF_SECONDS;
-		iRV = (i32Diff < 0) ? erSUCCESS : 1;
-		IF_SL_NOT(debugTRACK && ioB1GET(dbHTTPreq), "found  %r vs %r  Diff=%!r %s FW",
-				psRR->hvLastModified, BuildSeconds, i32Diff, i32Diff < 0 ? "old" : "new");
+		iRV = (i32Diff < 0) ? httpFW_OLD_FOUND : httpFW_NEW_FOUND;
+		IF_SL_WARN(debugTRACK && ioB1GET(ioFOTA), "found %r vs %r Diff=%!r FW=%s",
+				psRR->hvLastModified, BuildSeconds, i32Diff, i32Diff < 0 ? "Old" : "New");
 	}
 	return iRV;
 }
@@ -329,12 +330,12 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
  */
 static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
 	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen);
-	if (iRV <= 0)
-		return iRV;					// 0 = NotNew  -1 = Error
+	if (iRV < httpFW_NEW_FOUND)
+		return iRV;					// <0=Error 0=OLD  
 	part_xfer_t	sPX = { 0 };
-	iRV = halFOTA_Begin(&sPX);
-	if (iRV != erSUCCESS)
-		return iRV;
+	sPX.iRV = halFOTA_Begin(&sPX);
+	if (sPX.iRV != erSUCCESS)
+		goto exit;
 	sPX.pBuf = (void *) pBuf;
 	sPX.xLen = xLen;
 	sPX.xDone = 0;
@@ -342,33 +343,33 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 	sPX.xFull = psReq->hvContentLength;
 	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 
-	while (xLen) {										// deal with all received packets
-		iRV = halFOTA_Write(&sPX);
-		if (iRV != ESP_OK)
-			break;
+	while (sPX.xLen) {									// deal with all received packets
+		sPX.iRV = halFOTA_Write(&sPX);
+		if (sPX.iRV != ESP_OK)							// write fail exit
+			break;										// sPX.iRV is error code
 		sPX.xDone += sPX.xLen;
-		if (sPX.xDone == sPX.xFull)
-			break;
+		if (sPX.xDone == sPX.xFull)						// FOTA complete successful exit
+			break;										// sPX.iRV = ESP_OK 
 		IF_SYSTIMER_START(debugTIMING, stFOTA);
-		iRV = xNetRecvBlocks(&psReq->sCtx, (sPX.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT);
+		sPX.iRV = xNetRecvBlocks(&psReq->sCtx, (sPX.pBuf = psReq->sUB.pBuf), psReq->sUB.Size, configHTTP_RX_WAIT);
 		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
-		if (iRV > 0) {
-			sPX.xLen = iRV;
-		} else if (psReq->sCtx.error != EAGAIN) {
-			sPX.iRV = iRV;								// save for halFOTA_End() reuse
-			break;										// no need for error reporting, already done in xNetRecv()
+		if (sPX.iRV > 0) {								// Socket Recv successful
+			sPX.xLen = sPX.iRV;							// set next write length
+		} else if (psReq->sCtx.error != EAGAIN) {		// Socket Recv (not EAGAIN) error exit
+			break;										// sPX.iRV = Socket error code
 		}
 	}
 
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
-	int iRV1 = halFOTA_End(&sPX);						// even if Write error, close
-	if (iRV < erSUCCESS)
-		return iRV;					// Write error, return
-	if (iRV1 < erSUCCESS)
-		return iRV1;				// End error, return
-	if (iRV == erSUCCESS && sPX.iRV == ESP_OK)
-		setSYSFLAGS(sfREBOOT);
-	return sPX.iRV;
+	iRV = halFOTA_End(&sPX);							// even if Write error, close
+	if (sPX.iRV >= erSUCCESS && iRV < erSUCCESS)
+		sPX.iRV = iRV;									// override with latest error code
+exit:
+	if (sPX.iRV >= 0)									// ESP_OK or erSUCCESS or greater...
+		setSYSFLAGS(sfREBOOT);							// whole process OK, set flag
+	SL_LOG((sPX.iRV < 0) ? SL_SEV_ERROR : SL_SEV_NOTICE, "%s(%d)",
+			(iRV >= 0) ? "Done" : "FAIL", iRV);
+	return sPX.iRV;										// return ESP_OK
 }
 
 /**
@@ -644,6 +645,7 @@ void vTaskHttpClient(void * pvPara) {
 		case reqNUM_FW_UPG2:
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
+			clrSYSFLAGS(sfFW_OK);
 			optHost = ioB2GET(ioHostFOTA);
 			sRR.sCtx.pHost = HostInfo[optHost].pName;
 			sSecure.pcCert = HostInfo[optHost].pcCert;
@@ -739,35 +741,27 @@ void vTaskHttpClient(void * pvPara) {
 			}
 		}
 		IF_SYSTIMER_STOP(debugTIMING, stHTTP);
-
 		xNetClose(&sRR.sCtx);								// close the socket connection if still open...
 exit:
 		vUBufDestroy(&sRR.sUB);								// return memory allocated
-		// Do post processing
-		switch(BitNum) {
-//		case reqNUM_COREDUMP:
+		switch(BitNum) {									// Do post processing
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
-			if (allSYSFLAGS(sfREBOOT)) {					// reboot requested for new firmware?
-				Mask &= ~reqFW_UPGRADE;						// yes, ensure Req 1&2 flags cleared
-			}
-			if ((Mask && reqFW_UPGRADE) == 0) {				// both UPGRADE req 1&2 done
-				if (allSYSFLAGS(sfREBOOT) == 0)
-					setSYSFLAGS(sfFW_OK);
-				SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_NOTICE, "FWupg %s(%d)", iRV < erSUCCESS ? "FAIL" : "Done", iRV);
+			if (allSYSFLAGS(sfREBOOT))						// If reboot flag set we have new FW image
+				Mask &= ~reqFW_UPGRADE;						// yes, abandon possible 2nd stage
+			if ((Mask & reqFW_UPGRADE) == 0) {				// If UPGRADE (1 and/or 2) completed ?
+				if (allSYSFLAGS(sfREBOOT) == 0)				// yes, reboot flag set?
+					setSYSFLAGS(sfFW_OK);					// no, mark FW as still valid/OK
 			}
 			break;
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
 			if ((Mask && reqFW_CHECK) == 0) {				// both CHECK req 1&2 done
-			// iRV == 1 (new FW), 0 (old FW), <0 (error)
-				if (iRV == 0)
+				// iRV == 1 (new FW), 0 (old FW), <0 (error)
+				if (iRV < 1)
 					setSYSFLAGS(sfFW_OK);
 			}
 			break;
-//		case reqNUM_GEOLOC:
-//		case reqNUM_GEOTZ:
-//		case reqNUM_GEOALT:
 		default:
 			break;
 		}
