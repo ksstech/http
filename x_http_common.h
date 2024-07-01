@@ -92,10 +92,9 @@ enum {													// HTTP flags
 typedef struct http_rr_t {
 	ubuf_t sUB;											// both
 	netx_t sCtx;										// both
-	/* Sequence of parameters in pVarArg MUST be in same sequence as used by
-	 * a) the pcQuery format string; and
-	 * b) the pcBody format string
-	 */
+	// Sequence of parameters in pVarArg MUST be in same sequence as used by
+	// a) the pcQuery format string; and
+	// b) the pcBody format string
 	union {
 		pcc_t pcQuery;									// client: 'format' GET/PUT/POST/DELETE/PATCH .....
 		pcc_t pcStatMes;								// server: status message
@@ -116,9 +115,7 @@ typedef struct http_rr_t {
 	u32_t hvLastModified;								// Both
 	char * hvStatusMess;								// Both
 	union {
-		struct __attribute__((packed)) { 
-			u8_t Spare, hvConnect, hvAccept, hvContentType;
-		};
+		struct __attribute__((packed)) { u8_t Spare, hvConnect, hvAccept, hvContentType; };
 		u32_t hvValues;
 	};
 	u16_t hvStatus;										// Client (response to request)
