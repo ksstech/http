@@ -48,124 +48,9 @@
 
 // ################################### Global variables ############################################
 
-extern TaskHandle_t TnetHandle;
+TaskHandle_t TempHandle;
 extern const char * const ctValues[];
 extern const char * const coValues[];
-
-#if (includeCLNT_TASK > 0)
-	TaskHandle_t TempHandle;
-#endif
-
-// ################################### Common HTTP API functions ###################################
-
-/**
- * @brief	Build HTTP request packet and initiates connect, parse, respond & disconnect activities
- * @param	pHost - pointer to hostname to connect to
- * @param	pcCert - pointer to TLS certificate
- * @param	szCert - size of TLS certificate
- * @param	pQuery - HTTP query string, can contain printf formatting string
- * @param	pvBody - pointer to body content or handler supplying it...
- * @param	OnBodyCB - GET callback andler for response body
- * @param	DataSize - body content size, != 0 indicate pvBody is a handler
- * @param	BufSize - Tx/RX buffer size to be allocated, if 0 use default
- * @param	hvValues - header values
- * @param	pvArg - parameter for handler
- * @param	varArgs length list of arguments for use with pQuery
- * @return	erFAILURE or result of xHttpCommonDoParsing() being 0 or more
- */
-int	xHttpRequest(pcc_t pHost, pcc_t pcCert, size_t szCert,
-	const char *pQuery, void * pcBody, void * OnBodyCB,
-	u32_t DataSize, u16_t BufSize, u32_t hvValues, void * pvArg, ...) {
-	http_rr_t sRR = { 0 };
-	sock_sec_t sSecure = { 0 };		// LEAVE here else pcCert/szCert gets screwed
-	sRR.sCtx.pHost = pHost;
-	if (pcCert) {
-		sRR.sCtx.psSec = &sSecure;
-		sSecure.pcCert = pcCert;
-		sSecure.szCert = szCert;
-	}
-	sRR.pcQuery = pQuery;
-	sRR.pcBody = pcBody;
-	sRR.sfCB.on_body = (http_data_cb) OnBodyCB;
-	sRR.hvContentLength	= (u64_t) DataSize;
-	psUBufCreate(&sRR.sUB, NULL, BufSize ? BufSize : configHTTP_BUFSIZE, 0);	// setup ubuf_t structure
-	sRR.hvValues = hvValues;
-	IF_myASSERT(debugTRACK, sRR.hvContentType != ctUNDEFINED);
-	sRR.pvArg = pvArg;
-	// Default xNet debug flags
-	sRR.sCtx.d = ioB1GET(dbHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-										NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
-
-	http_parser sParser;
-	http_parser_init(&sParser, HTTP_RESPONSE);			// clear all parser fields/values
-	sParser.data = &sRR;
-
-	va_list vArgs;
-	va_start(vArgs, pvArg);
-	sRR.VaList = vArgs;
-	vuprintfx(&sRR.sUB, sRR.pcQuery, sRR.VaList);
-	uprintfx(&sRR.sUB, " HTTP/1.1"httpNL"Host: %s"httpNL"From: admin@irmacos.com"httpNL"User-Agent: irmacos"httpNL, sRR.sCtx.pHost);
-	if (sRR.hvAccept) {
-		uprintfx(&sRR.sUB, "Accept: %s"httpNL, ctValues[sRR.hvAccept]);
-		sRR.hvAccept = ctUNDEFINED;
-	}
-	if (sRR.hvConnect)
-		uprintfx(&sRR.sUB, "Connection: %s"httpNL, coValues[sRR.hvConnect]);
-	// from here on items common to requests and responses...
-	if (sRR.pcBody) {									// body is optional
-		if (sRR.hvContentType) {						// but if specified MUST have a content type
-			uprintfx(&sRR.sUB, "Content-Type: %s"httpNL, ctValues[sRR.hvContentType]);
-			if (sRR.hvContentLength) {
-				uprintfx(&sRR.sUB, "Content-Length: %llu"httpNL, sRR.hvContentLength);
-				/* Actual binary payload added in callback, only add a single 'httpNL' now.
-				 * Second 'httpNL' added at end of this function.
-				 * Callback will add final terminating 'httpNL' */
-			} else {									// currently handle json/xml/text/html here
-				sRR.hvContentLength = vsnprintfx(NULL, xpfMAXLEN_MAXVAL, sRR.pcBody, sRR.VaList);	// determine body length
-				uprintfx(&sRR.sUB, "Content-Length: %llu"httpNL httpNL, sRR.hvContentLength);
-				vuprintfx(&sRR.sUB, sRR.pcBody, sRR.VaList);// add actual content
-			}
-		} else {
-			SL_ERR(debugAPPL_PLACE);
-		}
-	}
-	// add the final 'httpNL' after the headers and payload, if binary payload this is 2nd pair
-	uprintfx(&sRR.sUB, httpNL);
-	IF_PX(debugTRACK && ioB1GET(dbHTTPreq) && sRR.sCtx.d.http, "Content:"strNL"%*s"strNL, xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
-	va_end(vArgs);
-
-	sRR.sCtx.type = SOCK_STREAM;
-	sRR.sCtx.sa_in.sin_family = AF_INET;
-	if (sRR.sCtx.sa_in.sin_port == 0)
-		sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
-	sRR.sCtx.flags = SO_REUSEADDR;
-
-	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "HTTPclnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT);
-	IF_SYSTIMER_START(debugTIMING, stHTTP);
-	int iRV = xNetOpen(&sRR.sCtx);
-	if (iRV == erSUCCESS) {								// if socket is open
-		iRV = xNetSend(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Used);	// write request
-		if (iRV > 0 && sRR.hvContentLength)
-			iRV = sRR.cbBody(&sRR);						// should return same as xNetSendX()
-		if (iRV > 0) {									// now read the response
-			iRV = xNetRecvBlocks(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size, configHTTP_RX_WAIT);
-			if (iRV > 0) {								// actually read something
-				sRR.sUB.Used = iRV;
-				iRV = xHttpCommonDoParsing(&sParser);	// return erFAILURE or some 0+ number
-			} else {
-				IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing read ie to parse"strNL);
-				iRV = erFAILURE;
-			}
-		} else {
-			IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing written (by handler) so can't expect to read"strNL);
-			iRV = erFAILURE;
-		}
-	}
-	IF_SYSTIMER_STOP(debugTIMING, stHTTP);
-	xNetClose(&sRR.sCtx);								// close the socket connection if still open...
-	vUBufDestroy(&sRR.sUB);								// return memory allocated
-	return iRV;
-}
 
 // ########################################## Location #############################################
 
@@ -191,14 +76,6 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 	}
 	if (psTL) free(psTL);
     return iRV;
-}
-
-int	xHttpGetLocation(void) {
-	return xHttpRequest("www.googleapis.com", CertGGLE, SizeGGLE,
-		"POST /geolocation/v1/geolocate?key="keyGOOGLE, "{ }"httpNL, xHttpParseGeoLoc,
-		httpDATASIZE_NONE, httpBUFSIZE_NONE,
-		httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0),
-		NULL);	// no parameters
 }
 
 // ##################################### TIMEZONE support ##########################################
@@ -239,14 +116,6 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
     return iRV;
 }
 
-int	xHttpGetTimeZone(void) {
-	return xHttpRequest("maps.googleapis.com", CertGGLE, SizeGGLE,
-		"GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%d&key="keyGOOGLE, NULL, xHttpParseTimeZone,
-		httpDATASIZE_NONE, httpBUFSIZE_NONE,
-		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
-		NULL, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], xTimeStampAsSeconds(RunTime));
-}
-
 // ########################################## Elevation #############################################
 
 /*
@@ -273,14 +142,6 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
 	}
 	if (psTL) free(psTL);
     return iRV;
-}
-
-int	xHttpGetElevation(void) {
-	return xHttpRequest("maps.googleapis.com", CertGGLE, SizeGGLE,
-		"GET /maps/api/elevation/json?locations=%.7f,%.7f&key="keyGOOGLE, NULL, xHttpParseElevation,
-		httpDATASIZE_NONE, httpBUFSIZE_NONE,
-		httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0),
-		NULL, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON]);	// Lat+Lon as parameter
 }
 
 // ################################# Firmware Over The Air support #################################
@@ -372,73 +233,8 @@ exit:
 	return sPX.iRV;										// return ESP_OK
 }
 
-/**
- * @brief	Initiate FW upgrade check or request
- * @return	If error erFAILURE or less, 0 if no valid upgrade or result from xHttpClientPerformFOTA()
-*/
-static int xHttpClientFirmwareUpgrade(void * pvFileName, bool bCheck) {
-	u8_t optHost = ioB2GET(ioHostFOTA);
-	return xHttpRequest(HostInfo[optHost].pName, HostInfo[optHost].pcCert, HostInfo[optHost].szCert,
-		"GET /firmware/%s.bin", NULL, bCheck == CHECK ? xHttpClientCheckFOTA : xHttpClientPerformFOTA,
-		httpDATASIZE_NONE, httpBUFSIZE_NONE,
-		httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0),
-		NULL, pvFileName);		// firmware filename as parameter into query
-}
-
-/**
- * @brief	step through multiple FW upgrade options till a valid option found or until all options done.
- * @return	
- */
-int xHttpClientCheckUpgrades(bool bCheck) {
-	clrSYSFLAGS(sfFW_OK);
-	/* To create a hierarchy of firmware upgrades, we need to define a descending order:
-	 * #1 MAC address: "1234567890ab.bin"
-	 * #2 hardware platform: "device-specification-token.bin"
-	 * #3 to be defined
-	 */
-	int iRV = xHttpClientFirmwareUpgrade((void *) idSTA, bCheck);
-	if (allSYSFLAGS(sfREBOOT) == 0)
-		iRV = xHttpClientFirmwareUpgrade((void *) mySTRINGIFY(buildUUID), bCheck);
-	if (bCheck == PERFORM)
-		SL_LOG(iRV < erSUCCESS ? SL_SEV_ERROR : SL_SEV_NOTICE, "FW upgrade %s(%d)", iRV < erSUCCESS ? "FAIL" : "Done", iRV);
-	if (allSYSFLAGS(sfREBOOT) == 0) 
-		setSYSFLAGS(sfFW_OK);
-	return iRV;
-}
-
-// ################################## PUT core dump to host ########################################
-
-/**
- * @brief 
- * @return	result from esp_partition_read() or xHttpRequest()
- */
-int xHttpCoredumpUpload(void) {
-	esp_core_dump_summary_t	sCDsummary = { 0 };
-	part_xfer_t sPX = { 0 };
-	sPX.psCDsum = &sCDsummary;
-	int iRV = esp_core_dump_get_summary(&sCDsummary);
-	if (iRV == ESP_OK)
-		iRV = esp_core_dump_image_get(&sPX.CDaddr, &sPX.CDsize);
-	if (iRV != ESP_OK) {
-		SL_ERR("%s (%d) v%-I t='%s' a=%p s=%lu", esp_err_to_name(iRV), iRV, sCDsummary.core_dump_version, sCDsummary.exc_task, sPX.CDaddr, sPX.CDsize);
-		return iRV;
-	}
-
-	sPX.sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
-	IF_myASSERT(debugRESULT, sPX.sIter != 0);
-	sPX.psPart = esp_partition_get(sPX.sIter);
-	IF_myASSERT(debugRESULT, sPX.psPart != 0);
-
-	u8_t optHost = ioB2GET(ioHostCONF);
-	return xHttpRequest(HostInfo[optHost].pName, HostInfo[optHost].pcCert, HostInfo[optHost].szCert,
-		"PUT /coredump/%M_%X_%X_%llu.elf", halPART_Upload_CB, NULL,
-		sPX.CDsize, httpBUFSIZE_NONE,
-		httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0),
-		(void *) &sPX, macSTA, esp_reset_reason(), DEV_FW_VER_NUM, xTimeStampAsSeconds(sTSZ.usecs));
-}
-
 // ###################################### Various gateways #########################################
-
+#if 0
 int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
 	return xHttpRequest("api.pushover.net", CertGGLE, SizeGGLE,
 		"POST /1/messages.json", "token="tokenPUSHOVER "&user="userPUSHOVER "&title=%U&message=%U%%40%u", NULL, 0, 0,
@@ -492,15 +288,14 @@ int	xHttpBadSSL(int ioHost) {
 		"GET /dashboard", NULL, NULL, 0, 0,
 		httpHDR_VALUES(ctTextPlain, 0, 0, 0), NULL);	// No argument or varargs
 }
-
-// ################################# HTTP client to TNET/HTTP task #################################
+#endif
+// ################################### Dynamic HTTP Task support ###################################
 
 /**
  * @brief	Notify correct (HTTP/TNET) server task to execute an HTTP (client) request
  * @return	1 if successful (ie task running) or 0 if not
 */
 bool bHttpRequestNotifyTask(u32_t AddMask) {
-#if (includeCLNT_TASK > 0)
 	if (xRtosCheckStatus(flagLX_STA) == 0)
 		return 0;
 	if (xRtosCheckStatus(flagCLNT_TASK)) {				// Transient HTTP client task running?
@@ -511,83 +306,11 @@ bool bHttpRequestNotifyTask(u32_t AddMask) {
 			return 1;
 		}
 		// now wait until the temp task has terminated
-		do vTaskDelay(pdMS_TO_TICKS(1000)); while (TempHandle);
+		do { vTaskDelay(pdMS_TO_TICKS(1000)); } while (TempHandle);
 		// then fall through to restart task
 	}
 	return (xHttpClientTaskStart((void *) AddMask) == NULL) ? 0 : 1;
-#elif (includeTNET_TASK > 0)
-	if (xRtosCheckStatus(flagTNET_SERV)) {
-		xTaskNotify(TnetHandle, AddMask, eSetBits);
-		return 1;
-	} else {
-		return 0;
-	}
-#elif (includeHTTP_TASK > 0)
-	if (xRtosCheckStatus(flagHTTP_SERV)) {
-		xTaskNotify(HttpHandle, AddMask, eSetBits);
-		return 1;
-	} else {
-		return 0;
-	}
-#else
-	#error "No task configured to handle HTTP requests"
-#endif
 }
-
-/**
- * @brief	
- * @return	
-*/
-int vHttpRequestNotifyHandler(void) {
-	u32_t fRqst = 0, fDone = 0;
-	int iRV = erSUCCESS;
-	if (xTaskNotifyWait(0, 0, &fRqst, pdMS_TO_TICKS(0)) == pdTRUE) {
-		IF_PX(debugTRACK && ioB1GET(dbHTTPreq), "Received Notify x%X"strNL, fRqst);
-		if (fRqst & reqCOREDUMP) {
-			iRV = xHttpCoredumpUpload();
-			fDone |= reqCOREDUMP;
-		}
-		if (fRqst & reqFW_UPGRADE) {
-			xRtosClearTaskRUN(taskGUI_MASK);			// Stop GUI task
-			iRV = xHttpClientCheckUpgrades(PERFORM);
-			xRtosSetTaskRUN(taskGUI_MASK);				// Start GUI task
-			fDone |= reqFW_UPGRADE;
-		}
-		if (fRqst & reqFW_CHECK) {
-			xHttpClientCheckUpgrades(CHECK);
-			fDone |= reqFW_CHECK;
-		}
-		if (allSYSFLAGS(sfREBOOT) == 0) {				// reboot NOT requested
-			if (fRqst & reqGEOLOC) {
-				iRV = xHttpGetLocation();
-				if (iRV > erFAILURE)
-					fDone |= reqGEOLOC;
-			}
-			if (fRqst & reqGEOTZ) {
-				iRV = xHttpGetTimeZone();
-				if (iRV > erFAILURE)
-					fDone |= reqGEOTZ;
-			}
-			if (fRqst & reqGEOALT) {
-				iRV = xHttpGetElevation();
-				if (iRV > erFAILURE)
-					fDone |= reqGEOALT;
-			}
-		} else if (fRqst & (reqGEOLOC|reqGEOTZ|reqGEOALT)) {	// REBOOT is requested
-			fDone |= (reqGEOLOC|reqGEOTZ|reqGEOALT);	// discard whatever is requested
-			IF_PX(debugTRACK && ioB1GET(dbHTTPreq), "GeoXXX requests discarded, restart..."strNL);
-		}
-		if (fDone) {
-			IF_PX(debugTRACK && ioB1GET(dbHTTPreq), "fRqst=x%X  fDone=x%X"strNL, fRqst, fDone);
-			ulTaskNotifyValueClear(NULL, fDone);
-		}
-	}
-	return iRV;
-}
-
-// ################################### Dynamic HTTP Task support ###################################
-
-#if (includeCLNT_TASK > 0)
 
 void vTaskHttpClient(void * pvPara) {
 	vTaskSetThreadLocalStoragePointer(NULL, buildFRTLSP_EVT_MASK, (void *)taskHTTP_CLNT_MASK);
@@ -774,12 +497,8 @@ TaskHandle_t xHttpClientTaskStart(void * pvPara) {
 	return (iRV == pdPASS) ? TempHandle : (TempHandle = NULL);
 }
 
-#endif
-
 /*	TODO:
 	Investigate counter for enums remove manual value checking
-	Add extra enums to enable firmware checking and/or upgrading for each type separately
-	Add extra switch section for post processing
 
 	http://wolkykim.github.io/libasyncd/
 	https://www.gnu.org/software/libmicrohttpd/
