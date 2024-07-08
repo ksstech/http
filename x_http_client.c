@@ -317,7 +317,7 @@ void vTaskHttpClient(void * pvPara) {
 	u8_t optHost;
 	u32_t Mask = (u32_t) pvPara;
 
-	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "clnt", configHTTP_RX_WAIT/100, configHTTP_RX_WAIT);
+	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "clnt", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 	while(Mask) {
 		int iRV = erSUCCESS;
 		s8_t BitNum	= __builtin_ctzl(Mask);				// identify next highest priority request
