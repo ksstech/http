@@ -426,7 +426,7 @@ void vTaskHttpClient(void * pvPara) {
 		} else {
 			// some form of upload, body payload added by callback handler
 		}
-		IF_PX(debugTRACK && ioB1GET(dbHTTPreq) && sRR.sCtx.d.http, "CONTENT"strNL"%*s"strNL, xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
+		IF_PX(debugTRACK && ioB1GET(dbHTTPreq) && sRR.sCtx.d.http, "%'-+hhY", xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
 		// Now start the network communication portion....
 		sRR.sCtx.type = SOCK_STREAM;
 		sRR.sCtx.sa_in.sin_family = AF_INET;
@@ -436,13 +436,16 @@ void vTaskHttpClient(void * pvPara) {
 		
 		IF_SYSTIMER_START(debugTIMING, stHTTP);
 		iRV = xNetOpen(&sRR.sCtx);
+		IF_PTL(debugDETAIL, "opened %s:%hu" strNL, sRR.sCtx.pHost, sRR.sCtx.sa_in.sin_port);
 		if (iRV == erSUCCESS) {								// if socket is open
 			iRV = xNetSend(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Used);	// write request
 			if (iRV > 0 && sRR.hdlr) {						// is handler specified for [additional] body
 				iRV = sRR.hdlr(&sRR);						// send body (should return same as xNetSend...)
 			}
+			IF_PTL(debugDETAIL, "sent" strNL);
 			if (iRV > 0) {									// now read the response
 				iRV = xNetRecvBlocks(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size, configHTTP_RX_WAIT);
+				IF_PTL(debugDETAIL, "received" strNL);
 				if (iRV > 0) {								// actually read something
 					sRR.sUB.Used = iRV;
 					iRV = xHttpCommonDoParsing(&sParser);	// return erFAILURE or some 0+ number
@@ -450,6 +453,7 @@ void vTaskHttpClient(void * pvPara) {
 					IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing read ie to parse" strNL);
 					iRV = erFAILURE;
 				}
+				IF_PTL(debugDETAIL, "parsed" strNL);
 			} else {
 				IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing written (by handler) so can't expect to read" strNL);
 				iRV = erFAILURE;
@@ -457,6 +461,7 @@ void vTaskHttpClient(void * pvPara) {
 		}
 		IF_SYSTIMER_STOP(debugTIMING, stHTTP);
 		xNetClose(&sRR.sCtx);								// close the socket connection if still open...
+		IF_PTL(debugDETAIL, "closed" strNL);
 exit:
 		vUBufDestroy(&sRR.sUB);								// return memory allocated
 		switch(BitNum) {									// Do post processing
