@@ -71,7 +71,8 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
 		SL_NOT("lat=%.7f  lng=%.7f  acc=%.7f", sNVSvars.GeoLoc[geoLAT],
 				sNVSvars.GeoLoc[geoLON], sNVSvars.GeoLoc[geoACC]);
 	}
-	if (psTL) free(psTL);
+	if (psTL)
+		free(psTL);
     return iRV;
 }
 
@@ -158,13 +159,10 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 
 	} else if (psRR->hvContentLength == 0ULL) {
 		SL_ERR("invalid size (%llu)", psRR->hvContentLength);
-
 	} else if (psRR->hvContentType != ctApplicationOctetStream) {
 		SL_ERR("invalid content (%d/%s)", psRR->hvContentType, ctValues[psRR->hvContentType]);
-
 	} else if (psRR->hvConnect == coClose) {
 		SL_ERR("Connection closed unexpectedly");
-
 	} else {
 		// BuildSeconds			: halfway(?) time of running FW
 		// hvLastModified		: creation time of available FW
@@ -339,7 +337,7 @@ void vTaskHttpClient(void * pvPara) {
 		// now process the actual request...
 		switch(BitNum) {
 		case reqNUM_COREDUMP:
-			iRV = esp_core_dump_get_summary(&sCDsummary);
+		{	iRV = esp_core_dump_get_summary(&sCDsummary);
 			if (iRV == ESP_OK)
 				iRV = esp_core_dump_image_get(&sPX.CDaddr, &sPX.CDsize);
 			if (iRV == ESP_OK) {
@@ -360,12 +358,12 @@ void vTaskHttpClient(void * pvPara) {
 				sRR.hvContentLength = (u64_t) sPX.CDsize;
 				sRR.pvArg = &sPX;							// Needed in upload handler				
 			}
-			break;
+		}	break;
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
-			clrSYSFLAGS(sfFW_OK);
+		{	clrSYSFLAGS(sfFW_OK);
 			optHost = ioB2GET(ioHostFOTA);
 			sRR.sCtx.pHost = HostInfo[optHost].pName;
 			sSecure.pcCert = HostInfo[optHost].pcCert;
@@ -375,9 +373,9 @@ void vTaskHttpClient(void * pvPara) {
 			uprintfx(&sRR.sUB, httpCLNT_REQ_FIRMWARE, BitNum == reqNUM_FW_UPG1 || BitNum==reqNUM_FW_CHK1 ? idSTA : (void *)mySTRINGIFY(buildUUID));
 			sRR.sfCB.on_body = (BitNum==reqNUM_FW_UPG1 || BitNum==reqNUM_FW_UPG2) ? (http_data_cb) xHttpClientPerformFOTA : (http_data_cb) xHttpClientCheckFOTA;
 			sRR.hvValues = httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0);
-			break;
+		}	break;
 		case reqNUM_GEOLOC:
-			sRR.sCtx.pHost = "www.googleapis.com";
+		{	sRR.sCtx.pHost = "www.googleapis.com";
 			sSecure.pcCert = CertGGLE;
 			sSecure.szCert = SizeGGLE;
 			sRR.sCtx.psSec = &sSecure;
@@ -386,9 +384,9 @@ void vTaskHttpClient(void * pvPara) {
 			sRR.pcBody = "{ }"httpNL;
 			sRR.sfCB.on_body = (http_data_cb) xHttpParseGeoLoc;
 			sRR.hvValues = httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0);
-			break;
+		}	break;
 		case reqNUM_GEOTZ:
-			sRR.sCtx.pHost = "maps.googleapis.com";
+		{	sRR.sCtx.pHost = "maps.googleapis.com";
 			sSecure.pcCert = CertGGLE;
 			sSecure.szCert = SizeGGLE;
 			sRR.sCtx.psSec = &sSecure;
@@ -396,9 +394,9 @@ void vTaskHttpClient(void * pvPara) {
 			uprintfx(&sRR.sUB, httpCLNT_REQ_GEOTZ, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], xTimeStampAsSeconds(RunTime), keyGOOGLE);
 			sRR.sfCB.on_body = (http_data_cb) xHttpParseTimeZone;
 			sRR.hvValues = httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0);
-			break;
+		}	break;
 		case reqNUM_GEOALT:
-			sRR.sCtx.pHost = "maps.googleapis.com";
+		{	sRR.sCtx.pHost = "maps.googleapis.com";
 			sSecure.pcCert = CertGGLE;
 			sSecure.szCert = SizeGGLE;
 			sRR.sCtx.psSec = &sSecure;
@@ -406,6 +404,8 @@ void vTaskHttpClient(void * pvPara) {
 			uprintfx(&sRR.sUB, httpCLNT_REQ_GEOALT, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], keyGOOGLE);
 			sRR.sfCB.on_body = (http_data_cb) xHttpParseElevation;
 			sRR.hvValues = httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0);
+		}	break;
+		default:
 			break;
 		}
 		if (iRV < erSUCCESS)
@@ -443,8 +443,8 @@ void vTaskHttpClient(void * pvPara) {
 		iRV = xNetOpen(&sRR.sCtx);
 		if (iRV == erSUCCESS) {								// if socket is open
 			iRV = xNetSend(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Used);	// write request
-			if (iRV > 0 && sRR.hdlr) {
-				iRV = sRR.hdlr(&sRR);						// should return same as xNetSendX()
+			if (iRV > 0 && sRR.hdlr) {						// is handler specified for [additional] body
+				iRV = sRR.hdlr(&sRR);						// send body (should return same as xNetSend...)
 			}
 			if (iRV > 0) {									// now read the response
 				iRV = xNetRecvBlocks(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size, configHTTP_RX_WAIT);
@@ -452,11 +452,11 @@ void vTaskHttpClient(void * pvPara) {
 					sRR.sUB.Used = iRV;
 					iRV = xHttpCommonDoParsing(&sParser);	// return erFAILURE or some 0+ number
 				} else {
-					IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing read ie to parse"strNL);
+					IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing read ie to parse" strNL);
 					iRV = erFAILURE;
 				}
 			} else {
-				IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing written (by handler) so can't expect to read"strNL);
+				IF_PX(debugTRACK && ioB1GET(ioHTTPtrack), " nothing written (by handler) so can't expect to read" strNL);
 				iRV = erFAILURE;
 			}
 		}
@@ -467,21 +467,21 @@ exit:
 		switch(BitNum) {									// Do post processing
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
-			if (allSYSFLAGS(sfREBOOT))						// If reboot flag set we have new FW image
+		{	if (allSYSFLAGS(sfREBOOT))						// If reboot flag set we have new FW image
 				Mask &= ~reqFW_UPGRADE;						// yes, abandon possible 2nd stage
 			if ((Mask & reqFW_UPGRADE) == 0) {				// If UPGRADE (1 and/or 2) completed ?
 				if (allSYSFLAGS(sfREBOOT) == 0)				// yes, reboot flag set?
 					setSYSFLAGS(sfFW_OK);					// no, mark FW as still valid/OK
 			}
-			break;
+		}	break;
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
-			if ((Mask && reqFW_CHECK) == 0) {				// both CHECK req 1&2 done
+		{	if ((Mask && reqFW_CHECK) == 0) {				// both CHECK req 1&2 done
 				// iRV == 1 (new FW), 0 (old FW), <0 (error)
 				if (iRV < 1)
 					setSYSFLAGS(sfFW_OK);
 			}
-			break;
+		}	break;
 		default:
 			break;
 		}
