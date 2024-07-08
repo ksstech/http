@@ -45,7 +45,7 @@ enum {													// Header Fields
 };
 
 enum {													// Content Types
-	ctUNDEFINED					= 0,
+	ctUndefined					= 0,
 	ctApplicationOctetStream,
 	ctApplicationJson,
 	ctApplicationXml,
@@ -99,10 +99,7 @@ typedef struct http_rr_t {
 		pcc_t pcQuery;									// client: 'format' GET/PUT/POST/DELETE/PATCH .....
 		pcc_t pcStatMes;								// server: status message
 	};
-	union {
-		const char * pcBody;							// content/format
-		int (* cbBody) (struct http_rr_t *);			// upload content handler
-	};
+	const char * pcBody;								// content/format
 	int (* hdlr) (struct http_rr_t *);					// upload content handler
 	va_list VaList;										// Client
 	void * pvArg;										// Client
