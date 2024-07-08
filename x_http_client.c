@@ -51,7 +51,7 @@ extern const char * const coValues[];
 
 // ########################################## Location #############################################
 
-int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
+int	xHttpParseGeoLoc(http_parser * psP, const char * pcBuf, size_t xLen) {
 	jsmn_parser	sParser;
 	jsmntok_t *	psTL;
 	int	iRV = erFAILURE;
@@ -84,7 +84,7 @@ int	xHttpParseGeoLoc(http_parser * psParser, const char * pcBuf, size_t xLen) {
  * Example:
  * 		https://maps.googleapis.com/maps/api/timezone/json?location=38.908133,-77.047119&timestamp=1458000000&key=YOUR_API_KEY
  */
-int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) {
+int	xHttpParseTimeZone(http_parser * psP, const char * pcBuf, size_t xLen) {
 	jsmn_parser	sParser;
 	jsmntok_t *	psTL;
 	int	iRV = erFAILURE;
@@ -122,7 +122,7 @@ int	xHttpParseTimeZone(http_parser * psParser, const char * pcBuf, size_t xLen) 
  * Example:
  *		https://maps.googleapis.com/maps/api/elevation/json?locations=39.7391536,-104.9847034&key=API_KEY
  */
-int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) {
+int	xHttpParseElevation(http_parser * psP, const char* pcBuf, size_t xLen) {
 	int	iRV = erFAILURE;
 	const char * pKey = " Insufficient";
 	jsmn_parser	sParser;
@@ -151,12 +151,11 @@ int	xHttpParseElevation(http_parser * psParser, const char* pcBuf, size_t xLen) 
  * 			0 if no newer upgrade file exists
  * 			1 if valid upgrade file exists
  */
-static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
-	http_rr_t * psRR = psParser->data;
+static int	xHttpClientCheckFOTA(http_parser * psP, const char * pBuf, size_t xLen) {
+	http_rr_t * psRR = psP->data;
 	int iRV = erFAILURE;
-	if (psParser->status_code != HTTP_STATUS_OK) {
-		IF_SL_WARN(debugTRACK && ioB1GET(ioFOTA), "'%s' Error=%d", psRR->pvArg, psParser->status_code);
-
+	if (psP->status_code != HTTP_STATUS_OK) {
+		SL_INFO("%s (%d)", psRR->hvStatusMess, psP->status_code);
 	} else if (psRR->hvContentLength == 0ULL) {
 		SL_ERR("invalid size (%llu)", psRR->hvContentLength);
 	} else if (psRR->hvContentType != ctApplicationOctetStream) {
@@ -179,13 +178,13 @@ static int	xHttpClientCheckFOTA(http_parser * psParser, const char * pBuf, size_
 
 /**
  * @brief	check if a valid download exists, if so, download and write to flash.
- * @param	psParser
+ * @param	psP
  * @param	pBuf
  * @param	xLen
  * @return	If error erFAILURE or less, 0 if no valid upgrade, 1 if valid upgrade
  */
-static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, size_t xLen) {
-	int iRV = xHttpClientCheckFOTA(psParser, pBuf, xLen);
+static int xHttpClientPerformFOTA(http_parser * psP, const char * pBuf, size_t xLen) {
+	int iRV = xHttpClientCheckFOTA(psP, pBuf, xLen);
 	if (iRV < httpFW_NEW_FOUND)
 		return iRV;					// <0=Error 0=OLD  
 	part_xfer_t	sPX = { 0 };
@@ -195,7 +194,7 @@ static int xHttpClientPerformFOTA(http_parser * psParser, const char * pBuf, siz
 	sPX.pBuf = (void *) pBuf;
 	sPX.xLen = xLen;
 	sPX.xDone = 0;
-	http_rr_t * psReq = psParser->data;
+	http_rr_t * psReq = psP->data;
 	sPX.xFull = psReq->hvContentLength;
 	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 
