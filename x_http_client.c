@@ -196,7 +196,7 @@ static int xHttpClientPerformFOTA(http_parser * psP, const char * pBuf, size_t x
 	sPX.xDone = 0;
 	http_rr_t * psReq = psP->data;
 	sPX.xFull = psReq->hvContentLength;
-	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "halFOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
+	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "FOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 
 	while (sPX.xLen) {									// deal with all received packets
 		sPX.iRV = halFOTA_Write(&sPX);
