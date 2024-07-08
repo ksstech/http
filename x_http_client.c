@@ -381,7 +381,7 @@ void vTaskHttpClient(void * pvPara) {
 			sRR.sCtx.psSec = &sSecure;
 			#define httpCLNT_REQ_GEOLOC "POST /geolocation/v1/geolocate?key=%s"
 			uprintfx(&sRR.sUB, httpCLNT_REQ_GEOLOC, keyGOOGLE);
-			sRR.pcBody = "{ }"httpNL;
+			sRR.pcBody = "{ \"considerIp\":true }";
 			sRR.sfCB.on_body = (http_data_cb) xHttpParseGeoLoc;
 			sRR.hvValues = httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0);
 		}	break;
