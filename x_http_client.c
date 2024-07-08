@@ -331,8 +331,8 @@ void vTaskHttpClient(void * pvPara) {
 		http_parser_init(&sParser, HTTP_RESPONSE);
 		psUBufCreate(&sRR.sUB, NULL, configHTTP_BUFSIZE, 0);
 		sParser.data = &sRR;
-		sRR.sCtx.d = ioB1GET(dbHTTPreq) ? NETX_DBG_FLAGS(0,1,0,0,0,0,0,0,0,0,0,0,0,0,3,1) :
-										NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+		sRR.sCtx.d = ioB1GET(dbHTTPreq) ? NETX_DBG_FLAGS(0,1,0,1,0,0,0,0,0,0,0,0,0,0,3,1)
+										: NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 		// now process the actual request...
 		switch(BitNum) {
 		case reqNUM_COREDUMP:
