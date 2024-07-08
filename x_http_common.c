@@ -45,7 +45,7 @@ const char * const hfValues[hfNUMBER]	= {
 };
 
 const char * const ctValues[ctNUMBER]	= {
-	[ctUNDEFINED]						= "",
+	[ctUndefined]						= "*.*",
 	[ctApplicationOctetStream]			= "application/octet-stream",
 	[ctApplicationJson]					= "application/json",
 	[ctApplicationXml]					= "application/xml",
