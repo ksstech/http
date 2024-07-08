@@ -28,9 +28,6 @@
 
 // ###################################### BUILD : CONFIG definitions ###############################
 
-#define httpBUFSIZE_NONE			0
-#define httpDATASIZE_NONE			0
-
 #define configHTTP_BUFSIZE			4096
 #define configHTTP_RX_WAIT			5000	// 500
 
