@@ -29,7 +29,7 @@
 // ###################################### BUILD : CONFIG definitions ###############################
 
 #define configHTTP_BUFSIZE			4096
-#define configHTTP_RX_WAIT			5000	// 500
+#define configHTTP_RX_WAIT			1000	// 500 5000
 
 #ifndef keyGOOGLE
 	#define	keyGOOGLE				"fakegoogle"
