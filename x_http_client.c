@@ -244,7 +244,7 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
  */
 int	xHttpClientIdentUpload(void * psRomID) {
 	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, NULL, 0, 
-		"PATCH /ibuttons.dat", "{'%M' , 'DS1990R' , 'Heavy Duty' , 'Maxim' }"httpNL, NULL, 0, 0,
+		"PATCH /ibuttons.dat", "{'%M' , 'DS1990R' , 'Heavy Duty' , 'Maxim' }""\r\n", NULL, 0, 0,
 		httpHDR_VALUES(ctTextPlain, 0, 0, 0),
 		NULL, psRomID);									// No argument, vararg
 }
@@ -409,27 +409,23 @@ void vTaskHttpClient(void * pvPara) {
 		}
 		if (iRV < erSUCCESS)
 			goto exit;
-		IF_myASSERT(debugTRACK, sRR.hvContentType != ctUNDEFINED);
-		uprintfx(&sRR.sUB, " HTTP/1.1"httpNL"Host: %s"httpNL"From: admin@irmacos.com"httpNL"User-Agent: irmacos"httpNL, sRR.sCtx.pHost);
-		if (sRR.hvAccept) {
-			uprintfx(&sRR.sUB, "Accept: %s"httpNL, ctValues[sRR.hvAccept]);
-			sRR.hvAccept = ctUNDEFINED;
-		}
+		IF_myASSERT(debugTRACK, sRR.hvContentType != ctUndefined);
+		uprintfx(&sRR.sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@irmacos.com\r\nUser-Agent: irmacos\r\nAccept: %s\r\n",
+			sRR.sCtx.pHost, ctValues[sRR.hvAccept]);
+		sRR.hvAccept = ctUndefined;
 		if (sRR.hvConnect)
-			uprintfx(&sRR.sUB, "Connection: %s"httpNL, coValues[sRR.hvConnect]);
-		uprintfx(&sRR.sUB, "Content-Type: %s"httpNL, ctValues[sRR.hvContentType]);
-		if (sRR.pcBody) {								// currently handle json/xml/text/html here
+			uprintfx(&sRR.sUB, "Connection: %s\r\n", coValues[sRR.hvConnect]);
+		uprintfx(&sRR.sUB, "Content-Type: %s\r\n", ctValues[sRR.hvContentType]);
+		if (sRR.pcBody && sRR.hvContentLength == 0)		// currently handle json/xml/text/html here
 			sRR.hvContentLength = (u64_t) strlen(sRR.pcBody);
-			uprintfx(&sRR.sUB, "Content-Length: %llu"httpNL""httpNL, sRR.hvContentLength);
-			uprintfx(&sRR.sUB, "%s", sRR.pcBody);		// add actual content
-		} else if (sRR.hvContentLength) {				// some form of upload, body added by handler
-				// Actual binary payload added in callback, only add a single 'httpNL' now.
-				// Second 'httpNL' added at end of this function.
-				// Callback will add final terminating 'httpNL'
-				uprintfx(&sRR.sUB, "Content-Length: %llu"httpNL, sRR.hvContentLength);
+		if (sRR.hvContentLength)
+			uprintfx(&sRR.sUB, "Content-Length: %llu\r\n", sRR.hvContentLength);
+		uprintfx(&sRR.sUB, "\r\n");						// end of header fields, add blank line...
+		if (sRR.pcBody) {
+			uprintfx(&sRR.sUB, "%s\r\n", sRR.pcBody);	// add actual content
+		} else {
+			// some form of upload, body payload added by callback handler
 		}
-		// add the final 'httpNL' after the headers and payload, if binary payload this is 2nd pair
-		uprintfx(&sRR.sUB, httpNL);
 		IF_PX(debugTRACK && ioB1GET(dbHTTPreq) && sRR.sCtx.d.http, "CONTENT"strNL"%*s"strNL, xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
 		// Now start the network communication portion....
 		sRR.sCtx.type = SOCK_STREAM;
