@@ -47,11 +47,6 @@ enum {													// REQuest MASKs
 
 // ######################################### Structures ############################################
 // ###################################### Global variables #########################################
-
-#if (includeTMP_TASK > 0)
-	TaskHandle_t TempHandle;
-#endif
-
 // ###################################### Public functions #########################################
 
 bool bHttpRequestNotifyTask(u32_t ulValue);
