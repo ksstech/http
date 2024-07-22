@@ -104,6 +104,7 @@ typedef struct http_rr_t {
 	va_list VaList;										// Client
 	void * pvArg;										// Client
 	http_parser_settings sfCB;							// Both
+	int onBodyRet;										// result fromon_body handler
 	struct yuarel url;									// Both
 	struct yuarel_param	params[httpYUAREL_MAX_QUERY];	// Both
 	char * parts[httpYUAREL_MAX_PARTS];					// Both
