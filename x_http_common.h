@@ -148,7 +148,7 @@ int xHttpCommonChunkHeaderHandler(http_parser * psParser);
 int xHttpCommonChunkCompleteHandler(http_parser * psParser);
 int xHttpCommonMessageBodyHandler(http_parser * psParser, const char * pBuf, size_t xLen);
 int xHttpCommonMessageCompleteHandler(http_parser * psParser);
-size_t	xHttpCommonDoParsing(http_parser * psParser);
+size_t xHttpCommonDoParsing(http_parser * psParser);
 
 #ifdef __cplusplus
 }
