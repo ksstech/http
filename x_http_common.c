@@ -216,17 +216,7 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 			PX("BODY (plain/html/xml)"strNL"%.*s", xLen, pcBuf);
 			break;
 		case ctApplicationJson:
-		{	// test parse (count tokens) then allocate memory & parse
-			jsmntok_t *	psTokenList;
-			jsmn_parser	sParser;
-			i32_t iRV = xJsonParse((char *)pcBuf, xLen, &sParser, &psTokenList);
-			if (iRV > erSUCCESS) {							// print parsed tokens
-				iRV = xJsonPrintTokens((char *)pcBuf, psTokenList, iRV, 0);
-			} else {
-				PX("BODY (json)"strNL"%!'+hhY", xLen, pcBuf);	// not parsed, just dump...
-			}
-			if (psTokenList)
-				free(psTokenList);
+			PX("BODY (json)"strNL"%!'+hhY", xLen, pcBuf);	// not parsed, just dump...
 			break;
 		}
 		default:
