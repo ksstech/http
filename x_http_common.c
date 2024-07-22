@@ -218,7 +218,6 @@ int xHttpCommonMessageBodyHandler(http_parser * psP, const char * pcBuf, size_t 
 		case ctApplicationJson:
 			PX("BODY (json)"strNL"%!'+hhY", xLen, pcBuf);	// not parsed, just dump...
 			break;
-		}
 		default:
 			PX("BODY (other)"strNL"%!'+hhY", xLen, pcBuf);
 		}
@@ -239,7 +238,7 @@ size_t xHttpCommonDoParsing(http_parser * psP) {
 	psRR->sfCB.on_header_field	= xHttpCommonHeaderFieldHandler;
 	psRR->sfCB.on_header_value	= xHttpCommonHeaderValueHandler;
 	if (debugTRACK && !psRR->sfCB.on_body)
-		psRR->sfCB.on_body = xHttpCommonMessageBodyHandler;
+		psRR->sfCB.on_body		= xHttpCommonMessageBodyHandler;
 	if (debugTRACK && psRR->sCtx.d.http) {
 		psRR->sfCB.on_message_begin		= xHttpCommonMessageBeginHandler;
 		psRR->sfCB.on_chunk_header		= xHttpCommonChunkHeaderHandler;
