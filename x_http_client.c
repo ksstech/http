@@ -251,7 +251,7 @@ static void vTaskHttpClient(void * pvPara) {
 				sRR.sCtx.psSec = &sSecure;
 				#define httpCLNT_REQ_COREDUMP "PUT /coredump/%M_%X_%X_%lu.elf"
 				uprintfx(&sRR.sUB, httpCLNT_REQ_COREDUMP, macSTA, esp_reset_reason(), buildFW_VER_NUM, xTimeStampAsSeconds(sTSZ.usecs));
-				sRR.hdlr = halPART_Upload_CB;
+				sRR.hdlr = halFlashUpload_CB;
 				sRR.hvValues = httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0);
 				sRR.hvContentLength = (u64_t) sPX.CDsize;
 				sRR.pvArg = &sPX;						// Needed in upload handler				
@@ -290,7 +290,7 @@ static void vTaskHttpClient(void * pvPara) {
 				sRR.sfCB.on_body = (BitNum == reqNUM_BL_UPG) ? xHttpClientDownload : xHttpClientCheckNewer;
 				sPX.tLow = sFIB.fi[0].tBuild;
 				sPX.tDiff = 10;		// Required MIN difference (hvLastModified - BuildSeconds)
-				sPX.psHdlr = &sHttpHdlrFile;
+				sPX.psHdlr = &sHttpHdlrBootloader;
 				sPX.pcFName = httpBOOT_REQ_FNAME;					// name to use in FFS
 			}
 			sRR.hvValues = httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0);
