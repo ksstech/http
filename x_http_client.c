@@ -315,7 +315,6 @@ static void vTaskHttpClient(void * pvPara) {
 			} else {
 				sRR.sCtx.pHost = "maps.googleapis.com";
 				sRR.hvValues = httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0);
-#if (buildNEW_CODE > 0)
 				if (BitNum == reqNUM_GEOTZ) {
 					sRR.pvArg = (void *) &saEntryGeoTZ;
 					#define httpCLNT_GOOG_TZ "GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%lu&key=%s"
@@ -331,26 +330,6 @@ static void vTaskHttpClient(void * pvPara) {
 					#define httpCLNT_GOOG_ALT "GET /maps/api/elevation/json?locations=%.7f,%.7f&key=%s"
 					uprintfx(&sRR.sUB, httpCLNT_GOOG_ALT, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], keyGOOGLE);
 				}
-#else
-				#define httpCLNT_GOOG_MAPS "GET /maps/api/%s/json?%s=%.7f,%.7f&key=%s"
-				const char * apiName, * apiGeoLoc;
-				if (BitNum == reqNUM_GEOTZ) {
-					apiName = "timezone";
-					apiGeoLoc = "timestamp=0&location";
-					sRR.pvArg = (void *) &saEntryGeoTZ;
-				} else if (BitNum == reqNUM_GEOCODE) {
-					apiName = "geocode";
-					apiGeoLoc = "result_type=country&latlng";
-					sRR.pvArg = (void *) &saEntryGeoCode;
-					sRR.sCtx.soRcvTO = 2000;
-					setSYSFLAGS(sfTRACKER);
-				} else {
-					apiName = "elevation";
-					apiGeoLoc = "locations";
-					sRR.pvArg = (void *) &saEntryGeoAlt;
-				}
-				uprintfx(&sRR.sUB, httpCLNT_GOOG_MAPS, apiName, apiGeoLoc, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], keyGOOGLE);
-#endif
 			}
 		}	break;
 		default:
