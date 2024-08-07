@@ -121,16 +121,16 @@ static int	xHttpClientCheckNewer(http_parser * psP, const char * pBuf, size_t xL
 	if (psP->status_code != HTTP_STATUS_OK) {
 		SL_INFO("%s (%d)", psRR->hvStatusMess, psP->status_code);
 	} else if (psRR->hvContentLength == 0ULL) {
-		SL_ERR("invalid size (%llu)", psRR->hvContentLength);
+		SL_ERR("Invalid size (%llu)", psRR->hvContentLength);
 	} else if (psRR->hvContentType != ctApplicationOctetStream) {
-		SL_ERR("invalid content (%d/%s)", psRR->hvContentType, ctValues[psRR->hvContentType]);
+		SL_ERR("Invalid content (%d/%s)", psRR->hvContentType, ctValues[psRR->hvContentType]);
 	} else if (psRR->hvConnect == coClose) {
 		SL_ERR("Connection closed unexpectedly");
 	} else {
 		part_xfer_t	* psPX = psRR->pvArg;
 		s32_t i32Diff = psRR->hvLastModified - psPX->tLow - psPX->tDiff;
 		psRR->onBodyRet = (i32Diff < 0) ? httpFW_OLD_FOUND : httpFW_NEW_FOUND;
-		IF_SL_WARN(debugTRACK && ioB1GET(ioFOTA), "found %r vs %r Diff=%!r '%s'",
+		SL_INFO("found %r vs %r Diff=%!r '%s'",
 				psRR->hvLastModified, psPX->tLow, i32Diff, i32Diff < 0 ? "Old" : "NEW");
 	}
 	return psRR->onBodyRet;
