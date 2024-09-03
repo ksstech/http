@@ -412,11 +412,11 @@ exit:
 			break;
 		}
 	}
-	vRtosTaskDelete(TempHandle = NULL);
+	vTaskDelete(TempHandle = NULL);
 }
 
 TaskHandle_t xHttpClientTaskStart(void * pvPara) {
-	int iRV = xRtosTaskCreate(vTaskHttpClient, "clnt", httpCLNT_STACK_SIZE, pvPara, httpCLNT_PRIORITY, &TempHandle, tskNO_AFFINITY);
+	int iRV = xTaskCreatePinnedToCore(vTaskHttpClient, "clnt", httpCLNT_STACK_SIZE, pvPara, httpCLNT_PRIORITY, &TempHandle, tskNO_AFFINITY);
 	return (iRV == pdPASS) ? TempHandle : (TempHandle = NULL);
 }
 
