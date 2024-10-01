@@ -142,7 +142,7 @@ int xHttpCommonStatusHandler(http_parser * psP, const char* pBuf, size_t xLen) {
 }
 
 int xHttpCommonHeaderFieldHandler(http_parser * psP, const char* pBuf, size_t xLen) {
-	IF_myASSERT(debugPARAM, halMemorySRAM(psP) && halMemorySRAM(pBuf) && (xLen > 0));
+	IF_myASSERT(debugPARAM, halMemorySRAM((void*) psP) && halMemorySRAM((void*) pBuf) && (xLen > 0));
 	http_rr_t * psReq = psP->data;
 	psReq->HdrField	= xHttpCommonFindMatch(hfValues, NO_MEM(hfValues), pBuf, xLen);
 	IF_PX(debugTRACK && psReq->sCtx.d.http, "%.*s: ", (int)xLen, pBuf);
