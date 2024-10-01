@@ -408,7 +408,6 @@ exit:
 			SL_WARN("New Bootloader '%s' %s available", httpBOOT_REQ_FNAME, (sRR.onBodyRet < 1) ? "NOT" : strNUL);
 			break;
 		default:
-//			clrSYSFLAGS(sfTRACKER);
 			break;
 		}
 	}
