@@ -232,8 +232,8 @@ static void vTaskHttpClient(void * pvPara) {
 		bool bOptName = 0, bOptHdlr;
 		// now process the actual request...
 		switch(BitNum) {
-		case reqNUM_COREDUMP:
-		{	esp_core_dump_summary_t	sCDsummary = { 0 };
+		case reqNUM_COREDUMP: {
+			esp_core_dump_summary_t	sCDsummary = { 0 };
 			sPX.psCDsum = &sCDsummary;
 			iRV = esp_core_dump_get_summary(&sCDsummary);
 			if (iRV == ESP_OK)
@@ -256,15 +256,16 @@ static void vTaskHttpClient(void * pvPara) {
 				sRR.hvContentLength = (u64_t) sPX.CDsize;
 				sRR.pvArg = &sPX;						// Needed in upload handler				
 			}
-		}	break;
+			break;
+        }
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
 			clrSYSFLAGS(sfFW_OK);						// ONLY cleared for upgrades NOT checks
 		case reqNUM_BL_UPG:
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
-		case reqNUM_BL_CHK:
-		{	optHost = ioB2GET(ioHostFOTA);
+		case reqNUM_BL_CHK: {
+			optHost = ioB2GET(ioHostFOTA);
 			sRR.sCtx.pHost = HostInfo[optHost].pName;
 			sSecure.pcCert = HostInfo[optHost].pcCert;
 			sSecure.szCert = HostInfo[optHost].szCert;
@@ -295,12 +296,13 @@ static void vTaskHttpClient(void * pvPara) {
 			}
 			sRR.hvValues = httpHDR_VALUES(ctTextPlain, ctApplicationOctetStream, coKeepAlive, 0);
 			sRR.pvArg = &sPX;						// Needed in upload handler				
-		}	break;
+			break;
+        }
 		case reqNUM_GEOLOC:
 		case reqNUM_GEOTZ:
 		case reqNUM_GEOCODE:
-		case reqNUM_GEOALT:
-		{	// all common to Google API's
+		case reqNUM_GEOALT: {
+			// all common to Google API's
 			sSecure.pcCert = CertGGLE;
 			sSecure.szCert = SizeGGLE;
 			sRR.sCtx.psSec = &sSecure;
@@ -331,7 +333,8 @@ static void vTaskHttpClient(void * pvPara) {
 					uprintfx(&sRR.sUB, httpCLNT_GOOG_ALT, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], keyGOOGLE);
 				}
 			}
-		}	break;
+			break;
+        }
 		default:
 			break;
 		}
