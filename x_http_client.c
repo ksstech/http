@@ -11,10 +11,10 @@
 #include "printfx.h"
 #include "syslog.h"
 #include "systiming.h"
-#include "x_errors_events.h"
+#include "errors_events.h"
 #include "x_http_client.h"
-#include "x_string_general.h"
-#include "x_utilities.h"
+#include "string_general.h"
+#include "utilitiesX.h"
 
 #include "esp_ota_ops.h"								// Coredump upload
 
