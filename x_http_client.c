@@ -250,7 +250,7 @@ static void vTaskHttpClient(void * pvPara) {
 				sSecure.szCert = HostInfo[optHost].szCert;
 				sRR.sCtx.psSec = &sSecure;
 				#define httpCLNT_REQ_COREDUMP "PUT /coredump/%M_%X_%X_%lu.elf"
-				uprintfx(&sRR.sUB, httpCLNT_REQ_COREDUMP, macSTA, esp_reset_reason(), buildFW_VER_NUM, xTimeStampAsSeconds(sTSZ.usecs));
+				uprintfx(&sRR.sUB, httpCLNT_REQ_COREDUMP, macSTA, esp_reset_reason(), buildFW_VER_NUM, xTimeStampSeconds(sTSZ.usecs));
 				sRR.hdlr = halFlashUpload_CB;
 				sRR.hvValues = httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0);
 				sRR.hvContentLength = (u64_t) sPX.CDsize;
@@ -320,7 +320,7 @@ static void vTaskHttpClient(void * pvPara) {
 				if (BitNum == reqNUM_GEOTZ) {
 					sRR.pvArg = (void *) &saEntryGeoTZ;
 					#define httpCLNT_GOOG_TZ "GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%lu&key=%s"
-					uprintfx(&sRR.sUB, httpCLNT_GOOG_TZ, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], xTimeStampAsSeconds(sTSZ.usecs), keyGOOGLE);
+					uprintfx(&sRR.sUB, httpCLNT_GOOG_TZ, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], xTimeStampSeconds(sTSZ.usecs), keyGOOGLE);
 				} else if (BitNum == reqNUM_GEOCODE) {
 					sRR.pvArg = (void *) &saEntryGeoCode;
 //					sRR.sCtx.d = NETX_DBG_FLAGS(0,0,0,1,0,0,0,1,1,0,0,0,0,3,1);
