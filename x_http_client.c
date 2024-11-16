@@ -98,11 +98,9 @@ int	xHttpParseGeneric(http_parser * psP, char * pcBuf, size_t xLen) {
 			++psPHE;									// step to next KEY:VALUE pair to be parsed
 			--Count;									// adjust remaining pair count
 		}
-		if (Done)
-			setSYSFLAGS(vfNVSBLOB);
+		if (Done) setSYSFLAGS(vfNVSBLOB);
 	}
-	if (sPH.psT0)
-		free(sPH.psT0);
+	if (sPH.psT0) free(sPH.psT0);
     return iRV;
 }
 
@@ -130,8 +128,7 @@ static int	xHttpClientCheckNewer(http_parser * psP, const char * pBuf, size_t xL
 		part_xfer_t	* psPX = psRR->pvArg;
 		s32_t i32Diff = psRR->hvLastModified - psPX->tLow - psPX->tDiff;
 		psRR->onBodyRet = (i32Diff < 0) ? httpFW_OLD_FOUND : httpFW_NEW_FOUND;
-		SL_INFO("found %r vs %r Diff=%!r '%s'",
-				psRR->hvLastModified, psPX->tLow, i32Diff, i32Diff < 0 ? "Old" : "NEW");
+		SL_INFO("found %r vs %r Diff=%!r '%s'", psRR->hvLastModified, psPX->tLow, i32Diff, i32Diff < 0 ? "Old" : "NEW");
 	}
 	return psRR->onBodyRet;
 }
@@ -146,8 +143,7 @@ static int	xHttpClientCheckNewer(http_parser * psP, const char * pBuf, size_t xL
 static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen) {
 	xHttpClientCheckNewer(psP, pBuf, xLen);
 	http_rr_t * psRR = psP->data;
-	if (psRR->onBodyRet < httpFW_NEW_FOUND)
-		return psRR->onBodyRet;							// <0=Error 0=OLD
+	if (psRR->onBodyRet < httpFW_NEW_FOUND)			return psRR->onBodyRet;		// <0=Error 0=OLD
 	part_xfer_t	* psPX = psRR->pvArg;
 	psPX->pBuf = (void *) pBuf;
 	psPX->xLen = xLen;
@@ -236,8 +232,7 @@ static void vTaskHttpClient(void * pvPara) {
 			esp_core_dump_summary_t	sCDsummary = { 0 };
 			sPX.psCDsum = &sCDsummary;
 			iRV = esp_core_dump_get_summary(&sCDsummary);
-			if (iRV == ESP_OK)
-				iRV = esp_core_dump_image_get(&sPX.CDaddr, &sPX.CDsize);
+			if (iRV == ESP_OK) iRV = esp_core_dump_image_get(&sPX.CDaddr, &sPX.CDsize);
 			if (iRV == ESP_OK) {
 				sPX.sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
 				IF_myASSERT(debugRESULT, sPX.sIter != 0);
