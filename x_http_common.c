@@ -73,9 +73,7 @@ int	xHttpCommonFindMatch(const char * const pcTable[], u32_t xSize, const char *
 	while (Idx < xSize) {
 		size_t ySize = strlen(*pcTable);				// get length of string in table to compare against
 		if (ySize == xLen) {
-			if (strncasecmp(*pcTable, pcMatch, ySize) == 0) {
-				return Idx;
-			}
+			if (strncasecmp(*pcTable, pcMatch, ySize) == 0) return Idx;
 		}
 		pcTable++;
 		Idx++;
@@ -98,9 +96,8 @@ int xHttpCommonUrlHandler(http_parser * psP, const char * pBuf, size_t xLen) {
 //	PX("AFTER : pBuf=%p  xLen=%d  cChr='%c'  url=[%s]"strNL, pBuf, xLen, *(pBuf+xLen), pBuf);
 
 	http_rr_t * psRR = psP->data;
-	int Idx = yuarel_parse(&psRR->url, (char *)pBuf);		// do the parse
-	if (Idx == erFAILURE)
-		return erFAILURE;
+	int Idx = yuarel_parse(&psRR->url, (char *)pBuf);	// do the parse
+	if (Idx == erFAILURE)							return erFAILURE;
 
 	/* This is to handle the special case where the whole URL is just "/"
 	 * The yuarel parser then (incorrectly) returns " HTTP" and "1.1" as
@@ -155,8 +152,7 @@ int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xL
 	struct tm sTM;
 	switch (psReq->HdrField) {
 	case hfAcceptRanges:
-		if (strncasecmp("bytes", pBuf, xLen) == 0)
-			psReq->f_ac_rng = 1;
+		if (strncasecmp("bytes", pBuf, xLen) == 0) psReq->f_ac_rng = 1;
 		break;
 	case hfConnection:
 		psReq->hvConnect = xHttpCommonFindMatch(coValues, NO_MEM(coValues), pBuf, xLen);
@@ -237,8 +233,7 @@ size_t xHttpCommonDoParsing(http_parser * psP) {
 	psRR->sfCB.on_status		= xHttpCommonStatusHandler;
 	psRR->sfCB.on_header_field	= xHttpCommonHeaderFieldHandler;
 	psRR->sfCB.on_header_value	= xHttpCommonHeaderValueHandler;
-	if (debugTRACK && !psRR->sfCB.on_body)
-		psRR->sfCB.on_body		= xHttpCommonMessageBodyHandler;
+	if (debugTRACK && !psRR->sfCB.on_body) psRR->sfCB.on_body = xHttpCommonMessageBodyHandler;
 	if (debugTRACK && psRR->sCtx.d.http) {
 		psRR->sfCB.on_message_begin		= xHttpCommonMessageBeginHandler;
 		psRR->sfCB.on_chunk_header		= xHttpCommonChunkHeaderHandler;
