@@ -188,9 +188,8 @@ exit:
  * @return	1 if successful (ie task running) or 0 if not
 */
 bool bHttpRequestNotifyTask(u32_t AddMask) {
-	if (xRtosCheckStatus(flagLX_STA) == 0)
-		return 0;
-	if (xRtosCheckStatus(flagCLNT_TASK)) {				// Transient HTTP client task running?
+	if (xRtosCheckStat0(flagLX_STA) == 0)			return 0;
+	if (xRtosCheckStat0(flagCLNT_TASK)) {				// Transient HTTP client task running?
 		u32_t CurMask;
 		xTaskNotifyAndQuery(TempHandle, 0, eNoAction, &CurMask);
 		if (CurMask) {
@@ -363,14 +362,14 @@ static void vTaskHttpClient(void * pvPara) {
 		
 		IF_SYSTIMER_START(debugTIMING, stHTTP);
 		iRV = xNetOpen(&sRR.sCtx);
-		if (iRV == erSUCCESS) {								// if socket is open
+		if (iRV == erSUCCESS) {							// if socket is open
 			iRV = xNetSend(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Used);	// write request
-			if (iRV > 0 && sRR.hdlr) {						// is handler specified for [additional] body
-				iRV = sRR.hdlr(&sRR);						// send body (should return same as xNetSend...)
+			if (iRV > 0 && sRR.hdlr) {					// is handler specified for [additional] body
+				iRV = sRR.hdlr(&sRR);					// send body (should return same as xNetSend...)
 			}
-			if (iRV > 0) {									// now read the response
+			if (iRV > 0) {								// now read the response
 				iRV = xNetRecv(&sRR.sCtx, sRR.sUB.pBuf, sRR.sUB.Size);
-				if (iRV > 0) {								// actually read something
+				if (iRV > 0) {							// actually read something
 					sRR.sUB.Used = iRV;
 					iRV = xHttpCommonDoParsing(&sParser);	// return erFAILURE or some 0+ number
 				} else {
@@ -381,10 +380,10 @@ static void vTaskHttpClient(void * pvPara) {
 			}
 		}
 		IF_SYSTIMER_STOP(debugTIMING, stHTTP);
-		xNetClose(&sRR.sCtx);								// close the socket connection if still open...
+		xNetClose(&sRR.sCtx);							// close the socket connection if still open...
 exit:
-		vUBufDestroy(&sRR.sUB);								// return memory allocated
-		switch(BitNum) {									// Do post processing
+		vUBufDestroy(&sRR.sUB);							// return memory allocated
+		switch(BitNum) {								// Do post processing
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
 		{	if (allSYSFLAGS(sfREBOOT))						// If reboot flag set we have new FW image
