@@ -98,7 +98,7 @@ int	xHttpParseGeneric(http_parser * psP, char * pcBuf, size_t xLen) {
 			++psPHE;									// step to next KEY:VALUE pair to be parsed
 			--Count;									// adjust remaining pair count
 		}
-		if (Done) setSYSFLAGS(vfNVSBLOB);
+		if (Done) halVarsUpdateBlobs(vfNVSBLOB);
 	}
 	if (sPH.psT0) free(sPH.psT0);
     return iRV;
@@ -206,10 +206,10 @@ bool bHttpRequestNotifyTask(u32_t AddMask) {
 static void vTaskHttpClient(void * pvPara) {
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "clnt", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 	vTaskSetThreadLocalStoragePointer(NULL, buildFRTLSP_EVT_MASK, (void *)taskHTTP_CLNT_MASK);
-	xRtosSetTaskRUN(taskHTTP_CLNT_MASK);
+	halEventUpdateRunTasks(taskHTTP_CLNT_MASK, 1);
 	bRtosTaskWaitOK(taskHTTP_CLNT_MASK, portMAX_DELAY);
 	u32_t Mask = (u32_t) pvPara;
-	while((allSYSFLAGS(sfREBOOT) == 0) && Mask) {
+	while((xRtosCheckStat1(sfREBOOT) == 0) && Mask) {
 		u8_t optHost = 0;
 		int iRV = erSUCCESS;
 		s8_t BitNum	= __builtin_ctzl(Mask);				// identify next highest priority request
@@ -254,7 +254,7 @@ static void vTaskHttpClient(void * pvPara) {
         }
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
-			clrSYSFLAGS(sfFW_OK);						// ONLY cleared for upgrades NOT checks
+			halEventUpdateStat1(sfFW_OK, 0);			// ONLY cleared for upgrades NOT checks
 		case reqNUM_BL_UPG:
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
@@ -386,12 +386,11 @@ exit:
 		switch(BitNum) {								// Do post processing
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
-		{	if (allSYSFLAGS(sfREBOOT))						// If reboot flag set we have new FW image
-				Mask &= ~reqFW_UPGRADE;						// yes, abandon possible 2nd stage
-			if ((Mask & reqFW_UPGRADE) == 0) {				// If UPGRADE (1 and/or 2) completed ?
-				if (allSYSFLAGS(sfREBOOT) == 0)	{			// yes, reboot flag set?
-					setSYSFLAGS(sfFW_OK);					// no, mark FW as still valid/OK
-				}
+		{	if (xRtosCheckStat1(sfREBOOT))				// If reboot flag set we have new FW image
+				Mask &= ~reqFW_UPGRADE;					// yes, abandon possible 2nd stage
+			if ((Mask & reqFW_UPGRADE) == 0) {			// If UPGRADE (1 and/or 2) completed ?
+				// If reboot flag not set then no new FW, mark FW as still valid/OK
+				if (xRtosCheckStat1(sfREBOOT) == 0) halEventUpdateStat1(sfFW_OK, 1);
 			}
 		}	break;
 		case reqNUM_FW_CHK1:
