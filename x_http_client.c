@@ -205,7 +205,6 @@ bool bHttpRequestNotifyTask(u32_t AddMask) {
 
 static void vTaskHttpClient(void * pvPara) {
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "clnt", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
-	vTaskSetThreadLocalStoragePointer(NULL, buildFRTLSP_EVT_MASK, (void *)taskHTTP_CLNT_MASK);
 	halEventUpdateRunTasks(taskHTTP_CLNT_MASK, 1);
 	bRtosTaskWaitOK(taskHTTP_CLNT_MASK, portMAX_DELAY);
 	u32_t Mask = (u32_t) pvPara;
@@ -410,10 +409,21 @@ exit:
 	vTaskDelete(TempHandle = NULL);
 }
 
-TaskHandle_t xHttpClientTaskStart(void * pvPara) {
-	int iRV = xTaskCreatePinnedToCore(vTaskHttpClient, "clnt", httpCLNT_STACK_SIZE, pvPara, httpCLNT_PRIORITY, &TempHandle, tskNO_AFFINITY);
-	return (iRV == pdPASS) ? TempHandle : (TempHandle = NULL);
-}
+StaticTask_t ttsHttpC = { 0 };
+StackType_t tsbHttpC[httpCLNT_STACK_SIZE] = { 0 };
+
+task_param_t sHttpParam = {
+	.pxTaskCode = vTaskHttpClient,
+	.pcName = "clnt",
+	.usStackDepth = httpCLNT_STACK_SIZE,
+	.uxPriority = httpCLNT_PRIORITY,
+	.pxStackBuffer = tsbHttpC,
+	.pxTaskBuffer = &ttsHttpC,
+	.xCoreID = tskNO_AFFINITY,
+	.xMask = taskHTTP_CLNT_MASK,
+};
+
+TaskHandle_t xHttpClientTaskStart(void * pvPara) { return xTaskCreateWithMask(&sHttpParam, pvPara); }
 
 #if 0
 // ###################################### Various gateways #########################################
