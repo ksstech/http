@@ -144,6 +144,12 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 	xHttpClientCheckNewer(psP, pBuf, xLen);
 	http_rr_t * psRR = psP->data;
 	if (psRR->onBodyRet < httpFW_NEW_FOUND)			return psRR->onBodyRet;		// <0=Error 0=OLD
+	#if (appOPTIONS == 1)
+		u8_t Option = ioB1GET(ioFOTA);
+	#else
+		#warning "Options support required for proper functioning!!!"
+		u8_t Option = 0;
+	#endif
 	part_xfer_t	* psPX = psRR->pvArg;
 	psPX->pBuf = (void *) pBuf;
 	psPX->xLen = xLen;
@@ -155,13 +161,13 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 	psPX->psHdlr->start(psPX);
 	if (psPX->iRV < erSUCCESS)
 		goto exit;
-	IF_PX(debugTRACK && ioB1GET(ioFOTA), "Started %ld/%lu" strNL, psPX->xLen, psPX->xFull);
+	IF_PX(debugTRACK && Option, "Started %ld/%lu" strNL, psPX->xLen, psPX->xFull);
 	while (psPX->xLen) {								// deal with all received packets
 		psPX->psHdlr->body(psPX);						// call OTA/BL/??? write handler
 		if (psPX->iRV < erSUCCESS)						// write fail
 			break;										// psPX->iRV is error code
 		psPX->xDone += psPX->xLen;
-		IF_PX(debugTRACK && ioB1GET(ioFOTA), "%d%%  \r", (psPX->xDone * 100) / psPX->xFull);
+		IF_PX(debugTRACK && Option, "%d%%  \r", (psPX->xDone * 100) / psPX->xFull);
 		if (psPX->xDone == psPX->xFull)					// All done?
 			break;										// psPX->iRV = ESP_OK
 		IF_SYSTIMER_START(debugTIMING, stFOTA);
@@ -173,7 +179,7 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 			break;										// psPX->iRV = Socket error code
 		}
 	}
-	IF_PX(debugTRACK && ioB1GET(ioFOTA), strNL "Stopped (%ld)" strNL, psPX->xFull - psPX->xDone);
+	IF_PX(debugTRACK && Option, strNL "Stopped (%ld)" strNL, psPX->xFull - psPX->xDone);
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
 	psPX->psHdlr->stop(psPX);							// even if Write error, close
 exit:
@@ -208,6 +214,12 @@ static void vTaskHttpClient(void * pvPara) {
 	halEventUpdateRunTasks(taskHTTP_CLNT_MASK, 1);
 	bRtosTaskWaitOK(taskHTTP_CLNT_MASK, portMAX_DELAY);
 	u32_t Mask = (u32_t) pvPara;
+	#if (appOPTIONS == 1)
+		u8_t Option = ioB1GET(dbHTTPreq);
+	#else
+		#warning "Options support required for proper functioning!!!"
+		u8_t Option = 0;
+	#endif
 	while((xRtosCheckStat1(sfREBOOT) == 0) && Mask) {
 		u8_t optHost = 0;
 		int iRV = erSUCCESS;
@@ -219,8 +231,8 @@ static void vTaskHttpClient(void * pvPara) {
 		part_xfer_t	sPX = { 0 };
 		http_parser sParser;
 		http_parser_init(&sParser, HTTP_RESPONSE);
-		sRR.sCtx.d = (u16_t) ioB1GET(dbHTTPreq) ? NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,1)
-												: NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+		sRR.sCtx.d = (u16_t) Option ? NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,1)
+									: NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 		psUBufCreate(&sRR.sUB, NULL, configHTTP_BUFSIZE, 0);
 		sParser.data = &sRR;
 		bool bOptName = 0, bOptHdlr;
@@ -237,7 +249,12 @@ static void vTaskHttpClient(void * pvPara) {
 				sPX.psPart = esp_partition_get(sPX.sIter);
 				IF_myASSERT(debugRESULT, sPX.psPart != 0);
 
-				optHost = ioB2GET(ioHostCONF);
+				#if (appOPTIONS == 1)
+					optHost = ioB2GET(ioHostCONF);
+				#else
+					#warning "Options support required for proper functioning!!!"
+					optHost = 0;
+				#endif
 				sRR.sCtx.pHost = HostInfo[optHost].pName;
 				sSecure.pcCert = HostInfo[optHost].pcCert;
 				sSecure.szCert = HostInfo[optHost].szCert;
@@ -258,7 +275,12 @@ static void vTaskHttpClient(void * pvPara) {
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
 		case reqNUM_BL_CHK: {
-			optHost = ioB2GET(ioHostFOTA);
+			#if (appOPTIONS == 1)
+				optHost = ioB2GET(ioHostFOTA);
+			#else
+				#warning "Options support required for proper functioning!!!"
+				optHost = 0;
+			#endif
 			sRR.sCtx.pHost = HostInfo[optHost].pName;
 			sSecure.pcCert = HostInfo[optHost].pcCert;
 			sSecure.szCert = HostInfo[optHost].szCert;
