@@ -211,9 +211,9 @@ bool bHttpRequestNotifyTask(u32_t AddMask) {
 
 static void vTaskHttpClient(void * pvPara) {
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "clnt", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
-	halEventUpdateRunTasks(taskHTTP_CLNT_MASK, 1);
-	bRtosTaskWaitOK(taskHTTP_CLNT_MASK, portMAX_DELAY);
 	u32_t Mask = (u32_t) pvPara;
+	halEventUpdateRunTasks(0, 1);
+	halEventWaitTasksOK(0, portMAX_DELAY);
 	#if (appOPTIONS == 1)
 		u8_t Option = ioB1GET(dbHTTPreq);
 	#else
