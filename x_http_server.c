@@ -364,7 +364,6 @@ static int xHttpServerResponseHandler(http_parser * psParser) {
  */
 static void vHttpTask(void * pvParameters) {
 	int	iRV, iRV2;
-	vTaskSetThreadLocalStoragePointer(NULL, buildFRTLSP_EVT_MASK, (void *)taskHTTP_MASK);
 	sRR.sUB.pBuf = pvRtosMalloc(sRR.sUB.Size = httpSERVER_BUFSIZE);
 	HttpState = stateHTTP_INIT;
 	xRtosSetTaskRUN(taskHTTP_MASK);
@@ -460,10 +459,22 @@ static void vHttpTask(void * pvParameters) {
 }
 
 void vHttpStartStop(void) {
+	static StaticTask_t ttsHTTP = { 0 };
+	static StackType_t tsbHTTP[httpSTACK_SIZE] = { 0 };
+	const task_param_t sTaskParam = {
+		.pxTaskCode = vHttpTask,
+		.pcName = "http",
+		.usStackDepth = httpSTACK_SIZE,
+		.uxPriority = httpPRIORITY,
+		.pxStackBuffer = tsbHTTP,
+		.pxTaskBuffer = ttsHTTP,
+		.xCoreID = tskNO_AFFINITY,
+		.xMask = taskHTTP_MASK,
+	};
 	if (ioB1GET(ioHTTPstart)) {
 		xRtosClearTaskRUN(taskHTTP_MASK);
 		xRtosClearTaskDELETE(taskHTTP_MASK);
-		HttpHandle = xRtosTaskCreateStatic(vHttpTask, "http", httpSTACK_SIZE, NULL, httpPRIORITY, tsbHTTP, &ttsHTTP, tskNO_AFFINITY);
+		xTaskCreateWithMask(&sTaskParam, NULL);
 	} else {
 		vRtosTaskTerminate(taskHTTP_MASK);
 	}
