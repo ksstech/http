@@ -102,17 +102,11 @@ static const char HtmlErrorInvMethod[] =
 static const char HtmlErrorBadQuery[] =
 	"<html><body><h2>Query key:value pair(s) mismatched</h2></body></html>";
 
-StaticTask_t ttsHTTP = { 0 };
-StackType_t tsbHTTP[httpSTACK_SIZE] = { 0 };
-
 uint8_t HttpState = 0;
 netx_t sServHttpCtx = { 0 };
 http_rr_t sRR = { 0 };
 
 // ###################################### global variables #########################################
-
-extern const char * const ctValues[];
-extern const char * const coValues[];
 
 // ################################## local/static support functions ###############################
 
