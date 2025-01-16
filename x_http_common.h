@@ -135,6 +135,10 @@ typedef struct http_rr_t {
 typedef int (* hdlr_req_t) (struct http_rr_t *);
 
 // ################################### Global variables ############################################
+
+extern const char * const ctValues[];
+extern const char * const coValues[];
+
 // ###################################### public functions #########################################
 
 int	xHttpCommonFindMatch(const char * const pcTable[], u32_t xSize, const char * pcMatch, size_t xLen);
