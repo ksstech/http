@@ -1,4 +1,4 @@
-// x_http_client.c - Copyright 2014-24 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
+// x_http_client.c - Copyright 2014-25 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
 
 #include "hal_platform.h"
 #include "hal_flash.h"									// firmware download handler
