@@ -182,9 +182,8 @@ int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xL
 
 int xHttpCommonHeadersCompleteHandler(http_parser * psP) {
 	http_rr_t * psReq = psP->data;
-	IF_PX(debugTRACK && psReq->sCtx.d.http, "HEADERS COMPLETE: ar=%d  co=%d  ct=%d  host=%d  len=%llu  date=%R  last=%R"strNL,
-			psReq->f_ac_rng, psReq->hvConnect, psReq->hvContentType, psReq->f_host, psP->content_length,
-			xTimeMakeTimeStamp(psReq->hvDate, 0), xTimeMakeTimeStamp(psReq->hvLastModified, 0));
+	IF_PX(debugTRACK && psReq->sCtx.d.http, "HEADERS COMPLETE: ar=%d  co=%d  ct=%d  host=%d  len=%llu  date=%r  last=%r" strNL,
+		psReq->f_ac_rng, psReq->hvConnect, psReq->hvContentType, psReq->f_host, psP->content_length, psReq->hvDate, psReq->hvLastModified);
 	// if we return 1 here the parser will believe there is no body in the message
 	return erSUCCESS;
 }
