@@ -46,7 +46,7 @@
 
 // ################################### Global variables ############################################
 
-TaskHandle_t TempHandle;
+static TaskHandle_t TempHandle;
 extern const char * const ctValues[];
 extern const char * const coValues[];
 
@@ -431,21 +431,21 @@ exit:
 	vTaskDelete(TempHandle = NULL);
 }
 
-StaticTask_t ttsHttpC = { 0 };
-StackType_t tsbHttpC[httpCLNT_STACK_SIZE] = { 0 };
-
-task_param_t sHttpParam = {
-	.pxTaskCode = vTaskHttpClient,
-	.pcName = "clnt",
-	.usStackDepth = httpCLNT_STACK_SIZE,
-	.uxPriority = httpCLNT_PRIORITY,
-	.pxStackBuffer = tsbHttpC,
-	.pxTaskBuffer = &ttsHttpC,
-	.xCoreID = tskNO_AFFINITY,
-	.xMask = taskHTTP_CLNT_MASK,
-};
-
-TaskHandle_t xHttpClientTaskStart(void * pvPara) { return xTaskCreateWithMask(&sHttpParam, pvPara); }
+TaskHandle_t xHttpClientTaskStart(void * pvPara) {
+	static StaticTask_t ttsHttpC = { 0 };
+	static StackType_t tsbHttpC[httpCLNT_STACK_SIZE] = { 0 };
+	const task_param_t sHttpParam = {
+		.pxTaskCode = vTaskHttpClient,
+		.pcName = "clnt",
+		.usStackDepth = httpCLNT_STACK_SIZE,
+		.uxPriority = httpCLNT_PRIORITY,
+		.pxStackBuffer = tsbHttpC,
+		.pxTaskBuffer = &ttsHttpC,
+		.xCoreID = tskNO_AFFINITY,
+		.xMask = taskHTTP_CLNT_MASK,
+	};
+	return xTaskCreateWithMask(&sHttpParam, pvPara);
+}
 
 #if 0
 // ###################################### Various gateways #########################################
