@@ -159,8 +159,7 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "FOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 	IF_myASSERT(debugPARAM, psPX->psHdlr && psPX->psHdlr->start && psPX->psHdlr->body && psPX->psHdlr->stop);
 	psPX->psHdlr->start(psPX);
-	if (psPX->iRV < erSUCCESS)
-		goto exit;
+	if (psPX->iRV < erSUCCESS)						goto exit;
 	IF_PX(debugTRACK && Option, "Started %ld/%lu" strNL, psPX->xLen, psPX->xFull);
 	while (psPX->xLen) {								// deal with all received packets
 		psPX->psHdlr->body(psPX);						// call OTA/BL/??? write handler
@@ -210,10 +209,10 @@ bool bHttpRequestNotifyTask(u32_t AddMask) {
 }
 
 static void vTaskHttpClient(void * pvPara) {
-	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "clnt", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 	u32_t Mask = (u32_t) pvPara;
 	halEventUpdateRunTasks(0, 1);
 	halEventWaitTasksOK(0, portMAX_DELAY);
+	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "clnt", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 	#if (appOPTIONS == 1)
 		u8_t Option = ioB1GET(dbHTTPreq);
 	#else
@@ -339,7 +338,6 @@ static void vTaskHttpClient(void * pvPara) {
 				} else if (BitNum == reqNUM_GEOCODE) {
 					sRR.pvArg = (void *) &saEntryGeoCode;
 //					sRR.sCtx.d = NETX_DBG_FLAGS(0,0,0,1,0,0,0,1,1,0,0,0,0,3,1);
-//					setSYSFLAGS(sfTRACKER);
 					#define httpCLNT_GOOG_CODE "GET /maps/api/geocode/json?latlng=%.7f,%.7f&key=%s&result_type=country"
 					uprintfx(&sRR.sUB, httpCLNT_GOOG_CODE, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], keyGOOGLE);
 				} else {
@@ -350,8 +348,7 @@ static void vTaskHttpClient(void * pvPara) {
 			}
 			break;
         }
-		default:
-			break;
+		default: break;
 		}
 		if (iRV < erSUCCESS)
 			goto exit;
@@ -359,26 +356,19 @@ static void vTaskHttpClient(void * pvPara) {
 		uprintfx(&sRR.sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@irmacos.com\r\nUser-Agent: irmacos\r\nAccept: %s\r\n",
 			sRR.sCtx.pHost, ctValues[sRR.hvAccept]);
 		sRR.hvAccept = ctUndefined;
-		if (sRR.hvConnect)
-			uprintfx(&sRR.sUB, "Connection: %s\r\n", coValues[sRR.hvConnect]);
+		if (sRR.hvConnect) uprintfx(&sRR.sUB, "Connection: %s\r\n", coValues[sRR.hvConnect]);
 		uprintfx(&sRR.sUB, "Content-Type: %s\r\n", ctValues[sRR.hvContentType]);
 		if (sRR.pcBody && sRR.hvContentLength == 0)		// currently handle json/xml/text/html here
 			sRR.hvContentLength = (u64_t) strlen(sRR.pcBody);
-		if (sRR.hvContentLength)
-			uprintfx(&sRR.sUB, "Content-Length: %llu\r\n", sRR.hvContentLength);
+		if (sRR.hvContentLength) uprintfx(&sRR.sUB, "Content-Length: %llu\r\n", sRR.hvContentLength);
 		uprintfx(&sRR.sUB, "\r\n");						// end of header fields, add blank line...
-		if (sRR.pcBody) {
-			uprintfx(&sRR.sUB, "%s\r\n", sRR.pcBody);	// add actual content
-		} else {
-			// some form of upload, body payload added by callback handler
-		}
-		IF_PX(debugTRACK && ioB1GET(dbHTTPreq) && sRR.sCtx.d.http, "%'-+hhY", xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
+		if (sRR.pcBody) uprintfx(&sRR.sUB, "%s\r\n", sRR.pcBody);	// add actual content
+		IF_PX(debugTRACK && Option && sRR.sCtx.d.http, "%'-+hhY", xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
 
 		// Now start the network communication portion....
 		sRR.sCtx.type = SOCK_STREAM;
 		sRR.sCtx.sa_in.sin_family = AF_INET;
-		if (sRR.sCtx.sa_in.sin_port == 0)
-			sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
+		if (sRR.sCtx.sa_in.sin_port == 0) sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
 		sRR.sCtx.flags = SO_REUSEADDR;
 		
 		IF_SYSTIMER_START(debugTIMING, stHTTP);
