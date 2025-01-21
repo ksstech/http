@@ -187,8 +187,8 @@ exit:
  * @return	1 if successful (ie task running) or 0 if not
 */
 bool bHttpRequestNotifyTask(u32_t AddMask) {
-	if (xRtosCheckStat0(flagLX_STA) == 0)			return 0;
-	if (xRtosCheckStat0(flagCLNT_TASK)) {				// Transient HTTP client task running?
+	if (halEventCheckStatus(flagLX_STA) == 0)			return 0;
+	if (halEventCheckStatus(flagCLNT_TASK)) {				// Transient HTTP client task running?
 		u32_t CurMask;
 		xTaskNotifyAndQuery(TempHandle, 0, eNoAction, &CurMask);
 		if (CurMask) {
@@ -251,7 +251,7 @@ static void vTaskHttpClient(void * pvPara) {
         }
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
-			halEventUpdateStat1(sfFW_OK, 0);			// ONLY cleared for upgrades NOT checks
+			halEventUpdateStatus(sfFW_OK, 0);			// ONLY cleared for upgrades NOT checks
 		case reqNUM_BL_UPG:
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
@@ -374,11 +374,11 @@ exit:
 		switch(BitNum) {								// Do post processing
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
-		{	if (xRtosCheckStat1(sfREBOOT))				// If reboot flag set we have new FW image
+		{	if (halEventCheckStatus(sfREBOOT))				// If reboot flag set we have new FW image
 				Mask &= ~reqFW_UPGRADE;					// yes, abandon possible 2nd stage
 			if ((Mask & reqFW_UPGRADE) == 0) {			// If UPGRADE (1 and/or 2) completed ?
 				// If reboot flag not set then no new FW, mark FW as still valid/OK
-				if (xRtosCheckStat1(sfREBOOT) == 0) halEventUpdateStat1(sfFW_OK, 1);
+				if (halEventCheckStatus(sfREBOOT) == 0) halEventUpdateStatus(sfFW_OK, 1);
 			}
 		}	break;
 		case reqNUM_FW_CHK1:
