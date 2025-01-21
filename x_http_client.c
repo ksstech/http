@@ -258,9 +258,9 @@ static void vTaskHttpClient(void * pvPara) {
 		case reqNUM_BL_CHK: {
 			optHost = ioB2GET(ioHostFOTA);
 			sRR.sCtx.pHost = HostInfo[optHost].pName;
+			sRR.sCtx.psSec = &sSecure;
 			sSecure.pcCert = HostInfo[optHost].pcCert;
 			sSecure.szCert = HostInfo[optHost].szCert;
-			sRR.sCtx.psSec = &sSecure;
 			if ((BitNum != reqNUM_BL_UPG) && (BitNum != reqNUM_BL_CHK)) {	// ensure NOT a bootloader option
 				#define httpCLNT_REQ_FIRMWARE "GET /firmware/%s.bin"
 				// Set flag for MAC vs UUID FW filename option
@@ -327,7 +327,6 @@ static void vTaskHttpClient(void * pvPara) {
         }
 		default: break;
 		}
-		IF_myASSERT(debugTRACK, sRR.hvContentType != ctUndefined);
 		// Done setting up host info and related parameters...
 		if (iRV < erSUCCESS)						goto exit;
 
@@ -337,6 +336,7 @@ static void vTaskHttpClient(void * pvPara) {
 		sRR.hvAccept = ctUndefined;
 		if (sRR.hvConnect) uprintfx(&sRR.sUB, "Connection: %s\r\n", coValues[sRR.hvConnect]);
 		//
+		IF_myASSERT(debugTRACK, sRR.hvContentType != ctUndefined);
 		uprintfx(&sRR.sUB, "Content-Type: %s\r\n", ctValues[sRR.hvContentType]);
 		if (sRR.pcBody && sRR.hvContentLength == 0)		// currently handle json/xml/text/html here
 			sRR.hvContentLength = (u64_t) strlen(sRR.pcBody);
