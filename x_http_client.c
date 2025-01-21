@@ -338,10 +338,9 @@ static void vTaskHttpClient(void * pvPara) {
 		//
 		IF_myASSERT(debugTRACK, sRR.hvContentType != ctUndefined);
 		uprintfx(&sRR.sUB, "Content-Type: %s\r\n", ctValues[sRR.hvContentType]);
-		if (sRR.pcBody && sRR.hvContentLength == 0)		// currently handle json/xml/text/html here
-			sRR.hvContentLength = (u64_t) strlen(sRR.pcBody);
 
 		// currently handle json/xml/text/html here
+		if (sRR.pcBody && sRR.hvContentLength == 0) sRR.hvContentLength = (u64_t) strlen(sRR.pcBody);
 		if (sRR.hvContentLength) uprintfx(&sRR.sUB, "Content-Length: %llu\r\n", sRR.hvContentLength);
 		uprintfx(&sRR.sUB, "\r\n");						// end of header fields, add blank line...
 		if (sRR.pcBody) uprintfx(&sRR.sUB, "%s\r\n", sRR.pcBody);	// add actual content
