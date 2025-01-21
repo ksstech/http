@@ -327,16 +327,21 @@ static void vTaskHttpClient(void * pvPara) {
         }
 		default: break;
 		}
-		if (iRV < erSUCCESS)
-			goto exit;
 		IF_myASSERT(debugTRACK, sRR.hvContentType != ctUndefined);
+		// Done setting up host info and related parameters...
+		if (iRV < erSUCCESS)						goto exit;
+
+		// start building the header
 		uprintfx(&sRR.sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@irmacos.com\r\nUser-Agent: irmacos\r\nAccept: %s\r\n",
 			sRR.sCtx.pHost, ctValues[sRR.hvAccept]);
 		sRR.hvAccept = ctUndefined;
 		if (sRR.hvConnect) uprintfx(&sRR.sUB, "Connection: %s\r\n", coValues[sRR.hvConnect]);
+		//
 		uprintfx(&sRR.sUB, "Content-Type: %s\r\n", ctValues[sRR.hvContentType]);
 		if (sRR.pcBody && sRR.hvContentLength == 0)		// currently handle json/xml/text/html here
 			sRR.hvContentLength = (u64_t) strlen(sRR.pcBody);
+
+		// currently handle json/xml/text/html here
 		if (sRR.hvContentLength) uprintfx(&sRR.sUB, "Content-Length: %llu\r\n", sRR.hvContentLength);
 		uprintfx(&sRR.sUB, "\r\n");						// end of header fields, add blank line...
 		if (sRR.pcBody) uprintfx(&sRR.sUB, "%s\r\n", sRR.pcBody);	// add actual content
