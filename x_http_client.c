@@ -143,7 +143,8 @@ static int	xHttpClientCheckNewer(http_parser * psP, const char * pBuf, size_t xL
 static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen) {
 	xHttpClientCheckNewer(psP, pBuf, xLen);
 	http_rr_t * psRR = psP->data;
-	if (psRR->onBodyRet < httpFW_NEW_FOUND)			return psRR->onBodyRet;		// <0=Error 0=OLD
+	if (psRR->onBodyRet < httpFW_NEW_FOUND)
+		return psRR->onBodyRet;							// <0=Error 0=OLD
 	part_xfer_t	* psPX = psRR->pvArg;
 	psPX->pBuf = (void *) pBuf;
 	psPX->xLen = xLen;
@@ -153,7 +154,8 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "FOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 	IF_myASSERT(debugPARAM, psPX->psHdlr && psPX->psHdlr->start && psPX->psHdlr->body && psPX->psHdlr->stop);
 	psPX->psHdlr->start(psPX);
-	if (psPX->iRV < erSUCCESS)						goto exit;
+	if (psPX->iRV < erSUCCESS)
+		goto exit;
 	IF_PX(debugTRACK && ioB1GET(ioFOTA), "Started %ld/%lu" strNL, psPX->xLen, psPX->xFull);
 	while (psPX->xLen) {								// deal with all received packets
 		psPX->psHdlr->body(psPX);						// call OTA/BL/??? write handler
@@ -225,11 +227,12 @@ static void vTaskHttpClient(void * pvPara) {
 		bool bOptName = 0, bOptHdlr;
 		// now process the actual request...
 		switch(BitNum) {
-		case reqNUM_COREDUMP: {
+		case reqNUM_COREDUMP: {		/* Highest priority, done before any FW or BL OTA or GEOxxx */
 			esp_core_dump_summary_t	sCDsummary = { 0 };
 			sPX.psCDsum = &sCDsummary;
 			iRV = esp_core_dump_get_summary(&sCDsummary);
-			if (iRV == ESP_OK) iRV = esp_core_dump_image_get(&sPX.CDaddr, &sPX.CDsize);
+			if (iRV == ESP_OK)
+				iRV = esp_core_dump_image_get(&sPX.CDaddr, &sPX.CDsize);
 			if (iRV == ESP_OK) {
 				sPX.sIter = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
 				IF_myASSERT(debugRESULT, sPX.sIter != 0);
@@ -328,28 +331,33 @@ static void vTaskHttpClient(void * pvPara) {
 		default: break;
 		}
 		// Done setting up host info and related parameters...
-		if (iRV < erSUCCESS)						goto exit;
+		if (iRV < erSUCCESS)
+			goto exit;
 
 		// start building the header
 		uprintfx(&sRR.sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@irmacos.com\r\nUser-Agent: irmacos\r\nAccept: %s\r\n",
 			sRR.sCtx.pHost, ctValues[sRR.hvAccept]);
 		sRR.hvAccept = ctUndefined;
-		if (sRR.hvConnect) uprintfx(&sRR.sUB, "Connection: %s\r\n", coValues[sRR.hvConnect]);
-		//
+		if (sRR.hvConnect)
+			uprintfx(&sRR.sUB, "Connection: %s\r\n", coValues[sRR.hvConnect]);
 		IF_myASSERT(debugTRACK, sRR.hvContentType != ctUndefined);
 		uprintfx(&sRR.sUB, "Content-Type: %s\r\n", ctValues[sRR.hvContentType]);
 
 		// currently handle json/xml/text/html here
-		if (sRR.pcBody && sRR.hvContentLength == 0) sRR.hvContentLength = (u64_t) strlen(sRR.pcBody);
-		if (sRR.hvContentLength) uprintfx(&sRR.sUB, "Content-Length: %llu\r\n", sRR.hvContentLength);
+		if (sRR.pcBody && sRR.hvContentLength == 0)
+			sRR.hvContentLength = (u64_t) strlen(sRR.pcBody);
+		if (sRR.hvContentLength)
+			uprintfx(&sRR.sUB, "Content-Length: %llu\r\n", sRR.hvContentLength);
 		uprintfx(&sRR.sUB, "\r\n");						// end of header fields, add blank line...
-		if (sRR.pcBody) uprintfx(&sRR.sUB, "%s\r\n", sRR.pcBody);	// add actual content
+		if (sRR.pcBody)
+			uprintfx(&sRR.sUB, "%s\r\n", sRR.pcBody);	// add actual content
 		IF_PX(debugTRACK && ioB1GET(dbHTTPreq) && sRR.sCtx.d.http, "%'-+hhY", xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
 
 		// Now start the network communication portion....
 		sRR.sCtx.type = SOCK_STREAM;
 		sRR.sCtx.sa_in.sin_family = AF_INET;
-		if (sRR.sCtx.sa_in.sin_port == 0) sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
+		if (sRR.sCtx.sa_in.sin_port == 0)
+			sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
 		sRR.sCtx.flags = SO_REUSEADDR;
 		
 		IF_SYSTIMER_START(debugTIMING, stHTTP);
@@ -377,14 +385,15 @@ exit:
 		vUBufDestroy(&sRR.sUB);							// return memory allocated
 		switch(BitNum) {								// Do post processing
 		case reqNUM_FW_UPG1:
-		case reqNUM_FW_UPG2:
-		{	if (halEventCheckStatus(sfREBOOT))				// If reboot flag set we have new FW image
+		case reqNUM_FW_UPG2: {
+			if (halEventCheckStatus(sfREBOOT))				// If reboot flag set we have new FW image
 				Mask &= ~reqFW_UPGRADE;					// yes, abandon possible 2nd stage
 			if ((Mask & reqFW_UPGRADE) == 0) {			// If UPGRADE (1 and/or 2) completed ?
 				// If reboot flag not set then no new FW, mark FW as still valid/OK
 				if (halEventCheckStatus(sfREBOOT) == 0) halEventUpdateStatus(sfFW_OK, 1);
 			}
-		}	break;
+			break;
+		}
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
 			SL_WARN("New Firmware '%s' %s available", bOptName ? (void *)idSTA : buildUUID, (sRR.onBodyRet < 1) ? "NOT" : strNUL);
