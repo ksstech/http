@@ -52,28 +52,28 @@ extern const char * const coValues[];
 
 // ######################################### Constants ############################################
 
-#define buildHTTP_PARSE_ENTRY(name,addr,form) { name, { addr }, form },
+#define http_PARSE_ENTRY(name,addr,form) { name, { addr }, form },
 
 const ph_entries_t saEntryGeoCode = { 1, {
-	buildHTTP_PARSE_ENTRY("short_name", &sNVSvars.GeoCode[0], cvSXX)
+	http_PARSE_ENTRY("short_name", &sNVSvars.GeoCode[0], cvSXX)
 } };
 
 const ph_entries_t saEntryGeoAlt = { 2, {
-	buildHTTP_PARSE_ENTRY("elevation", &sNVSvars.GeoLoc[geoALT], cvF32)
-	buildHTTP_PARSE_ENTRY("resolution", &sNVSvars.GeoLoc[geoRES], cvF32)
+	http_PARSE_ENTRY("elevation", &sNVSvars.GeoLoc[geoALT], cvF32)
+	http_PARSE_ENTRY("resolution", &sNVSvars.GeoLoc[geoRES], cvF32)
 } };
 
 const ph_entries_t saEntryGeoLoc = { 3, {
-	buildHTTP_PARSE_ENTRY("lat", &sNVSvars.GeoLoc[geoLAT], cvF32)
-	buildHTTP_PARSE_ENTRY("lng", &sNVSvars.GeoLoc[geoLON], cvF32)
-	buildHTTP_PARSE_ENTRY("accuracy", &sNVSvars.GeoLoc[geoACC], cvF32)
+	http_PARSE_ENTRY("lat", &sNVSvars.GeoLoc[geoLAT], cvF32)
+	http_PARSE_ENTRY("lng", &sNVSvars.GeoLoc[geoLON], cvF32)
+	http_PARSE_ENTRY("accuracy", &sNVSvars.GeoLoc[geoACC], cvF32)
 } };
 
 const ph_entries_t saEntryGeoTZ = { 4, {
-	buildHTTP_PARSE_ENTRY("dstOffset", &sNVSvars.sTZ.daylight, cvI16)
-	buildHTTP_PARSE_ENTRY("rawOffset", &sNVSvars.sTZ.timezone, cvI32)
-	buildHTTP_PARSE_ENTRY("timeZoneId", sNVSvars.sTZ.TZid, cvSXX)
-	buildHTTP_PARSE_ENTRY("timeZoneName", sNVSvars.sTZ.TZname, cvSXX)
+	http_PARSE_ENTRY("dstOffset", &sNVSvars.sTZ.daylight, cvI16)
+	http_PARSE_ENTRY("rawOffset", &sNVSvars.sTZ.timezone, cvI32)
+	http_PARSE_ENTRY("timeZoneId", sNVSvars.sTZ.TZid, cvSXX)
+	http_PARSE_ENTRY("timeZoneName", sNVSvars.sTZ.TZname, cvSXX)
 } };
 
 // ########################################## Generic ##############################################
