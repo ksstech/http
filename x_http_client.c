@@ -178,7 +178,7 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
 	psPX->psHdlr->stop(psPX);							// even if Write error, close
 exit:
-	SL_LOG((psPX->iRV < 0) ? SL_SEV_ERROR : SL_SEV_NOTICE, "%s (%s/%d)", (psPX->iRV < 0) ? "FAIL" : "Done", esp_err_to_name(psPX->iRV),psPX->iRV);
+	SL_LOG((psPX->iRV < 0) ? SL_SEV_ERROR : SL_SEV_INFO, "%s (%s/%d)", (psPX->iRV < 0) ? "FAIL" : "Done", esp_err_to_name(psPX->iRV),psPX->iRV);
 	return psPX->iRV;									// return ESP_OK
 }
 
