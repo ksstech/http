@@ -334,7 +334,7 @@ static void vTaskHttpClient(void * pvPara) {
 		if (iRV < erSUCCESS)
 			goto exit;
 
-		// start building the header
+		// start creating the header
 		uprintfx(&sRR.sUB, " HTTP/1.1\r\nHost: %s\r\nFrom: admin@irmacos.com\r\nUser-Agent: irmacos\r\nAccept: %s\r\n",
 			sRR.sCtx.pHost, ctValues[sRR.hvAccept]);
 		sRR.hvAccept = ctUndefined;
