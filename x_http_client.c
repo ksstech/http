@@ -244,7 +244,7 @@ static void vTaskHttpClient(void * pvPara) {
 				sSecure.szCert = HostInfo[optHost].szCert;
 				sRR.sCtx.psSec = &sSecure;
 				#define httpCLNT_REQ_COREDUMP "PUT /coredump/%M_%X_%X_%lu.elf"
-				uprintfx(&sRR.sUB, httpCLNT_REQ_COREDUMP, macSTA, esp_reset_reason(), buildFW_VER_NUM, xTimeStampSeconds(sTSZ.usecs));
+				uprintfx(&sRR.sUB, httpCLNT_REQ_COREDUMP, macSTA, esp_reset_reason(), appFW_VER_NUM, xTimeStampSeconds(sTSZ.usecs));
 				sRR.hdlr = halFlashUpload_CB;
 				sRR.hvValues = httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0);
 				sRR.hvContentLength = (u64_t) sPX.CDsize;
@@ -271,7 +271,7 @@ static void vTaskHttpClient(void * pvPara) {
 				// Set flag for UPGrade or CHecK option ie select handler
 				bOptHdlr = ((BitNum == reqNUM_FW_UPG1) || (BitNum == reqNUM_FW_UPG2)) ? 1 : 0;
 				// Build request body
-				uprintfx(&sRR.sUB, httpCLNT_REQ_FIRMWARE, bOptName ? (void *)idSTA : buildUUID);
+				uprintfx(&sRR.sUB, httpCLNT_REQ_FIRMWARE, bOptName ? (void *)idSTA : appUUID);
 				// Set correct handler
 				sRR.sfCB.on_body = bOptHdlr ? xHttpClientDownload : xHttpClientCheckNewer;
 				sPX.tLow = BuildSeconds;
@@ -280,7 +280,7 @@ static void vTaskHttpClient(void * pvPara) {
 			} else {
 				#define httpBOOT_REQ_FNAME "bootloader.bin"
 				#define httpBOOT_REQ_LOADER "GET /firmware/%>s/%s"
-				uprintfx(&sRR.sUB, httpBOOT_REQ_LOADER, buildMODEL, httpBOOT_REQ_FNAME);
+				uprintfx(&sRR.sUB, httpBOOT_REQ_LOADER, appMODEL, httpBOOT_REQ_FNAME);
 				// Set correct handler
 				sRR.sfCB.on_body = (BitNum == reqNUM_BL_UPG) ? xHttpClientDownload : xHttpClientCheckNewer;
 				sPX.tLow = sFIB.fi[0].tBuild;
@@ -396,7 +396,7 @@ exit:
 		}
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
-			SL_WARN("New Firmware '%s' %s available", bOptName ? (void *)idSTA : buildUUID, (sRR.onBodyRet < 1) ? "NOT" : strNUL);
+			SL_WARN("New Firmware '%s' %s available", bOptName ? (void *)idSTA : appUUID, (sRR.onBodyRet < 1) ? "NOT" : strNUL);
 			break;
 		case reqNUM_BL_UPG:
 			SL_WARN("Bootloader '%s' upgrade %s", httpBOOT_REQ_FNAME, (sRR.onBodyRet < 1) ? "FAIL" : "successful");
