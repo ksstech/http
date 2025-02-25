@@ -189,7 +189,8 @@ exit:
  * @return	1 if successful (ie task running) or 0 if not
 */
 bool bHttpRequestNotifyTask(u32_t AddMask) {
-	if (halEventCheckStatus(flagLX_STA) == 0)			return 0;
+	if (halEventCheckStatus(flagLX_STA) == 0)
+		return 0;
 	if (halEventCheckStatus(flagCLNT_TASK)) {				// Transient HTTP client task running?
 		u32_t CurMask;
 		xTaskNotifyAndQuery(TempHandle, 0, eNoAction, &CurMask);
