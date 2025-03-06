@@ -156,13 +156,13 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 	psPX->psHdlr->start(psPX);
 	if (psPX->iRV < erSUCCESS)
 		goto exit;
-	IF_PX(debugTRACK && ioB1GET(ioFOTA), "Started %ld/%lu" strNL, psPX->xLen, psPX->xFull);
+	IF_PX(debugTRACK && xOptionGet(ioFOTA), "Started %ld/%lu" strNL, psPX->xLen, psPX->xFull);
 	while (psPX->xLen) {								// deal with all received packets
 		psPX->psHdlr->body(psPX);						// call OTA/BL/??? write handler
 		if (psPX->iRV < erSUCCESS)						// write fail
 			break;										// psPX->iRV is error code
 		psPX->xDone += psPX->xLen;
-		IF_PX(debugTRACK && ioB1GET(ioFOTA), "%d%%  \r", (psPX->xDone * 100) / psPX->xFull);
+		IF_PX(debugTRACK && xOptionGet(ioFOTA), "%d%%  \r", (psPX->xDone * 100) / psPX->xFull);
 		if (psPX->xDone == psPX->xFull)					// All done?
 			break;										// psPX->iRV = ESP_OK
 		IF_SYSTIMER_START(debugTIMING, stFOTA);
@@ -174,7 +174,7 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 			break;										// psPX->iRV = Socket error code
 		}
 	}
-	IF_PX(debugTRACK && ioB1GET(ioFOTA), strNL "Stopped (%ld)" strNL, psPX->xFull - psPX->xDone);
+	IF_PX(debugTRACK && xOptionGet(ioFOTA), strNL "Stopped (%ld)" strNL, psPX->xFull - psPX->xDone);
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
 	psPX->psHdlr->stop(psPX);							// even if Write error, close
 exit:
@@ -221,7 +221,7 @@ static void vTaskHttpClient(void * pvPara) {
 		part_xfer_t	sPX = { 0 };
 		http_parser sParser;
 		http_parser_init(&sParser, HTTP_RESPONSE);
-		sRR.sCtx.d = (u16_t) ioB1GET(dbHTTPreq) ? NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,1)
+		sRR.sCtx.d = (u16_t) xOptionGet(dbHTTPreq) ? NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,1)
 									: NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 		psUBufCreate(&sRR.sUB, NULL, configHTTP_BUFSIZE, 0);
 		sParser.data = &sRR;
@@ -239,7 +239,7 @@ static void vTaskHttpClient(void * pvPara) {
 				IF_myASSERT(debugRESULT, sPX.sIter != 0);
 				sPX.psPart = esp_partition_get(sPX.sIter);
 				IF_myASSERT(debugRESULT, sPX.psPart != 0);
-				optHost = ioB2GET(ioHostCONF);
+				optHost = xOptionGet(ioHostCONF);
 				sRR.sCtx.pHost = HostInfo[optHost].pName;
 				sSecure.pcCert = HostInfo[optHost].pcCert;
 				sSecure.szCert = HostInfo[optHost].szCert;
@@ -260,7 +260,7 @@ static void vTaskHttpClient(void * pvPara) {
 		case reqNUM_FW_CHK1:
 		case reqNUM_FW_CHK2:
 		case reqNUM_BL_CHK: {
-			optHost = ioB2GET(ioHostFOTA);
+			optHost = xOptionGet(ioHostFOTA);
 			sRR.sCtx.pHost = HostInfo[optHost].pName;
 			sRR.sCtx.psSec = &sSecure;
 			sSecure.pcCert = HostInfo[optHost].pcCert;
@@ -352,7 +352,7 @@ static void vTaskHttpClient(void * pvPara) {
 		uprintfx(&sRR.sUB, "\r\n");						// end of header fields, add blank line...
 		if (sRR.pcBody)
 			uprintfx(&sRR.sUB, "%s\r\n", sRR.pcBody);	// add actual content
-		IF_PX(debugTRACK && ioB1GET(dbHTTPreq) && sRR.sCtx.d.http, "%'-+hhY", xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
+		IF_PX(debugTRACK && xOptionGet(dbHTTPreq) && sRR.sCtx.d.http, "%'-+hhY", xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
 
 		// Now start the network communication portion....
 		sRR.sCtx.type = SOCK_STREAM;
@@ -445,7 +445,7 @@ int	xHttpClientPushOver(const char * pcMess, u32_t u32Val) {
  * @param	psRomID pointer to tag ROM ID string
  */
 int	xHttpClientIdentUpload(void * psRomID) {
-	return xHttpRequest(HostInfo[ioB2GET(ioHostCONF)].pName, NULL, 0, 
+	return xHttpRequest(HostInfo[xOptionGet(ioHostCONF)].pName, NULL, 0, 
 		"PATCH /ibuttons.dat", "{'%M' , 'DS1990R' , 'Heavy Duty' , 'Maxim' }""\r\n", NULL, 0, 0,
 		httpHDR_VALUES(ctTextPlain, 0, 0, 0),
 		NULL, psRomID);									// No argument, vararg
