@@ -128,7 +128,7 @@ static int	xHttpClientCheckNewer(http_parser * psP, const char * pBuf, size_t xL
 		part_xfer_t	* psPX = psRR->pvArg;
 		s32_t i32Diff = psRR->hvLastModified - psPX->tLow - psPX->tDiff;
 		psRR->onBodyRet = (i32Diff < 0) ? httpFW_OLD_FOUND : httpFW_NEW_FOUND;
-		SL_INFO("found %r vs %r Diff=%!r '%s'", psRR->hvLastModified, psPX->tLow, i32Diff, i32Diff < 0 ? "Old" : "NEW");
+		SL_NOT("found %r vs %r Diff=%!r '%s'", psRR->hvLastModified, psPX->tLow, i32Diff, i32Diff < 0 ? "Old" : "NEW");
 	}
 	return psRR->onBodyRet;
 }
@@ -178,7 +178,7 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
 	psPX->psHdlr->stop(psPX);							// even if Write error, close
 exit:
-	SL_LOG((psPX->iRV < 0) ? SL_SEV_ERROR : SL_SEV_INFO, "%s (%s/%d)", (psPX->iRV < 0) ? "FAIL" : "Done", esp_err_to_name(psPX->iRV),psPX->iRV);
+	SL_LOG((psPX->iRV < 0) ? SL_SEV_ERROR : SL_SEV_NOTICE, "%s (%s/%d)", (psPX->iRV < 0) ? "FAIL" : "Done", esp_err_to_name(psPX->iRV),psPX->iRV);
 	return psPX->iRV;									// return ESP_OK
 }
 
