@@ -199,7 +199,9 @@ bool bHttpRequestNotifyTask(u32_t AddMask) {
 			return 1;
 		}
 		// now wait until the temp task has terminated
-		do { vTaskDelay(pdMS_TO_TICKS(1000)); } while (TempHandle);
+		do {
+			vTaskDelay(pdMS_TO_TICKS(1000));
+		} while (TempHandle);
 		// then fall through to restart task
 	}
 	return (xHttpClientTaskStart((void *) AddMask) == NULL) ? 0 : 1;
