@@ -207,8 +207,8 @@ bool bHttpRequestNotifyTask(u32_t AddMask) {
 
 static void vTaskHttpClient(void * pvPara) {
 	u32_t Mask = (u32_t) pvPara;
-	halEventUpdateRunTasks(0, 1);
-	halEventWaitTasksOK(0, portMAX_DELAY);
+	halEventUpdateRunTasks(taskHTTP_CLNT_MASK, 1);
+	halEventWaitTasksOK(taskHTTP_CLNT_MASK, portMAX_DELAY);
 	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "clnt", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 	while((halEventCheckStatus(sfREBOOT) == 0) && Mask) {
 		u8_t optHost = 0;
