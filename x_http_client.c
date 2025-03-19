@@ -357,7 +357,7 @@ static void vTaskHttpClient(void * pvPara) {
 		IF_PX(debugTRACK && xOptionGet(dbHTTPreq) && sRR.sCtx.d.http, "%'-+hhY", xUBufGetUsed(&sRR.sUB), pcUBufTellRead(&sRR.sUB));
 
 		// Now start the network communication portion....
-		sRR.sCtx.type = SOCK_STREAM;
+		sRR.sCtx.c.type = SOCK_STREAM;
 		sRR.sCtx.sa_in.sin_family = AF_INET;
 		if (sRR.sCtx.sa_in.sin_port == 0)
 			sRR.sCtx.sa_in.sin_port = htons(sRR.sCtx.psSec ? IP_PORT_HTTPS : IP_PORT_HTTP);
