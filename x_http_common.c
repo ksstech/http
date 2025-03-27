@@ -5,7 +5,7 @@
 #include "x_http_common.h"
 #include "parserX.h"
 #include "x_buffers.h"
-#include "printfx.h"
+#include "report.h"
 #include "syslog.h"
 #include "string_to_values.h"
 #include "string_general.h"

@@ -9,7 +9,7 @@
 #include "hal_fota.h"
 #include "hal_storage.h"
 #include "hal_mcu.h"									// for halMCU_Restart()
-#include "printfx.h"
+#include "report.h"
 #include "rules.h"
 #include "syslog.h"
 #include "task_control.h"

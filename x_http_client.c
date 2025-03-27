@@ -8,7 +8,7 @@
 #include "certificates.h"
 #include "FreeRTOS_Support.h"
 #include "parserX.h"									// parsing location & TZ requests
-#include "printfx.h"
+#include "report.h"
 #include "syslog.h"
 #include "systiming.h"
 #include "errors_events.h"
