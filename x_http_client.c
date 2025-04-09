@@ -54,28 +54,6 @@ extern const char * const coValues[];
 
 #define http_PARSE_ENTRY(name,addr,form) { name, { addr }, form },
 
-const ph_entries_t saEntryGeoCode = { 1, {
-	http_PARSE_ENTRY("short_name", &sNVSvars.GeoCode[0], cvSXX)
-} };
-
-const ph_entries_t saEntryGeoAlt = { 2, {
-	http_PARSE_ENTRY("elevation", &sNVSvars.GeoLoc[geoALT], cvF32)
-	http_PARSE_ENTRY("resolution", &sNVSvars.GeoLoc[geoRES], cvF32)
-} };
-
-const ph_entries_t saEntryGeoLoc = { 3, {
-	http_PARSE_ENTRY("lat", &sNVSvars.GeoLoc[geoLAT], cvF32)
-	http_PARSE_ENTRY("lng", &sNVSvars.GeoLoc[geoLON], cvF32)
-	http_PARSE_ENTRY("accuracy", &sNVSvars.GeoLoc[geoACC], cvF32)
-} };
-
-const ph_entries_t saEntryGeoTZ = { 4, {
-	http_PARSE_ENTRY("dstOffset", &sNVSvars.sTZ.daylight, cvI16)
-	http_PARSE_ENTRY("rawOffset", &sNVSvars.sTZ.timezone, cvI32)
-	http_PARSE_ENTRY("timeZoneId", sNVSvars.sTZ.TZid, cvSXX)
-	http_PARSE_ENTRY("timeZoneName", sNVSvars.sTZ.TZname, cvSXX)
-} };
-
 // ########################################## Generic ##############################################
 
 /**
@@ -224,7 +202,7 @@ static void vTaskHttpClient(void * pvPara) {
 		http_parser sParser;
 		http_parser_init(&sParser, HTTP_RESPONSE);
 		sRR.sCtx.d = (u16_t) xOptionGet(dbHTTPreq) ? NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,1)
-									: NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
+									                : NETX_DBG_FLAGS(0,0,0,0,0,0,0,0,0,0,0,0,0,3,0);
 		psUBufCreate(&sRR.sUB, NULL, configHTTP_BUFSIZE, 0);
 		sParser.data = &sRR;
 		bool bOptName = 0, bOptHdlr;
@@ -305,26 +283,44 @@ static void vTaskHttpClient(void * pvPara) {
 			sRR.sCtx.psSec = &sSecure;
 			sRR.sfCB.on_body = (http_data_cb) xHttpParseGeneric;
 			if (BitNum == reqNUM_GEOLOC) {
+                static const ph_entries_t saEntryGeoLoc = { 3, {
+                    http_PARSE_ENTRY("lat", &sNVSvars.GeoLoc[geoLAT], cvF32)
+                    http_PARSE_ENTRY("lng", &sNVSvars.GeoLoc[geoLON], cvF32)
+                    http_PARSE_ENTRY("accuracy", &sNVSvars.GeoLoc[geoACC], cvF32)
+                } };
+                sRR.pvArg = (void *) &saEntryGeoLoc;
 				sRR.sCtx.pHost = "www.googleapis.com";
+				sRR.hvValues = httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0);
+				sRR.pcBody = "{ \"considerIp\":true }";
 				#define httpCLNT_REQ_GEOLOC "POST /geolocation/v1/geolocate?key=%s"
 				uprintfx(&sRR.sUB, httpCLNT_REQ_GEOLOC, keyGOOGLE);
-				sRR.pcBody = "{ \"considerIp\":true }";
-				sRR.hvValues = httpHDR_VALUES(ctApplicationJson, ctApplicationJson, 0, 0);
-				sRR.pvArg = (void *) &saEntryGeoLoc;
 			} else {
 				sRR.sCtx.pHost = "maps.googleapis.com";
 				sRR.hvValues = httpHDR_VALUES(ctTextPlain, ctApplicationJson, 0, 0);
 				if (BitNum == reqNUM_GEOTZ) {
-					sRR.pvArg = (void *) &saEntryGeoTZ;
+                    static const ph_entries_t saEntryGeoTZ = { 4, {
+                        http_PARSE_ENTRY("dstOffset", &sNVSvars.sTZ.daylight, cvI16)
+                        http_PARSE_ENTRY("rawOffset", &sNVSvars.sTZ.timezone, cvI32)
+                        http_PARSE_ENTRY("timeZoneId", sNVSvars.sTZ.TZid, cvSXX)
+                        http_PARSE_ENTRY("timeZoneName", sNVSvars.sTZ.TZname, cvSXX)
+                    } };
+                    sRR.pvArg = (void *) &saEntryGeoTZ;
 					#define httpCLNT_GOOG_TZ "GET /maps/api/timezone/json?location=%.7f,%.7f&timestamp=%lu&key=%s"
 					uprintfx(&sRR.sUB, httpCLNT_GOOG_TZ, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], xTimeStampSeconds(sTSZ.usecs), keyGOOGLE);
 				} else if (BitNum == reqNUM_GEOCODE) {
-					sRR.pvArg = (void *) &saEntryGeoCode;
-//					sRR.sCtx.d = NETX_DBG_FLAGS(0,0,0,1,0,0,0,1,1,0,0,0,0,3,1);
+                    static const ph_entries_t saEntryGeoCode = { 1, {
+                        http_PARSE_ENTRY("short_name", &sNVSvars.GeoCode[0], cvSXX)
+                    } };
+                    sRR.pvArg = (void *) &saEntryGeoCode;
+					//sRR.sCtx.d = NETX_DBG_FLAGS(0,0,0,1,0,0,0,1,1,0,0,0,0,3,1);
 					#define httpCLNT_GOOG_CODE "GET /maps/api/geocode/json?latlng=%.7f,%.7f&key=%s&result_type=country"
 					uprintfx(&sRR.sUB, httpCLNT_GOOG_CODE, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], keyGOOGLE);
 				} else {
-					sRR.pvArg = (void *) &saEntryGeoAlt;
+                    static const ph_entries_t saEntryGeoAlt = { 2, {
+                        http_PARSE_ENTRY("elevation", &sNVSvars.GeoLoc[geoALT], cvF32)
+                        http_PARSE_ENTRY("resolution", &sNVSvars.GeoLoc[geoRES], cvF32)
+                    } };
+                    sRR.pvArg = (void *) &saEntryGeoAlt;
 					#define httpCLNT_GOOG_ALT "GET /maps/api/elevation/json?locations=%.7f,%.7f&key=%s"
 					uprintfx(&sRR.sUB, httpCLNT_GOOG_ALT, sNVSvars.GeoLoc[geoLAT], sNVSvars.GeoLoc[geoLON], keyGOOGLE);
 				}
