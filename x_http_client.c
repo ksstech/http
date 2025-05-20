@@ -4,11 +4,9 @@
 #include "hal_flash.h"									// firmware download handler
 #include "hal_memory.h"
 #include "hal_network.h"
-#include "hal_options.h"
 #include "certificates.h"
 #include "FreeRTOS_Support.h"
 #include "parserX.h"									// parsing location & TZ requests
-#include "report.h"
 #include "syslog.h"
 #include "systiming.h"
 #include "errors_events.h"
