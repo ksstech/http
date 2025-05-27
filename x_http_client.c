@@ -127,7 +127,7 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 	psPX->xDone = 0;
 	psPX->xFull = psRR->hvContentLength;
 
-	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stMILLIS, "FOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
+	IF_SYSTIMER_INIT(debugTIMING, stFOTA, stTICKS, "FOTA", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 	IF_myASSERT(debugPARAM, psPX->psHdlr && psPX->psHdlr->start && psPX->psHdlr->body && psPX->psHdlr->stop);
 	psPX->psHdlr->start(psPX);
 	if (psPX->iRV < erSUCCESS)
@@ -187,7 +187,7 @@ static void vTaskHttpClient(void * pvPara) {
 	u32_t Mask = (u32_t) pvPara;
 	halEventUpdateRunTasks(taskHTTP_CLNT_MASK, 1);
 	halEventWaitTasksOK(taskHTTP_CLNT_MASK, portMAX_DELAY);
-	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stMILLIS, "clnt", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
+	IF_SYSTIMER_INIT(debugTIMING, stHTTP, stTICKS, "clnt", configHTTP_RX_WAIT/10, configHTTP_RX_WAIT);
 	while((halEventCheckStatus(sfREBOOT) == 0) && Mask) {
 		u8_t optHost = 0;
 		int iRV = erSUCCESS;
