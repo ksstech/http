@@ -231,6 +231,7 @@ static void vTaskHttpClient(void * pvPara) {
 			}
 			break;
         }
+		// Firmware & Bootloader checking & upgrades
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2:
 			halEventUpdateStatus(sfFW_OK, 0);			// ONLY cleared for upgrades NOT checks
@@ -271,6 +272,7 @@ static void vTaskHttpClient(void * pvPara) {
 			sRR.pvArg = &sPX;						// Needed in upload handler				
 			break;
         }
+		// Geo-location support
 		case reqNUM_GEOLOC:
 		case reqNUM_GEOTZ:
 		case reqNUM_GEOCODE:
