@@ -227,7 +227,9 @@ static void vTaskHttpClient(void * pvPara) {
 				sRR.hdlr = halFlashUpload_CB;
 				sRR.hvValues = httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0);
 				sRR.hvContentLength = (u64_t) sPX.CDsize;
-				sRR.pvArg = &sPX;						// Needed in upload handler				
+				sRR.pvArg = &sPX;						// Needed in upload handler
+				// cached, so this is the same verdict task_control acted on when it raised the request
+				sPX.bErase = (halFlashCoredumpAction() & cdACTION_ERASE) ? 1 : 0;
 			}
 			break;
         }
