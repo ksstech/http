@@ -223,7 +223,10 @@ static void vTaskHttpClient(void * pvPara) {
 				sSecure.szCert = HostInfo[optHost].szCert;
 				sRR.sCtx.psSec = &sSecure;
 				#define httpCLNT_REQ_COREDUMP "PUT /coredump/%M_%X_%X_%lu.elf"
-				uprintfx(&sRR.sUB, httpCLNT_REQ_COREDUMP, macSTA, esp_reset_reason(), cmakeFW_VER_NUM, xTimeStampSeconds(sTSZ.usecs));
+				// sRTCvars.CDreason, NOT esp_reset_reason(): the reason of the dump being sent, which
+				// is only the same thing on the boot that produced it. Naming it from the CURRENT
+				// reason mislabelled held dumps (a PANIC dump was uploaded tagged as WDT).
+				uprintfx(&sRR.sUB, httpCLNT_REQ_COREDUMP, macSTA, sRTCvars.CDreason, cmakeFW_VER_NUM, xTimeStampSeconds(sTSZ.usecs));
 				sRR.hdlr = halFlashUpload_CB;
 				sRR.hvValues = httpHDR_VALUES(ctApplicationOctetStream, 0, 0, 0);
 				sRR.hvContentLength = (u64_t) sPX.CDsize;
