@@ -1,4 +1,4 @@
-// x_http_client.c - Copyright 2014-25 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
+// x_http_client.c - Copyright 2014-26 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
 
 #include "hal_platform.h"
 #include "hal_flash.h"									// firmware download handler
@@ -104,7 +104,9 @@ static int	xHttpClientCheckNewer(http_parser * psP, const char * pBuf, size_t xL
 		part_xfer_t	* psPX = psRR->pvArg;
 		s32_t i32Diff = psRR->hvLastModified - psPX->tLow - psPX->tDiff;
 		psRR->onBodyRet = (i32Diff < 0) ? httpFW_OLD_FOUND : httpFW_NEW_FOUND;
-		SL_NOT("found %r vs %r Diff=%!r '%s'", psRR->hvLastModified, psPX->tLow, i32Diff, i32Diff < 0 ? "Old" : "NEW");
+		// OLD is routine/nightly -> INFO (silent). NEW is rare/actionable -> WARN (reaches host).
+		if (i32Diff < 0)	SL_INFO("found %r vs %r Diff=%!r 'Old'", psRR->hvLastModified, psPX->tLow, i32Diff);
+		else				SL_WARN("found %r vs %r Diff=%!r 'NEW'", psRR->hvLastModified, psPX->tLow, i32Diff);
 	}
 	return psRR->onBodyRet;
 }
@@ -160,6 +162,8 @@ exit:
 
 // ################################### Dynamic HTTP Task support ###################################
 
+static SemaphoreHandle_t shHttpTemp = NULL;			// serialises the check-then-create below
+
 /**
  * @brief	Notify correct (HTTP/TNET) server task to execute an HTTP (client) request
  * @return	1 if successful (ie task running) or 0 if not
@@ -167,20 +171,28 @@ exit:
 bool bHttpRequestNotifyTask(u32_t AddMask) {
 	if (halEventCheckStatus(flagLX_STA) == 0)
 		return 0;
-	if (halEventCheckStatus(flagCLNT_TASK)) {				// Transient HTTP client task running?
+	// TempHandle, not flagCLNT_TASK (set too late) - closes the double-create race. Own mutex,
+	// not shTaskInfo, since that guards ALL task create/delete and shouldn't stall on our wait.
+	xRtosSemaphoreTake(&shHttpTemp, portMAX_DELAY);
+	bool bRV;
+	if (TempHandle) {										// Transient HTTP client task running?
 		u32_t CurMask;
 		xTaskNotifyAndQuery(TempHandle, 0, eNoAction, &CurMask);
 		if (CurMask) {
 			xTaskNotify(TempHandle, AddMask, eSetBits);
+			xRtosSemaphoreGive(&shHttpTemp);
 			return 1;
 		}
+		xRtosSemaphoreGive(&shHttpTemp);					// release before the blocking wait below
 		// now wait until the temp task has terminated
 		do {
 			vTaskDelay(pdMS_TO_TICKS(1000));
 		} while (TempHandle);
-		// then fall through to restart task
+		xRtosSemaphoreTake(&shHttpTemp, portMAX_DELAY);	// re-acquire before touching TempHandle again
 	}
-	return (xHttpClientTaskStart((void *) AddMask) == NULL) ? 0 : 1;
+	bRV = (TempHandle = xHttpClientTaskStart((void *) AddMask)) != NULL;
+	xRtosSemaphoreGive(&shHttpTemp);
+	return bRV;
 }
 
 static void vTaskHttpClient(void * pvPara) {
