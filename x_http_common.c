@@ -174,15 +174,15 @@ int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xL
 		psReq->hvContentType = xHttpCommonFindMatch(ctValues, NO_MEM(ctValues), pBuf, xLen);
 		break;
 	case hfDate:
-		strptime(pBuf, "%a, %d %b %Y %T", &sTM);
-		psReq->hvDate = xHttpDate2UTC(&sTM);
+		if (strptime(pBuf, "%a, %d %b %Y %T", &sTM) != NULL)	// failed parse leaves 0 = OLD,
+			psReq->hvDate = xHttpDate2UTC(&sTM);				//  not a wrapped-epoch "NEW"
 		break;
 	case hfHost:
 		psReq->f_host = 1;
 		break;
 	case hfLastModified:
-		strptime(pBuf, "%a, %d %b %Y %T", &sTM);
-		psReq->hvLastModified = xHttpDate2UTC(&sTM);
+		if (strptime(pBuf, "%a, %d %b %Y %T", &sTM) != NULL)
+			psReq->hvLastModified = xHttpDate2UTC(&sTM);
 		break;
 	default:
 		break;
