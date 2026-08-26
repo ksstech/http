@@ -154,6 +154,8 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 	}
 	IF_PX(debugTRACK && OPT_GET(ioFOTA), strNL "Stopped (%ld)" strNL, psPX->xFull - psPX->xDone);
 	IF_SYSTIMER_SHOW_NUM(debugTIMING, stFOTA);
+	if (psPX->iRV == erSUCCESS && psPX->xDone != psPX->xFull)	// clean early close: xNetRecv 0 -> iRV 0
+		psPX->iRV = erFAILURE;							// stop handler must never commit a partial image
 	psPX->psHdlr->stop(psPX);							// even if Write error, close
 exit:
 	SL_LOG((psPX->iRV < 0) ? SL_SEV_ERROR : SL_SEV_NOTICE, "%s (%s/%d)", (psPX->iRV < 0) ? "FAIL" : "Done", esp_err_to_name(psPX->iRV),psPX->iRV);
