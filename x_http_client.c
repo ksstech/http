@@ -144,11 +144,14 @@ static int xHttpClientDownload(http_parser * psP, const char * pBuf, size_t xLen
 		if (psPX->xDone == psPX->xFull)					// All done?
 			break;										// psPX->iRV = ESP_OK
 		IF_SYSTIMER_START(debugTIMING, stFOTA);
-		psPX->iRV = xNetRecv(&psRR->sCtx, (psPX->pBuf = psRR->sUB.pBuf), psRR->sUB.Size);
+		int Retries = 0;								// FOTA-3: EAGAIN fell through with stale xLen and
+		do {											//  re-WROTE the previous chunk - xDone inflated so a
+			psPX->iRV = xNetRecv(&psRR->sCtx, (psPX->pBuf = psRR->sUB.pBuf), psRR->sUB.Size);
+		} while (psPX->iRV < 0 && psRR->sCtx.error == EAGAIN && ++Retries < 10);	// transfer could "complete" corrupt
 		IF_SYSTIMER_STOP(debugTIMING, stFOTA);
 		if (psPX->iRV >= 0) {							// Socket Recv successful
 			psPX->xLen = psPX->iRV;						// set next write length
-		} else if (psRR->sCtx.error != EAGAIN) {		// Socket Recv (not EAGAIN) error
+		} else {										// persistent EAGAIN or real socket error
 			break;										// psPX->iRV = Socket error code
 		}
 	}
