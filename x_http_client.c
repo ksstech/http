@@ -103,9 +103,9 @@ static int	xHttpClientCheckNewer(http_parser * psP, const char * pBuf, size_t xL
 	} else {
 		part_xfer_t	* psPX = psRR->pvArg;
 		s32_t i32Diff = psRR->hvLastModified - psPX->tLow - psPX->tDiff;
-		psRR->onBodyRet = (i32Diff < 0) ? httpFW_OLD_FOUND : httpFW_NEW_FOUND;
+		psRR->onBodyRet = (i32Diff <= 0) ? httpFW_OLD_FOUND : httpFW_NEW_FOUND;
 		// OLD is routine/nightly -> INFO (silent). NEW is rare/actionable -> WARN (reaches host).
-		if (i32Diff < 0)	SL_INFO("found %r vs %r Diff=%!r 'Old'", psRR->hvLastModified, psPX->tLow, i32Diff);
+		if (i32Diff <= 0)	SL_INFO("found %r vs %r Diff=%!r 'Old'", psRR->hvLastModified, psPX->tLow, i32Diff);
 		else				SL_WARN("found %r vs %r Diff=%!r 'NEW'", psRR->hvLastModified, psPX->tLow, i32Diff);
 	}
 	return psRR->onBodyRet;

@@ -1,4 +1,4 @@
-// http_common.c - Copyright (c) 2014-24 Andre M. Maree / KSS Technologies (Pty) Ltd.
+// http_common.c - Copyright (c) 2014-26 Andre M. Maree / KSS Technologies (Pty) Ltd.
 
 #include "hal_platform.h"
 #include "hal_memory.h"
@@ -146,10 +146,20 @@ int xHttpCommonHeaderFieldHandler(http_parser * psP, const char* pBuf, size_t xL
 	return erSUCCESS;
 }
 
+/* HTTP dates are GMT; mktime() applies the local TZ and reads tm_isdst from stack garbage -
+ * both skewed the FOTA newer-test by hours and flipped it between boots. timegm() is absent
+ * from newlib, so convert civil UTC directly (valid 1970..2105). */
+static u32_t xHttpDate2UTC(const struct tm * psTM) {
+	u32_t y = psTM->tm_year + 1900, m = psTM->tm_mon + 1;
+	if (m <= 2) { --y; m += 12; }
+	u32_t days = 365UL * y + y / 4 - y / 100 + y / 400 + (153UL * (m - 3) + 2) / 5 + psTM->tm_mday - 719469UL;
+	return (days * 86400UL) + (psTM->tm_hour * 3600UL) + (psTM->tm_min * 60UL) + psTM->tm_sec;
+}
+
 int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xLen) {
 	http_rr_t * psReq = psP->data;
 	IF_PX(debugTRACK && psReq->sCtx.d.http, "%.*s"strNL, (int)xLen, pBuf);
-	struct tm sTM;
+	struct tm sTM = { 0 };								// strptime fills only the parsed fields
 	switch (psReq->HdrField) {
 	case hfAcceptRanges:
 		if (strncasecmp("bytes", pBuf, xLen) == 0) psReq->f_ac_rng = 1;
@@ -165,14 +175,14 @@ int xHttpCommonHeaderValueHandler(http_parser * psP, const char* pBuf, size_t xL
 		break;
 	case hfDate:
 		strptime(pBuf, "%a, %d %b %Y %T", &sTM);
-		psReq->hvDate = mktime(&sTM);
+		psReq->hvDate = xHttpDate2UTC(&sTM);
 		break;
 	case hfHost:
 		psReq->f_host = 1;
 		break;
 	case hfLastModified:
 		strptime(pBuf, "%a, %d %b %Y %T", &sTM);
-		psReq->hvLastModified = mktime(&sTM);
+		psReq->hvLastModified = xHttpDate2UTC(&sTM);
 		break;
 	default:
 		break;
