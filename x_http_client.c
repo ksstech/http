@@ -409,7 +409,7 @@ exit:
 		case reqNUM_FW_UPG2: {
 			if (sRR.onBodyRet == httpFW_NEW_FOUND && sPX.iRV == erSUCCESS) {	// flashed OK: consumed, this mtime is never fetched again
 				sNVSvars.tConsumed = sRR.hvLastModified;
-				sNVSvars.ConsumedPart = halEventCheckStatus(sfREBOOT) ? mapSUB2LOG(sPX.psPart->subtype) : CurPart;
+				sNVSvars.ConsumedPart = mapSUB2LOG(sPX.psPart->subtype);	// iRV==erSUCCESS here means set_boot done, reboot pending
 				halVarsUpdateBlobs(vfNVSBLOB);
 			}
 			if (halEventCheckStatus(sfREBOOT))				// If reboot flag set we have new FW image
