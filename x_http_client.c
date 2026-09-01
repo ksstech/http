@@ -276,8 +276,8 @@ static void vTaskHttpClient(void * pvPara) {
 				uprintfx(&sRR.sUB, httpCLNT_REQ_FIRMWARE, bOptName ? (void *)idSTA : cmakeUUID);
 				// Set correct handler
 				sRR.sfCB.on_body = bOptHdlr ? xHttpClientDownload : xHttpClientCheckNewer;
-				sPX.tLow = BuildSeconds;
-				sPX.tDiff = 120;		// Required MIN difference (hvLastModified - BuildSeconds)
+				sPX.tLow = (sNVSvars.tConsumed > BuildSeconds) ? sNVSvars.tConsumed : BuildSeconds;	// FOTA contract: last consumed mtime, else build
+				sPX.tDiff = 120;		// Required MIN difference (hvLastModified - tLow)
 				sPX.psHdlr = &sHttpHdlrFOTA;
 			} else {
 				#define httpBOOT_REQ_FNAME "bootloader.bin"
@@ -407,6 +407,11 @@ exit:
 		switch(BitNum) {								// Do post processing
 		case reqNUM_FW_UPG1:
 		case reqNUM_FW_UPG2: {
+			if (sRR.onBodyRet == httpFW_NEW_FOUND && sPX.iRV == erSUCCESS) {	// flashed OK: consumed, this mtime is never fetched again
+				sNVSvars.tConsumed = sRR.hvLastModified;
+				sNVSvars.ConsumedPart = halEventCheckStatus(sfREBOOT) ? mapSUB2LOG(sPX.psPart->subtype) : CurPart;
+				halVarsUpdateBlobs(vfNVSBLOB);
+			}
 			if (halEventCheckStatus(sfREBOOT))				// If reboot flag set we have new FW image
 				Mask &= ~reqFW_UPGRADE;					// yes, abandon possible 2nd stage
 			if ((Mask & reqFW_UPGRADE) == 0) {			// If UPGRADE (1 and/or 2) completed ?
