@@ -297,8 +297,10 @@ static void vTaskHttpClient(void * pvPara) {
 				uprintfx(&sRR.sUB, httpBOOT_REQ_LOADER, cmakeMODEL, httpBOOT_REQ_FNAME);
 				// Set correct handler
 				sRR.sfCB.on_body = (BitNum == reqNUM_BL_UPG) ? xHttpClientDownload : xHttpClientCheckNewer;
-				sPX.tLow = sFIB.fi[0].tBuild;
-				sPX.tDiff = 10;		// Required MIN difference (hvLastModified - BuildSeconds)
+				// FOTA-6: consumed-mtime floor, as the FW path - tBuild (compile time) never advances
+				// to the file mtime, so without it a scheduled BL_UPG re-flashed the same file every run
+				sPX.tLow = (sNVSvars.tConsumedBL > sFIB.fi[0].tBuild) ? sNVSvars.tConsumedBL : sFIB.fi[0].tBuild;
+				sPX.tDiff = 10;		// Required MIN difference (hvLastModified - tLow)
 				sPX.psHdlr = &sHttpHdlrBootloader;
 				sPX.pcFName = httpBOOT_REQ_FNAME;					// name to use in FFS
 			}
@@ -437,6 +439,10 @@ exit:
 			SL_WARN("New Firmware '%s' %s available", bOptName ? (void *)idSTA : cmakeUUID, (sRR.onBodyRet < 1) ? "NOT" : strNUL);
 			break;
 		case reqNUM_BL_UPG:
+			if (sRR.onBodyRet == httpFW_NEW_FOUND && sPX.iRV == erSUCCESS) {	// flashed OK: consumed, as the FW path does
+				sNVSvars.tConsumedBL = sRR.hvLastModified;
+				halVarsUpdateBlobs(vfNVSBLOB);
+			}
 			SL_WARN("Bootloader '%s' upgrade %s", httpBOOT_REQ_FNAME, (sRR.onBodyRet < 1) ? "FAIL" : "successful");
 			break;
 		case reqNUM_BL_CHK:
