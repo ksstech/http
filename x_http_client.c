@@ -103,6 +103,18 @@ static int	xHttpClientCheckNewer(http_parser * psP, const char * pBuf, size_t xL
 	} else {
 		part_xfer_t	* psPX = psRR->pvArg;
 		s32_t i32Diff = psRR->hvLastModified - psPX->tLow - psPX->tDiff;
+		/* FOTA-5: a FUTURE file mtime (server clock error, restored backup) would be flashed once,
+		 * then CONSUMED at that future value - silently freezing every later legitimate release
+		 * until wall-clock passes it. Refuse it HERE instead: no flash, nothing consumed, one WARN
+		 * per check, self-healing the moment the file is re-uploaded with a sane mtime (or time
+		 * catches up). NOT a clamp at the recording site: recording now-instead-of-mtime keeps the
+		 * file "newer" every check and re-creates the flash->reboot loop until its stamp passes.
+		 * Gated on credible local time (tNow > tLow: a mote cannot predate its own build stamp). */
+		u32_t tNow = xTimeStampSeconds(sTSZ.usecs);
+		if (i32Diff > 0 && tNow > psPX->tLow && psRR->hvLastModified > (tNow + SECONDS_IN_DAY)) {
+			SL_WARN("found %r is %!r PAST now(%r) - mtime bogus, REFUSED", psRR->hvLastModified, psRR->hvLastModified - tNow, tNow);
+			i32Diff = 0;								// fall through as 'Old': no flash, nothing consumed
+		}
 		psRR->onBodyRet = (i32Diff <= 0) ? httpFW_OLD_FOUND : httpFW_NEW_FOUND;
 		// OLD is routine/nightly -> INFO (silent). NEW is rare/actionable -> WARN (reaches host).
 		if (i32Diff <= 0)	SL_INFO("found %r vs %r Diff=%!r 'Old'", psRR->hvLastModified, psPX->tLow, i32Diff);
